@@ -2,7 +2,6 @@ package com.github.ycyz.starrocks.datagrip.lang
 
 import com.intellij.lang.PsiBuilder
 import com.intellij.sql.dialects.mysql.MysqlParser
-import com.intellij.sql.psi.SqlElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
 import com.intellij.sql.psi.SqlElementTypes.SQL_INSERT_STATEMENT
 import com.intellij.sql.psi.SqlElementTypes.SQL_STATEMENT
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
@@ -155,7 +154,7 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
     private fun parseCreateMaterializedView(builder: PsiBuilder): Boolean {
         val marker = builder.mark()
         parseUntilQueryTail(builder, "AS")
-        marker.done(SQL_CREATE_MATERIALIZED_VIEW_STATEMENT)
+        marker.done(SQL_STATEMENT)
         return true
     }
 
