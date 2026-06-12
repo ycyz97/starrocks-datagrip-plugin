@@ -59,7 +59,9 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
                 "UNIQUE",
                 "ENGINE",
                 "OLAP",
-                "ROLLUP"
+                "ROLLUP",
+                "RANDOM",
+                "ORDER"
             )
     }
 
@@ -110,7 +112,7 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
                 "PARTITION"
             )
             "BACKUP", "RESTORE", "RECOVER", "SYNC" -> true
-            "CANCEL" -> wordAt(builder, 1) in setOf("LOAD", "EXPORT", "ALTER", "DECOMMISSION")
+            "CANCEL" -> wordAt(builder, 1) in setOf("LOAD", "EXPORT", "ALTER", "DECOMMISSION", "REFRESH")
             "CLEAN" -> wordAt(builder, 1) in setOf("TEMPORARY", "TRASH")
             "CREATE" -> isStarRocksCreateStatement(builder)
             "DROP" -> wordAt(builder, 1) in setOf(
@@ -192,7 +194,9 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
                 "UNIQUE",
                 "ENGINE",
                 "OLAP",
-                "ROLLUP"
+                "ROLLUP",
+                "RANDOM",
+                "ORDER"
             )
         }
         if (second in setOf(

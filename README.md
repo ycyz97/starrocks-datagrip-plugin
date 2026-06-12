@@ -1,4 +1,4 @@
-# StarRocks Support For Datagrip
+# StarRocks Support
 
 JetBrains DataGrip/IntelliJ plugin that adds StarRocks SQL dialect support.
 
@@ -13,9 +13,11 @@ The plugin uses JetBrains MySQL SQL support as the baseline and applies StarRock
   - `FULL JOIN` and `FULL OUTER JOIN`
   - `INSERT OVERWRITE`
   - `CREATE MATERIALIZED VIEW`
+  - StarRocks 4.1 materialized view DDL clauses such as `REFRESH`, `SCHEDULE`, `START`, `EVERY`, `ORDER BY`, `DISTRIBUTED BY HASH`, and `DISTRIBUTED BY RANDOM`
   - `REFRESH MATERIALIZED VIEW`
   - `UNNEST` and lateral join forms
   - `PROPERTIES ("key" = "value")`
+- StarRocks 4.1 DDL keyword coverage for table models, complex types, partitioning, distribution, properties, and materialized views.
 - Formatting adjustments for common StarRocks DDL clauses, `PROPERTIES`, `DISTRIBUTED BY HASH`, `PARTITION BY`, and `UNNEST`.
 
 ## Requirements
@@ -23,6 +25,7 @@ The plugin uses JetBrains MySQL SQL support as the baseline and applies StarRock
 - JDK 17
 - Gradle wrapper or Gradle 8.13
 - JetBrains DataGrip 2025.1 or compatible 251-based IDE
+- StarRocks syntax coverage is based on StarRocks 4.1 official documentation
 
 ## Build
 
@@ -58,6 +61,10 @@ Or run from the command line:
 .\gradlew.bat runIde --no-daemon
 ```
 
+## Version
+
+Current plugin version: `1.2.0`
+
 ---
 
 # StarRocks 支持插件
@@ -75,9 +82,11 @@ Or run from the command line:
   - `FULL JOIN` 和 `FULL OUTER JOIN`
   - `INSERT OVERWRITE`
   - `CREATE MATERIALIZED VIEW`
+  - StarRocks 4.1 物化视图 DDL 子句，例如 `REFRESH`、`SCHEDULE`、`START`、`EVERY`、`ORDER BY`、`DISTRIBUTED BY HASH` 和 `DISTRIBUTED BY RANDOM`
   - `REFRESH MATERIALIZED VIEW`
   - `UNNEST` 和 lateral join 形式
   - `PROPERTIES ("key" = "value")`
+- 覆盖 StarRocks 4.1 DDL 常见关键字，包括表模型、复杂类型、分区、分桶、属性和物化视图。
 - 针对常见 StarRocks DDL 子句、`PROPERTIES`、`DISTRIBUTED BY HASH`、`PARTITION BY` 和 `UNNEST` 做格式化调整。
 
 ## 环境要求
@@ -85,6 +94,7 @@ Or run from the command line:
 - JDK 17
 - Gradle Wrapper 或 Gradle 8.13
 - JetBrains DataGrip 2025.1，或兼容 251 平台版本的 IDE
+- StarRocks 语法覆盖基于 StarRocks 4.1 官方文档
 
 ## 构建
 
@@ -119,3 +129,7 @@ build/distributions/
 ```powershell
 .\gradlew.bat runIde --no-daemon
 ```
+
+## 版本
+
+当前插件版本：`1.2.0`

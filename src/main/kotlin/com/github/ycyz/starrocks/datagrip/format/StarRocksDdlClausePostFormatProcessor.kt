@@ -54,13 +54,20 @@ class StarRocksDdlClausePostFormatProcessor : PostFormatProcessor {
         val lineSeparator = detectLineSeparator(sql)
         return sql
             .replace(Regex("\\)\\s+(COMMENT\\s+)", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
-            .replace(Regex("\\)\\s+(REFRESH\\s+(?:MANUAL|ASYNC|EVERY))", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
+            .replace(Regex("\\)\\s+(REFRESH\\s+(?:IMMEDIATE|DEFERRED|MANUAL|ASYNC|SCHEDULE|EVERY))", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
             .replace(Regex("\\)\\s+(DISTRIBUTED\\s+BY)", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
+            .replace(Regex("\\)\\s+(ORDER\\s+BY\\s*\\()", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
             .replace(Regex("\\)\\s+(PROPERTIES\\s*\\()", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
             .replace(Regex("\\b(COMMENT\\s+[^\\r\\n]+?)\\s+(PARTITION\\s+BY)", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
-            .replace(Regex("\\b(REFRESH\\s+(?:MANUAL|ASYNC|EVERY)[^\\r\\n]*?)\\s+(PROPERTIES\\s*\\()", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
-            .replace(Regex("\\b(BUCKETS\\s+\\d+)\\s+(REFRESH\\s+(?:MANUAL|ASYNC|EVERY))", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(REFRESH\\s+(?:IMMEDIATE|DEFERRED|MANUAL|ASYNC|SCHEDULE|EVERY)[^\\r\\n]*?)\\s+(PARTITION\\s+BY)", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(REFRESH\\s+(?:IMMEDIATE|DEFERRED|MANUAL|ASYNC|SCHEDULE|EVERY)[^\\r\\n]*?)\\s+(ORDER\\s+BY\\s*\\()", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(REFRESH\\s+(?:IMMEDIATE|DEFERRED|MANUAL|ASYNC|SCHEDULE|EVERY)[^\\r\\n]*?)\\s+(PROPERTIES\\s*\\()", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(BUCKETS\\s+\\d+)\\s+(REFRESH\\s+(?:IMMEDIATE|DEFERRED|MANUAL|ASYNC|SCHEDULE|EVERY))", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(BUCKETS\\s+\\d+)\\s+(ORDER\\s+BY\\s*\\()", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
             .replace(Regex("\\b(BUCKETS\\s+\\d+)\\s+(PROPERTIES\\s*\\()", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(DISTRIBUTED\\s+BY\\s+RANDOM(?:\\s+BUCKETS\\s+\\d+)?)\\s+(REFRESH\\s+(?:IMMEDIATE|DEFERRED|MANUAL|ASYNC|SCHEDULE|EVERY))", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(DISTRIBUTED\\s+BY\\s+RANDOM(?:\\s+BUCKETS\\s+\\d+)?)\\s+(ORDER\\s+BY\\s*\\()", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
+            .replace(Regex("\\b(DISTRIBUTED\\s+BY\\s+RANDOM(?:\\s+BUCKETS\\s+\\d+)?)\\s+(PROPERTIES\\s*\\()", RegexOption.IGNORE_CASE), "$1" + lineSeparator + "$2")
     }
 
     private fun formatPropertiesBlock(sql: String): String {

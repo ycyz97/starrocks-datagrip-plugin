@@ -83,15 +83,19 @@ class StarRocksSqlAnnotator : Annotator {
         return when (tokenText) {
             "AGGREGATE", "DUPLICATE", "PRIMARY", "UNIQUE" -> next == "KEY"
             "BUCKETS" -> previous == ")" || previous == "HASH"
+            "DEFERRED" -> previous == "REFRESH" || next in setOf("ASYNC", "MANUAL", "SCHEDULE")
             "DISTRIBUTED" -> next == "BY"
             "ENGINE" -> next == "=" || next == "OLAP"
+            "EVERY" -> previous in setOf("SCHEDULE", "ASYNC") || next == "("
             "EXPORT" -> next == "TABLE" || next == "DATABASE" || previous == null
             "FULL" -> next == "JOIN" || next == "OUTER"
             "HASH" -> previous == "BY" || next == "("
+            "IMMEDIATE" -> previous == "REFRESH" || next in setOf("ASYNC", "MANUAL", "SCHEDULE")
             "JOIN" -> previous == "FULL" || previous == "OUTER"
             "LABEL" -> previous == "LOAD" || previous == "CANCEL"
             "LATERAL" -> previous == "JOIN" && next == "UNNEST"
             "LOAD" -> next == "LABEL"
+            "MANUAL" -> previous == "REFRESH" || previous in setOf("IMMEDIATE", "DEFERRED")
             "MATERIALIZED" -> next == "VIEW"
             "OLAP" -> previous == "ENGINE" || previous == "="
             "OUTER" -> previous == "FULL" && next == "JOIN"
@@ -99,7 +103,10 @@ class StarRocksSqlAnnotator : Annotator {
             "PIPE" -> previous in setOf("CREATE", "ALTER", "DROP", "SHOW", "PAUSE", "RESUME", "STOP")
             "PARTITION" -> next == "BY"
             "PROPERTIES" -> next == "("
+            "RANDOM" -> previous == "BY" || previous == "DISTRIBUTED"
             "REFRESH" -> next == "MANUAL" || next == "ASYNC" || next == "MATERIALIZED"
+            "SCHEDULE" -> previous == "REFRESH" || previous in setOf("IMMEDIATE", "DEFERRED")
+            "START" -> previous == "SCHEDULE" || next == "("
             "TASK" -> previous == "SUBMIT" || previous == "CREATE"
             else -> false
         }
