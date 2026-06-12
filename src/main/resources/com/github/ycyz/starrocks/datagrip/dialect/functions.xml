@@ -1,0 +1,920 @@
+<?xmlFile version="1.0" encoding="UTF-8"?>
+<functions>
+  <macro name='set_quantifier'>
+    {DISTINCT | ALL}
+  </macro>
+  <macro name='time_unit'>
+    {MICROSECOND|SECOND|MINUTE|HOUR|DAY|WEEK|MONTH|QUARTER|YEAR}
+  </macro>
+
+  <function aggregate='true'>
+    <name>SUM</name>
+    <prototype>([set_quantifier] expr:X):P0</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>COUNT</name>
+    <prototype>([set_quantifier] expr:ANY...):N</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>AVG</name>
+    <prototype>([set_quantifier] expr:X):X</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>MIN</name>
+    <prototype>([set_quantifier] expr:X):P0</prototype>
+    <prototype>([set_quantifier] expr:str):str</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>MAX</name>
+    <prototype>([set_quantifier] expr:X):P0</prototype>
+    <prototype>([set_quantifier] expr:str):str</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>MEDIAN</name>
+    <prototype>(expr:X):X</prototype>
+  </function>
+
+  <function>
+    <name>ABS</name>
+    <prototype>(X:X):X</prototype>
+  </function>
+  <function analytic='true'>
+    <name>PERCENT_RANK</name>
+    <prototype>():N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_AGG</name>
+    <prototype>(expr:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_AVG</name>
+    <prototype>(array:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_APPEND</name>
+    <prototype>(array:ANY, value:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_CONCAT</name>
+    <prototype>(array:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_CONTAINS</name>
+    <prototype>(array:ANY, value:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_CONTAINS_ALL</name>
+    <prototype>(array1:ANY, array2:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_CONTAINS_SEQ</name>
+    <prototype>(array1:ANY, array2:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_CUM_SUM</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_DIFFERENCE</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_DISTINCT</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_FILTER</name>
+    <prototype>(array:ANY, lambda:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_FLATTEN</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_GENERATE</name>
+    <prototype>(start:N, end:N):ANY</prototype>
+    <prototype>(start:N, end:N, step:N):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_INTERSECT</name>
+    <prototype>(array1:ANY, array2:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_JOIN</name>
+    <prototype>(array:ANY, delimiter:str):str</prototype>
+  </function>
+  <function>
+    <name>ARRAY_LENGTH</name>
+    <prototype>(array:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_MAX</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_MIN</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_POSITION</name>
+    <prototype>(array:ANY, value:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_REPEAT</name>
+    <prototype>(value:ANY, count:N):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_REMOVE</name>
+    <prototype>(array:ANY, value:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_SORT</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_SORTBY</name>
+    <prototype>(array:ANY, sort_by:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_SLICE</name>
+    <prototype>(array:ANY, start:N, length:N):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_SUM</name>
+    <prototype>(array:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_TO_BITMAP</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_TOP_N</name>
+    <prototype>(array:ANY, n:N):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>ARRAY_UNIQUE_AGG</name>
+    <prototype>(expr:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAY_UNION</name>
+    <prototype>(array1:ANY, array2:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>ARRAYS_OVERLAP</name>
+    <prototype>(array1:ANY, array2:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAYS_ZIP</name>
+    <prototype>(array:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>UNNEST</name>
+    <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_COUNT</name>
+    <prototype>(bitmap:ANY):N</prototype>
+  </function>
+  <function>
+    <name>BITMAP_EMPTY</name>
+    <prototype>():ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_FROM_STRING</name>
+    <prototype>(str:str):ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_HASH</name>
+    <prototype>(expr:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_TO_STRING</name>
+    <prototype>(bitmap:ANY):str</prototype>
+  </function>
+  <function>
+    <name>CARDINALITY</name>
+    <prototype>(expr:ANY):N</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_UNION</name>
+    <prototype>(bitmap:ANY):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_UNION_COUNT</name>
+    <prototype>(bitmap:ANY):N</prototype>
+  </function>
+  <function>
+    <name>CHAR_LENGTH</name>
+    <prototype>(str:str):N</prototype>
+  </function>
+  <function>
+    <name>ASCII</name>
+    <prototype>(str:str):N</prototype>
+  </function>
+  <function>
+    <name>BIN</name>
+    <prototype>(expr:N):str</prototype>
+  </function>
+  <function>
+    <name>COALESCE</name>
+    <prototype>(value:ANY...):P0</prototype>
+  </function>
+  <function>
+    <name>CONCAT</name>
+    <prototype>(expr:ANY...):str</prototype>
+  </function>
+  <function>
+    <name>CONCAT_WS</name>
+    <prototype>(separator:str, expr:ANY...):str</prototype>
+  </function>
+  <function>
+    <name>CAST</name>
+    <prototype>(ANY:ANY AS datatype:cast_datatype):P2</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>COUNT_IF</name>
+    <prototype>(expr:ANY):N</prototype>
+  </function>
+  <function>
+    <name>DATE_ADD</name>
+    <name>ADDDATE</name>
+    <prototype>(date:date, INTERVAL expr:N time_unit):date</prototype>
+  </function>
+  <function>
+    <name>DATE</name>
+    <prototype>(dt:datetime):date</prototype>
+  </function>
+  <function>
+    <name>DATE_FORMAT</name>
+    <prototype>(date:date, format:str):str</prototype>
+  </function>
+  <function>
+    <name>DATE_SUB</name>
+    <name>SUBDATE</name>
+    <prototype>(date:date, INTERVAL expr:N time_unit):date</prototype>
+  </function>
+  <function>
+    <name>DATE_TRUNC</name>
+    <prototype>(unit:str, date:date):date</prototype>
+  </function>
+  <function>
+    <name>DATEDIFF</name>
+    <prototype>(date1:date, date2:date):N</prototype>
+  </function>
+  <function>
+    <name>IF</name>
+    <prototype>(expr:ANY, if_true:ANY, if_false:ANY):P1</prototype>
+  </function>
+  <function>
+    <name>IFNULL</name>
+    <prototype>(expr1:ANY, expr2:ANY):P0</prototype>
+  </function>
+  <function>
+    <name>ISNULL</name>
+    <prototype>(expr:ANY):N</prototype>
+  </function>
+  <function>
+    <name>JSON_EXISTS</name>
+    <prototype>(json:ANY, path:str):N</prototype>
+  </function>
+  <function>
+    <name>JSON_EXTRACT</name>
+    <prototype>(json:ANY, path:str):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_KEYS</name>
+    <prototype>(json:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_LENGTH</name>
+    <prototype>(json:ANY):N</prototype>
+    <prototype>(json:ANY, path:str):N</prototype>
+  </function>
+  <function>
+    <name>JSON_OBJECT</name>
+    <prototype>(key_value:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_PRETTY</name>
+    <prototype>(json:ANY):str</prototype>
+  </function>
+  <function>
+    <name>JSON_QUERY</name>
+    <prototype>(json:ANY, path:str):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_REMOVE</name>
+    <prototype>(json:ANY, path:str...):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_SET</name>
+    <prototype>(json:ANY, path_value:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_VALUE</name>
+    <prototype>(json:ANY, path:str):ANY</prototype>
+  </function>
+  <function>
+    <name>PARSE_JSON</name>
+    <prototype>(json:str):ANY</prototype>
+  </function>
+  <function>
+    <name>GET_JSON_OBJECT</name>
+    <prototype>(json:str, path:str):str</prototype>
+  </function>
+  <function>
+    <name>GET_JSON_STRING</name>
+    <prototype>(json:str, path:str):str</prototype>
+  </function>
+  <function>
+    <name>GET_JSON_INT</name>
+    <prototype>(json:str, path:str):N</prototype>
+  </function>
+  <function>
+    <name>GET_JSON_DOUBLE</name>
+    <prototype>(json:str, path:str):N</prototype>
+  </function>
+  <function>
+    <name>LOWER</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>ELT</name>
+    <prototype>(index:N, str:str...):str</prototype>
+  </function>
+  <function>
+    <name>FIELD</name>
+    <prototype>(expr:ANY, value:ANY...):N</prototype>
+  </function>
+  <function>
+    <name>FIND_IN_SET</name>
+    <prototype>(str:str, strlist:str):N</prototype>
+  </function>
+  <function>
+    <name>FROM_BASE64</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>HEX</name>
+    <prototype>(expr:ANY):str</prototype>
+  </function>
+  <function>
+    <name>INITCAP</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>INSTR</name>
+    <prototype>(str:str, substr:str):N</prototype>
+  </function>
+  <function>
+    <name>LEFT</name>
+    <prototype>(str:str, len:N):str</prototype>
+  </function>
+  <function>
+    <name>LENGTH</name>
+    <prototype>(str:str):N</prototype>
+  </function>
+  <function>
+    <name>LOCATE</name>
+    <prototype>(substr:str, str:str):N</prototype>
+    <prototype>(substr:str, str:str, pos:N):N</prototype>
+  </function>
+  <function>
+    <name>MD5</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>MONEY_FORMAT</name>
+    <prototype>(expr:X):str</prototype>
+  </function>
+  <function>
+    <name>NULL_OR_EMPTY</name>
+    <prototype>(str:str):N</prototype>
+  </function>
+  <function>
+    <name>POSITION</name>
+    <prototype>(substr:str IN str:str):N</prototype>
+  </function>
+  <function>
+    <name>MAP_KEYS</name>
+    <prototype>(map:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>MAP_VALUES</name>
+    <prototype>(map:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>MAP_SIZE</name>
+    <prototype>(map:ANY):N</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>SUM_MAP</name>
+    <prototype>(key:ANY, value:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>TO_BITMAP</name>
+    <prototype>(expr:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>NOW</name>
+    <prototype>():date</prototype>
+  </function>
+  <function>
+    <name>CURDATE</name>
+    <prototype>():date</prototype>
+  </function>
+  <function>
+    <name>CURTIME</name>
+    <prototype>():date</prototype>
+  </function>
+  <function>
+    <name>CURRENT_TIMESTAMP</name>
+    <prototype>():date</prototype>
+  </function>
+  <function>
+    <name>UTC_TIMESTAMP</name>
+    <prototype>():date</prototype>
+  </function>
+  <function>
+    <name>DAY</name>
+    <name>DAYOFMONTH</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>DAYNAME</name>
+    <prototype>(date:date):str</prototype>
+  </function>
+  <function>
+    <name>DAYOFWEEK</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>DAYOFYEAR</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>FROM_UNIXTIME</name>
+    <prototype>(unix_time:N):date</prototype>
+    <prototype>(unix_time:N, format:str):str</prototype>
+  </function>
+  <function>
+    <name>HOUR</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>LAST_DAY</name>
+    <prototype>(date:date):date</prototype>
+  </function>
+  <function>
+    <name>MINUTE</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>MONTH</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>MONTHNAME</name>
+    <prototype>(date:date):str</prototype>
+  </function>
+  <function>
+    <name>QUARTER</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>SECOND</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>STR_TO_DATE</name>
+    <prototype>(str:str, format:str):date</prototype>
+  </function>
+  <function>
+    <name>WEEK</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>WEEKDAY</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>YEAR</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>NULLIF</name>
+    <prototype>(expr1:ANY, expr2:ANY):P0</prototype>
+  </function>
+  <function analytic='true'>
+    <name>ROW_NUMBER</name>
+    <prototype>():N</prototype>
+  </function>
+  <function>
+    <name>ROUND</name>
+    <prototype>(X:X):X</prototype>
+    <prototype>(X:X, D:N):X</prototype>
+  </function>
+  <function>
+    <name>ACOS</name>
+    <name>ASIN</name>
+    <name>ATAN</name>
+    <name>COS</name>
+    <name>COT</name>
+    <name>DEGREES</name>
+    <name>EXP</name>
+    <name>FLOOR</name>
+    <name>LN</name>
+    <name>LOG</name>
+    <name>LOG10</name>
+    <name>LOG2</name>
+    <name>RADIANS</name>
+    <name>SIN</name>
+    <name>SQRT</name>
+    <name>TAN</name>
+    <name>TRUNCATE</name>
+    <prototype>(X:X):X</prototype>
+  </function>
+  <function>
+    <name>CEIL</name>
+    <name>CEILING</name>
+    <prototype>(X:X):X</prototype>
+  </function>
+  <function>
+    <name>GREATEST</name>
+    <name>LEAST</name>
+    <prototype>(expr:ANY...):P0</prototype>
+  </function>
+  <function>
+    <name>MOD</name>
+    <prototype>(X:X, Y:X):X</prototype>
+  </function>
+  <function>
+    <name>NEGATIVE</name>
+    <prototype>(X:X):X</prototype>
+  </function>
+  <function>
+    <name>RAND</name>
+    <prototype>():X</prototype>
+    <prototype>(seed:N):X</prototype>
+  </function>
+  <function>
+    <name>SIGN</name>
+    <prototype>(X:X):N</prototype>
+  </function>
+  <function>
+    <name>PI</name>
+    <prototype>():N</prototype>
+  </function>
+  <function>
+    <name>POW</name>
+    <prototype>(X:X, Y:X):X</prototype>
+  </function>
+  <function>
+    <name>POWER</name>
+    <prototype>(X:X, Y:X):X</prototype>
+  </function>
+  <function>
+    <name>REGEXP_EXTRACT</name>
+    <prototype>(str:str, pattern:str, pos:N):str</prototype>
+  </function>
+  <function>
+    <name>REGEXP_REPLACE</name>
+    <prototype>(str:str, pattern:str, repl:str):str</prototype>
+  </function>
+  <function>
+    <name>REPLACE</name>
+    <prototype>(str:str, old:str, new:str):str</prototype>
+  </function>
+  <function>
+    <name>REPEAT</name>
+    <prototype>(str:str, count:N):str</prototype>
+  </function>
+  <function>
+    <name>REVERSE</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>RIGHT</name>
+    <prototype>(str:str, len:N):str</prototype>
+  </function>
+  <function>
+    <name>LPAD</name>
+    <name>RPAD</name>
+    <prototype>(str:str, len:N, pad:str):str</prototype>
+  </function>
+  <function>
+    <name>LTRIM</name>
+    <name>RTRIM</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>SHA1</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>SHA2</name>
+    <prototype>(str:str, bits:N):str</prototype>
+  </function>
+  <function>
+    <name>SUBSTR</name>
+    <name>SUBSTRING</name>
+    <prototype>(str:str, pos:N):str</prototype>
+    <prototype>(str:str, pos:N, len:N):str</prototype>
+  </function>
+  <function>
+    <name>SPLIT</name>
+    <prototype>(str:str, delimiter:str):ANY</prototype>
+  </function>
+  <function>
+    <name>SPLIT_PART</name>
+    <prototype>(str:str, delimiter:str, part:N):str</prototype>
+  </function>
+  <function>
+    <name>STARTS_WITH</name>
+    <prototype>(str:str, prefix:str):N</prototype>
+  </function>
+  <function>
+    <name>ENDS_WITH</name>
+    <prototype>(str:str, suffix:str):N</prototype>
+  </function>
+  <function>
+    <name>STRCMP</name>
+    <prototype>(str1:str, str2:str):N</prototype>
+  </function>
+  <function>
+    <name>TO_BASE64</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>UNHEX</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>TIME_SLICE</name>
+    <prototype>(dt:datetime, interval:N, unit:str):datetime</prototype>
+  </function>
+  <function>
+    <name>TIMESTAMPDIFF</name>
+    <prototype>(unit:str, datetime1:datetime, datetime2:datetime):N</prototype>
+  </function>
+  <function>
+    <name>TO_DATE</name>
+    <prototype>(dt:datetime):date</prototype>
+  </function>
+  <function>
+    <name>TO_DAYS</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>UPPER</name>
+    <prototype>(str:str):str</prototype>
+  </function>
+  <function>
+    <name>UNIX_TIMESTAMP</name>
+    <prototype>():N</prototype>
+    <prototype>(dt:datetime):N</prototype>
+  </function>
+  <function>
+    <name>TRIM</name>
+    <prototype>(str:str):str</prototype>
+    <prototype>([{BOTH | LEADING | TRAILING}] [remstr:str] FROM str:str):str</prototype>
+  </function>
+  <function analytic='true'>
+    <name>LAG</name>
+    <prototype>(expr:ANY[, N:N [, default:ANY]]):P0</prototype>
+  </function>
+  <function analytic='true'>
+    <name>LEAD</name>
+    <prototype>(expr:ANY[, N:N [, default:ANY]]):P0</prototype>
+  </function>
+  <function analytic='true'>
+    <name>FIRST_VALUE</name>
+    <prototype>(expr:ANY):P0</prototype>
+  </function>
+  <function analytic='true'>
+    <name>LAST_VALUE</name>
+    <prototype>(expr:ANY):P0</prototype>
+  </function>
+  <function>
+    <name>ANY_VALUE</name>
+    <prototype>(expr:ANY):P0</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>APPROX_COUNT_DISTINCT</name>
+    <prototype>(expr:ANY):N</prototype>
+  </function>
+  <function>
+    <name>ARRAY_MAP</name>
+    <prototype>(lambda:ANY, array:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>ATAN2</name>
+    <prototype>(Y:X, X:X):X</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_AGG</name>
+    <prototype>(expr:ANY):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_AND</name>
+    <prototype>(bitmap:ANY):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_AND_COUNT</name>
+    <prototype>(bitmap:ANY):N</prototype>
+  </function>
+  <function>
+    <name>BITMAP_HAS_ALL</name>
+    <prototype>(bitmap1:ANY, bitmap2:ANY):N</prototype>
+  </function>
+  <function>
+    <name>BITMAP_HAS_ANY</name>
+    <prototype>(bitmap1:ANY, bitmap2:ANY):N</prototype>
+  </function>
+  <function>
+    <name>BITMAP_INTERSECT</name>
+    <prototype>(bitmap:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_MAX</name>
+    <prototype>(bitmap:ANY):N</prototype>
+  </function>
+  <function>
+    <name>BITMAP_MIN</name>
+    <prototype>(bitmap:ANY):N</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_OR</name>
+    <prototype>(bitmap:ANY):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_OR_COUNT</name>
+    <prototype>(bitmap:ANY):N</prototype>
+  </function>
+  <function>
+    <name>BITMAP_TO_ARRAY</name>
+    <prototype>(bitmap:ANY):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_XOR</name>
+    <prototype>(bitmap:ANY):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>BITMAP_XOR_COUNT</name>
+    <prototype>(bitmap:ANY):N</prototype>
+  </function>
+  <function>
+    <name>CBRT</name>
+    <prototype>(X:X):X</prototype>
+  </function>
+  <function>
+    <name>CHARACTER_LENGTH</name>
+    <prototype>(str:str):N</prototype>
+  </function>
+  <function>
+    <name>CONV</name>
+    <prototype>(expr:ANY, from_base:N, to_base:N):str</prototype>
+  </function>
+  <function>
+    <name>CONVERT</name>
+    <prototype>(expr:ANY, type:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>CURRENT_DATE</name>
+    <name>CURRENT_TIME</name>
+    <prototype>():date</prototype>
+  </function>
+  <function>
+    <name>DATE_DIFF</name>
+    <prototype>(unit:str, start:date, end:date):N</prototype>
+  </function>
+  <function analytic='true'>
+    <name>DENSE_RANK</name>
+    <prototype>():N</prototype>
+  </function>
+  <function>
+    <name>E</name>
+    <prototype>():N</prototype>
+  </function>
+  <function>
+    <name>ELEMENT_AT</name>
+    <prototype>(collection:ANY, key:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>FROM_DAYS</name>
+    <prototype>(days:N):date</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>GROUP_CONCAT</name>
+    <prototype>(expr:ANY...):str</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>GROUPING</name>
+    <prototype>(expr:ANY):N</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>GROUPING_ID</name>
+    <prototype>(expr:ANY...):N</prototype>
+  </function>
+  <function>
+    <name>HLL_CARDINALITY</name>
+    <prototype>(hll:ANY):N</prototype>
+  </function>
+  <function>
+    <name>HLL_EMPTY</name>
+    <prototype>():ANY</prototype>
+  </function>
+  <function>
+    <name>HLL_HASH</name>
+    <prototype>(expr:ANY):ANY</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>HLL_UNION_AGG</name>
+    <prototype>(hll:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_ARRAY</name>
+    <prototype>(expr:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>JSON_STRING</name>
+    <prototype>(json:ANY):str</prototype>
+  </function>
+  <function>
+    <name>MAKEDATE</name>
+    <prototype>(year:N, day_of_year:N):date</prototype>
+  </function>
+  <function>
+    <name>MAP_CONCAT</name>
+    <prototype>(map:ANY...):ANY</prototype>
+  </function>
+  <function>
+    <name>MAP_FILTER</name>
+    <prototype>(map:ANY, lambda:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>MAP_FROM_ARRAYS</name>
+    <prototype>(keys:ANY, values:ANY):ANY</prototype>
+  </function>
+  <function analytic='true'>
+    <name>NTILE</name>
+    <prototype>(buckets:N):N</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>PERCENTILE_APPROX</name>
+    <prototype>(expr:X, percentile:X):X</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>PERCENTILE_CONT</name>
+    <prototype>(percentile:X):X</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>PERCENTILE_DISC</name>
+    <prototype>(percentile:X):X</prototype>
+  </function>
+  <function>
+    <name>PMOD</name>
+    <prototype>(X:X, Y:X):X</prototype>
+  </function>
+  <function>
+    <name>POSITIVE</name>
+    <prototype>(X:X):X</prototype>
+  </function>
+  <function>
+    <name>RANDOM</name>
+    <prototype>():X</prototype>
+  </function>
+  <function analytic='true'>
+    <name>RANK</name>
+    <prototype>():N</prototype>
+  </function>
+  <function>
+    <name>REGEXP</name>
+    <prototype>(str:str, pattern:str):N</prototype>
+  </function>
+  <function aggregate='true'>
+    <name>STDDEV</name>
+    <name>STDDEV_POP</name>
+    <name>STDDEV_SAMP</name>
+    <name>VAR_POP</name>
+    <name>VAR_SAMP</name>
+    <name>VARIANCE</name>
+    <prototype>(expr:X):X</prototype>
+  </function>
+  <function>
+    <name>TIMEDIFF</name>
+    <prototype>(datetime1:datetime, datetime2:datetime):date</prototype>
+  </function>
+  <function>
+    <name>TIMESTAMP</name>
+    <prototype>(expr:ANY):date</prototype>
+  </function>
+  <function>
+    <name>TIMESTAMPADD</name>
+    <prototype>(unit:str, interval:N, datetime:datetime):date</prototype>
+  </function>
+  <function>
+    <name>WEEKOFYEAR</name>
+    <prototype>(date:date):N</prototype>
+  </function>
+</functions>

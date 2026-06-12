@@ -1,0 +1,41 @@
+<idea-plugin>
+    <id>com.github.ycyz.starrocks.support</id>
+    <name>StarRocks Support</name>
+    <version>1.2.5</version>
+    <vendor>ycyz</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.database</depends>
+
+    <description><![CDATA[
+        StarRocks Support adds StarRocks SQL dialect integration for JetBrains IDEs, including syntax highlighting, function completion, formatting helpers, and compatibility handling for common StarRocks SQL statements.<br>
+    ]]></description>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- StarRocks SQL dialect registration -->
+        <sql.dialect dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect"/>
+        <sql.dialectCodeStyleProvider implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksCodeStyleProvider"/>
+        <lang.parserDefinition language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighterFactory"/>
+        <lang.formatter language="StarRocks" implementationClass="com.intellij.sql.formatter.SqlFormattingModelBuilder"/>
+
+        <!-- SQL dialect-aware highlighting enhancement -->
+        <annotator language="SQL" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSqlAnnotator"/>
+        <annotator language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSqlAnnotator"/>
+        <completion.contributor language="SQL" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksFunctionCompletionContributor"/>
+        <completion.contributor language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksFunctionCompletionContributor"/>
+        <preFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlColumnAlignmentPreFormatProcessor"/>
+        <postFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlClausePostFormatProcessor"/>
+        <postFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksQueryPostFormatProcessor"/>
+        <sql.inspectionSuppressorDelegate implementation="com.github.ycyz.starrocks.datagrip.inspections.StarRocksUnnestInspectionSuppressor"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij.database">
+        <dbms id="STARROCKS" instance="com.github.ycyz.starrocks.datagrip.dialect.StarRocksDbmsHolder.INSTANCE"/>
+        <addToHSet item="STARROCKS" set="MYSQL_LIKE"/>
+        <dialect dbms="STARROCKS" implementationClass="com.intellij.database.dialects.mysql.MysqlDialect"/>
+        <typeSystem dbms="STARROCKS" implementationClass="com.intellij.database.dialects.mysqlbase.types.MysqlBaseTypeSystem"/>
+        <!--suppress PluginXmlValidity -->
+        <driversConfig config="databaseDrivers/starrocks-drivers.xml"/>
+    </extensions>
+</idea-plugin>
