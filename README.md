@@ -54,7 +54,7 @@ Or run from the command line:
 
 ## Version
 
-Current plugin version: `1.2.1`
+Current plugin version: `1.2.2`
 
 ---
 
@@ -114,4 +114,4 @@ build/distributions/
 
 ## 版本
 
-当前插件版本：`1.2.1`
+当前插件版本：`1.2.2`

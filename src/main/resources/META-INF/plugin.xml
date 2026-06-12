@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.github.ycyz.starrocks.datagrip</id>
     <name>StarRocks Support</name>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
     <vendor>ycyz</vendor>
 
     <depends>com.intellij.modules.platform</depends>
@@ -26,6 +26,7 @@
         <completion.contributor language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksFunctionCompletionContributor"/>
         <preFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlColumnAlignmentPreFormatProcessor"/>
         <postFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlClausePostFormatProcessor"/>
+        <postFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksQueryPostFormatProcessor"/>
         <sql.inspectionSuppressorDelegate implementation="com.github.ycyz.starrocks.datagrip.inspections.StarRocksUnnestInspectionSuppressor"/>
     </extensions>
 
