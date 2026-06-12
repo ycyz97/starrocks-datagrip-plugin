@@ -147,31 +147,3 @@ build/distributions/
 ```powershell
 .\gradlew.bat runIde --no-daemon
 ```
-
-## 手动冒烟测试
-
-使用以下 smoke SQL 文件作为手动回归测试基准：
-
-```text
-src/main/resources/sql/starrocks/starrocks_editing_smoke.sql
-```
-
-建议检查：
-
-- 可以选择 StarRocks 方言。
-- `FULL JOIN` 和 `FULL OUTER JOIN` 不出现语法错误。
-- Join 场景中的字段、别名和函数高亮保持可用。
-- 官方 `UNNEST` 示例不出现语法错误。
-- `PROPERTIES ("key" = "value")` 中的双引号值按字符串处理。
-- 格式化不会破坏 StarRocks DDL、物化视图、`PROPERTIES` 或 `UNNEST`。
-- 普通 MySQL 方言行为不受影响。
-
-## 来源策略
-
-新增 StarRocks 专属语法、关键字和函数时，必须有 StarRocks 官方文档、StarRocks 源码或 StarRocks 官方测试作为依据。
-
-当前记录的官方来源位于：
-
-```text
-src/main/resources/sql/starrocks/starrocks_official_sources.md
-```
