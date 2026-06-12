@@ -83,12 +83,16 @@ class StarRocksSqlAnnotator : Annotator {
         return when (tokenText) {
             "AGGREGATE", "DUPLICATE", "PRIMARY", "UNIQUE" -> next == "KEY"
             "BUCKETS" -> previous == ")" || previous == "HASH"
+            "CATALOG" -> previous in setOf("CREATE", "EXTERNAL", "ALTER", "DROP", "SHOW") || next == "PROPERTIES"
+            "COMMENT" -> previous in setOf("CATALOG", "RESOURCE") || next != null
+            "CUBE" -> previous == "BY" || next == "("
             "DEFERRED" -> previous == "REFRESH" || next in setOf("ASYNC", "MANUAL", "SCHEDULE")
             "DISTRIBUTED" -> next == "BY"
             "ENGINE" -> next == "=" || next == "OLAP"
             "EVERY" -> previous in setOf("SCHEDULE", "ASYNC") || next == "("
             "EXPORT" -> next == "TABLE" || next == "DATABASE" || previous == null
             "FULL" -> next == "JOIN" || next == "OUTER"
+            "GROUPING" -> previous == "BY" || next == "SETS"
             "HASH" -> previous == "BY" || next == "("
             "IMMEDIATE" -> previous == "REFRESH" || next in setOf("ASYNC", "MANUAL", "SCHEDULE")
             "JOIN" -> previous == "FULL" || previous == "OUTER"
@@ -103,11 +107,17 @@ class StarRocksSqlAnnotator : Annotator {
             "PIPE" -> previous in setOf("CREATE", "ALTER", "DROP", "SHOW", "PAUSE", "RESUME", "STOP")
             "PARTITION" -> next == "BY"
             "PROPERTIES" -> next == "("
+            "QUALIFY" -> previous != null
             "RANDOM" -> previous == "BY" || previous == "DISTRIBUTED"
             "REFRESH" -> next == "MANUAL" || next == "ASYNC" || next == "MATERIALIZED"
+            "RESOURCE" -> previous in setOf("CREATE", "ALTER", "DROP", "SHOW")
+            "ROLLUP" -> previous == "BY" || next == "("
             "SCHEDULE" -> previous == "REFRESH" || previous in setOf("IMMEDIATE", "DEFERRED")
+            "SET" -> previous in setOf("CATALOG", "RESOURCE") || next == "PROPERTIES"
+            "SETS" -> previous == "GROUPING"
             "START" -> previous == "SCHEDULE" || next == "("
             "TASK" -> previous == "SUBMIT" || previous == "CREATE"
+            "UNSET" -> previous in setOf("CATALOG", "RESOURCE") || next == "PROPERTIES"
             else -> false
         }
     }

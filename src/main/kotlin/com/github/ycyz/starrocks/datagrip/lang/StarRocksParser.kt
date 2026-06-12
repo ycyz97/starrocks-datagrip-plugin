@@ -24,7 +24,16 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
         if (isRefreshMaterializedView(builder)) {
             return parseRefreshMaterializedView(builder)
         }
+        if (isCatalogManagementStatement(builder)) {
+            return parseLenientStarRocksStatement(builder)
+        }
+        if (isResourceManagementStatement(builder)) {
+            return parseLenientStarRocksStatement(builder)
+        }
         if (isQueryWithStarRocksTableFunction(builder)) {
+            return parseLenientStarRocksStatement(builder)
+        }
+        if (isQueryWithStarRocksAnalyticClause(builder)) {
             return parseLenientStarRocksStatement(builder)
         }
         if (hasStarRocksQueryTail(builder)) {
@@ -75,9 +84,60 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
             wordAt(builder, 2) == "VIEW"
     }
 
+    private fun isCatalogManagementStatement(builder: PsiBuilder): Boolean {
+        return when (wordAt(builder, 0)) {
+            "CREATE" -> wordAt(builder, 1) == "EXTERNAL" && wordAt(builder, 2) == "CATALOG"
+            "ALTER", "DROP" -> wordAt(builder, 1) == "CATALOG"
+            "SHOW" -> wordAt(builder, 1) == "CATALOGS" ||
+                wordAt(builder, 1) == "CREATE" && wordAt(builder, 2) == "CATALOG"
+            else -> false
+        }
+    }
+
+    private fun isResourceManagementStatement(builder: PsiBuilder): Boolean {
+        return when (wordAt(builder, 0)) {
+            "CREATE", "ALTER", "DROP" -> wordAt(builder, 1) == "RESOURCE"
+            "SHOW" -> wordAt(builder, 1) == "RESOURCES"
+            else -> false
+        }
+    }
+
     private fun isQueryWithStarRocksTableFunction(builder: PsiBuilder): Boolean {
         if (!isQueryStart(builder)) return false
         return statementContainsAny(builder, "UNNEST", "LATERAL")
+    }
+
+    private fun isQueryWithStarRocksAnalyticClause(builder: PsiBuilder): Boolean {
+        if (!isQueryStart(builder)) return false
+        return statementContainsAny(builder, "QUALIFY", "ROLLUP", "CUBE") ||
+            statementContainsSequence(builder, "GROUPING", "SETS")
+    }
+
+    private fun statementContainsSequence(builder: PsiBuilder, vararg words: String): Boolean {
+        if (words.isEmpty()) return false
+
+        val marker = builder.mark()
+        var scanned = 0
+        var matched = 0
+        var found = false
+        while (!builder.eof() && builder.tokenText != ";" && scanned < MAX_LOOKAHEAD_TOKENS) {
+            val text = builder.tokenText
+            if (text != null && text.firstOrNull()?.isLetter() == true) {
+                if (text.equals(words[matched], ignoreCase = true)) {
+                    matched++
+                    if (matched == words.size) {
+                        found = true
+                        break
+                    }
+                } else {
+                    matched = if (text.equals(words[0], ignoreCase = true)) 1 else 0
+                }
+            }
+            builder.advanceLexer()
+            scanned++
+        }
+        marker.rollbackTo()
+        return found
     }
 
     private fun hasStarRocksQueryTail(builder: PsiBuilder): Boolean {
@@ -106,6 +166,10 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
                 builder,
                 "MATERIALIZED",
                 "ROLLUP",
+                "CATALOG",
+                "RESOURCE",
+                "SET",
+                "UNSET",
                 "DISTRIBUTED",
                 "BUCKETS",
                 "PROPERTIES",

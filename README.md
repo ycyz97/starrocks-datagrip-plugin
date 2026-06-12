@@ -7,18 +7,9 @@ The plugin uses JetBrains MySQL SQL support as the baseline and applies StarRock
 ## Features
 
 - StarRocks dialect and data source registration.
-- StarRocks SQL keyword highlighting for common DDL, DML, materialized view, pipe, task, load, and refresh statements.
-- StarRocks function completion and highlighting backed by the local function registry.
-- Compatibility handling for StarRocks SQL such as:
-  - `FULL JOIN` and `FULL OUTER JOIN`
-  - `INSERT OVERWRITE`
-  - `CREATE MATERIALIZED VIEW`
-  - StarRocks 4.1 materialized view DDL clauses such as `REFRESH`, `SCHEDULE`, `START`, `EVERY`, `ORDER BY`, `DISTRIBUTED BY HASH`, and `DISTRIBUTED BY RANDOM`
-  - `REFRESH MATERIALIZED VIEW`
-  - `UNNEST` and lateral join forms
-  - `PROPERTIES ("key" = "value")`
-- StarRocks 4.1 DDL keyword coverage for table models, complex types, partitioning, distribution, properties, and materialized views.
-- Formatting adjustments for common StarRocks DDL clauses, `PROPERTIES`, `DISTRIBUTED BY HASH`, `PARTITION BY`, and `UNNEST`.
+- Keyword highlighting and lenient parsing for common StarRocks query, DDL, DML, and management statements.
+- Function completion and highlighting backed by the local StarRocks function registry.
+- Formatting support for common StarRocks-specific statement clauses.
 
 ## Requirements
 
@@ -63,7 +54,7 @@ Or run from the command line:
 
 ## Version
 
-Current plugin version: `1.2.0`
+Current plugin version: `1.2.1`
 
 ---
 
@@ -76,18 +67,9 @@ Current plugin version: `1.2.0`
 ## 功能
 
 - StarRocks 方言和数据源注册。
-- 支持常见 DDL、DML、物化视图、Pipe、Task、Load、Refresh 等语句中的 StarRocks 关键字高亮。
-- 基于本地函数注册表提供 StarRocks 函数补全和高亮。
-- 对以下 StarRocks SQL 语法做兼容处理：
-  - `FULL JOIN` 和 `FULL OUTER JOIN`
-  - `INSERT OVERWRITE`
-  - `CREATE MATERIALIZED VIEW`
-  - StarRocks 4.1 物化视图 DDL 子句，例如 `REFRESH`、`SCHEDULE`、`START`、`EVERY`、`ORDER BY`、`DISTRIBUTED BY HASH` 和 `DISTRIBUTED BY RANDOM`
-  - `REFRESH MATERIALIZED VIEW`
-  - `UNNEST` 和 lateral join 形式
-  - `PROPERTIES ("key" = "value")`
-- 覆盖 StarRocks 4.1 DDL 常见关键字，包括表模型、复杂类型、分区、分桶、属性和物化视图。
-- 针对常见 StarRocks DDL 子句、`PROPERTIES`、`DISTRIBUTED BY HASH`、`PARTITION BY` 和 `UNNEST` 做格式化调整。
+- 对常见 StarRocks 查询、DDL、DML 和管理语句提供关键字高亮和宽松解析。
+- 基于本地 StarRocks 函数注册表提供函数补全和高亮。
+- 对常见 StarRocks 专属语句子句提供格式化支持。
 
 ## 环境要求
 
@@ -132,4 +114,4 @@ build/distributions/
 
 ## 版本
 
-当前插件版本：`1.2.0`
+当前插件版本：`1.2.1`
