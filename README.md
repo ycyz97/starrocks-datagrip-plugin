@@ -58,34 +58,6 @@ Or run from the command line:
 .\gradlew.bat runIde --no-daemon
 ```
 
-## Manual Smoke Test
-
-Use the smoke SQL file as the manual regression baseline:
-
-```text
-src/main/resources/sql/starrocks/starrocks_editing_smoke.sql
-```
-
-Recommended checks:
-
-- StarRocks dialect can be selected.
-- `FULL JOIN` and `FULL OUTER JOIN` do not show syntax errors.
-- Field, alias, and function highlighting remain usable in joins.
-- Official `UNNEST` examples do not show syntax errors.
-- `PROPERTIES ("key" = "value")` treats double-quoted values as strings.
-- Formatting does not break StarRocks DDL, materialized views, `PROPERTIES`, or `UNNEST`.
-- Normal MySQL dialect behavior is unchanged.
-
-## Source Policy
-
-StarRocks-specific syntax, keywords, and functions should only be added when backed by StarRocks official documentation, StarRocks source code, or StarRocks official tests.
-
-Tracked references live in:
-
-```text
-src/main/resources/sql/starrocks/starrocks_official_sources.md
-```
-
 ---
 
 # StarRocks DataGrip 支持插件
