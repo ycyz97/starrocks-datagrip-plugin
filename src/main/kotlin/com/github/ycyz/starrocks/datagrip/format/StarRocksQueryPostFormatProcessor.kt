@@ -48,7 +48,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
             val nextState = state.advance(char)
             if (state.isTopLevel && char == ',' && startsWithWordSequence(sql, index + 1, "UNNEST")) {
                 result.append(',')
-                appendLineBreakAndIndent(result, sql, index, lineSeparator)
+                appendLineBreakAndIndent(result, detectFromItemIndent(sql, index), lineSeparator)
                 val nextIndex = skipSpaces(sql, index + 1)
                 state = advanceState(sql, nextState, index + 1 until nextIndex)
                 index = nextIndex
@@ -58,7 +58,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
 
             val joinMatch = topLevelJoinMatch(sql, index, state)
             if (joinMatch != null && !isAtLineStart(sql, index)) {
-                appendLineBreakAndIndent(result, sql, index, lineSeparator)
+                appendLineBreakAndIndent(result, detectFromItemIndent(sql, index), lineSeparator)
                 result.append(sql, index, joinMatch.end)
                 state = advanceState(sql, state, index until joinMatch.end)
                 index = joinMatch.end
@@ -93,7 +93,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
             }
 
             if (match != null && !isAtLineStart(sql, index)) {
-                appendLineBreakAndIndent(result, sql, index, lineSeparator)
+                appendLineBreakAndIndent(result, detectLineIndent(sql, index), lineSeparator)
                 result.append(match.normalized)
                 state = advanceState(sql, state, index until match.end)
                 index = match.end
@@ -119,7 +119,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
 
         while (index < sql.length) {
             if (state.isTopLevel && startsWithWordSequence(sql, index, keyword) && !isAtLineStart(sql, index)) {
-                appendLineBreakAndIndent(result, sql, index, lineSeparator)
+                appendLineBreakAndIndent(result, detectLineIndent(sql, index), lineSeparator)
                 result.append(sql, index, index + keyword.length)
                 state = advanceState(sql, state, index until index + keyword.length)
                 index += keyword.length
@@ -144,7 +144,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
         }
     }
 
-    private fun appendLineBreakAndIndent(builder: StringBuilder, sql: String, index: Int, lineSeparator: String) {
+    private fun appendLineBreakAndIndent(builder: StringBuilder, indent: String, lineSeparator: String) {
         while (builder.isNotEmpty() && builder.last().isWhitespace() && builder.last() != '\n' && builder.last() != '\r') {
             builder.deleteCharAt(builder.length - 1)
         }
@@ -152,7 +152,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
             return
         }
         builder.append(lineSeparator)
-        builder.append(detectLineIndent(sql, index))
+        builder.append(indent)
     }
 
     private fun startsWithWordSequence(sql: String, index: Int, vararg words: String): Boolean {
@@ -204,6 +204,26 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
         return text.substring(lineStart, index).takeWhile { it == ' ' || it == '\t' }
     }
 
+    private fun detectFromItemIndent(text: String, index: Int): String {
+        val sameLineIndent = detectLineIndent(text, index)
+        if (sameLineIndent.isNotEmpty()) return sameLineIndent
+
+        val previousLineIndent = previousNonBlankLineIndent(text, index)
+        return if (previousLineIndent.isEmpty()) DEFAULT_CONTINUATION_INDENT else previousLineIndent + DEFAULT_INDENT_UNIT
+    }
+
+    private fun previousNonBlankLineIndent(text: String, index: Int): String {
+        var cursor = text.lastIndexOf('\n', (index - 1).coerceAtLeast(0))
+        while (cursor > 0) {
+            val lineEnd = cursor
+            val lineStart = text.lastIndexOf('\n', cursor - 1).let { if (it < 0) 0 else it + 1 }
+            val line = text.substring(lineStart, lineEnd)
+            if (line.isNotBlank()) return line.takeWhile { it == ' ' || it == '\t' }
+            cursor = text.lastIndexOf('\n', lineStart - 2)
+        }
+        return ""
+    }
+
     private fun detectLineSeparator(text: String): String =
         if (text.contains("\r\n")) "\r\n" else "\n"
 
@@ -241,6 +261,9 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
     }
 
     private companion object {
+        const val DEFAULT_INDENT_UNIT = "    "
+        const val DEFAULT_CONTINUATION_INDENT = "    "
+
         val GROUPING_PATTERNS = listOf(
             GroupingPattern("GROUP BY GROUPING SETS", arrayOf("GROUP", "BY", "GROUPING", "SETS")),
             GroupingPattern("GROUP BY ROLLUP", arrayOf("GROUP", "BY", "ROLLUP")),

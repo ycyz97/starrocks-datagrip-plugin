@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.github.ycyz.starrocks.datagrip</id>
     <name>StarRocks Support</name>
-    <version>1.2.3</version>
+    <version>1.2.4</version>
     <vendor>ycyz</vendor>
 
     <depends>com.intellij.modules.platform</depends>
