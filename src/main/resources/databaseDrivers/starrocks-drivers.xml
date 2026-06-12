@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<drivers>
+  <driver id="starrocks" name="StarRocks" dialect="StarRocks" forced-dbms="STARROCKS" driver-class="com.mysql.cj.jdbc.Driver">
+    <url-template name="default" template="jdbc:mysql://{host::localhost}?[:{port::9030}][/{database}?][\?&lt;&amp;,user={user},password={password},{:identifier}={:param}&gt;]"/>
+    <artifact name="MySQL Connector/J" use="true" rolling="true"/>
+    <option name="auto-sync" value="true"/>
+    <property name="tinyInt1isBit" value="false"/>
+    <property name="characterEncoding" value="utf8"/>
+    <property name="characterSetResults" value="utf8"/>
+    <property name="yearIsDateType" value="false"/>
+    <constraints>
+      <constraint dbms="STARROCKS"/>
+    </constraints>
+  </driver>
+</drivers>
