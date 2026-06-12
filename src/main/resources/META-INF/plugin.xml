@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>com.github.ycyz.starrocks.datagrip</id>
-    <name>StarRocks Support for DataGrip</name>
+    <name>StarRocks Support</name>
     <version>1.1.0</version>
     <vendor>ycyz</vendor>
 
@@ -8,7 +8,7 @@
     <depends>com.intellij.database</depends>
 
     <description><![CDATA[
-        StarRocks SQL dialect support for DataGrip.<br>
+        StarRocks SQL dialect support.<br>
     ]]></description>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -26,6 +26,7 @@
         <completion.contributor language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksFunctionCompletionContributor"/>
         <preFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlColumnAlignmentPreFormatProcessor"/>
         <postFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlClausePostFormatProcessor"/>
+        <sql.inspectionSuppressorDelegate implementation="com.github.ycyz.starrocks.datagrip.inspections.StarRocksUnnestInspectionSuppressor"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">

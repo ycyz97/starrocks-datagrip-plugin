@@ -1,4 +1,4 @@
-# StarRocks Support for DataGrip
+# StarRocks Support For Datagrip
 
 JetBrains DataGrip/IntelliJ plugin that adds StarRocks SQL dialect support.
 
@@ -60,7 +60,7 @@ Or run from the command line:
 
 ---
 
-# StarRocks DataGrip 支持插件
+# StarRocks 支持插件
 
 为 JetBrains DataGrip/IntelliJ 提供 StarRocks SQL 方言支持的插件。
 
