@@ -68,6 +68,7 @@ class StarRocksFunctionCompletionContributor : CompletionContributor() {
         QUERY_KEYWORDS.forEach { keyword ->
             result.addElement(
                 LookupElementBuilder.create(keyword)
+                    .withLookupString(keyword.lowercase())
                     .withTypeText("StarRocks keyword", true)
             )
         }
@@ -77,6 +78,7 @@ class StarRocksFunctionCompletionContributor : CompletionContributor() {
         QUERY_SNIPPETS.forEach { snippet ->
             result.addElement(
                 LookupElementBuilder.create(snippet.lookup)
+                    .withLookupStrings(snippet.lookupStrings)
                     .withPresentableText(snippet.presentableText)
                     .withTailText(" ${snippet.tailText}", true)
                     .withTypeText("StarRocks snippet", true)
@@ -188,6 +190,7 @@ class StarRocksFunctionCompletionContributor : CompletionContributor() {
         val tailText: String,
         val insertText: String,
         val caretOffset: Int,
+        val lookupStrings: Set<String> = emptySet(),
     )
 
     private data class PropertyCompletion(
@@ -212,49 +215,56 @@ class StarRocksFunctionCompletionContributor : CompletionContributor() {
                 presentableText = "UNNEST(...)",
                 tailText = "table function",
                 insertText = "UNNEST()",
-                caretOffset = "UNNEST(".length
+                caretOffset = "UNNEST(".length,
+                lookupStrings = setOf("unnest", "UNNEST")
             ),
             SnippetCompletion(
                 lookup = "CROSS JOIN LATERAL UNNEST",
                 presentableText = "CROSS JOIN LATERAL UNNEST(...)",
                 tailText = "table function join",
                 insertText = "CROSS JOIN LATERAL UNNEST()",
-                caretOffset = "CROSS JOIN LATERAL UNNEST(".length
+                caretOffset = "CROSS JOIN LATERAL UNNEST(".length,
+                lookupStrings = setOf("cross join lateral unnest", "lateral unnest", "LATERAL UNNEST")
             ),
             SnippetCompletion(
                 lookup = "LEFT JOIN UNNEST",
                 presentableText = "LEFT JOIN UNNEST(...) ON ...",
                 tailText = "table function join",
                 insertText = "LEFT JOIN UNNEST() ON ",
-                caretOffset = "LEFT JOIN UNNEST(".length
+                caretOffset = "LEFT JOIN UNNEST(".length,
+                lookupStrings = setOf("left join unnest", "unnest join", "UNNEST JOIN")
             ),
             SnippetCompletion(
                 lookup = "QUALIFY row_number",
                 presentableText = "QUALIFY row_number() OVER (...) = 1",
                 tailText = "latest row filter",
                 insertText = "QUALIFY row_number() OVER () = 1",
-                caretOffset = "QUALIFY row_number() OVER (".length
+                caretOffset = "QUALIFY row_number() OVER (".length,
+                lookupStrings = setOf("qualify", "QUALIFY", "row_number", "ROW_NUMBER")
             ),
             SnippetCompletion(
                 lookup = "GROUP BY ROLLUP",
                 presentableText = "GROUP BY ROLLUP (...)",
                 tailText = "grouping extension",
                 insertText = "GROUP BY ROLLUP ()",
-                caretOffset = "GROUP BY ROLLUP (".length
+                caretOffset = "GROUP BY ROLLUP (".length,
+                lookupStrings = setOf("rollup", "ROLLUP")
             ),
             SnippetCompletion(
                 lookup = "GROUP BY CUBE",
                 presentableText = "GROUP BY CUBE (...)",
                 tailText = "grouping extension",
                 insertText = "GROUP BY CUBE ()",
-                caretOffset = "GROUP BY CUBE (".length
+                caretOffset = "GROUP BY CUBE (".length,
+                lookupStrings = setOf("cube", "CUBE")
             ),
             SnippetCompletion(
                 lookup = "GROUP BY GROUPING SETS",
                 presentableText = "GROUP BY GROUPING SETS (...)",
                 tailText = "grouping extension",
                 insertText = "GROUP BY GROUPING SETS ()",
-                caretOffset = "GROUP BY GROUPING SETS (".length
+                caretOffset = "GROUP BY GROUPING SETS (".length,
+                lookupStrings = setOf("grouping sets", "GROUPING SETS")
             )
         )
 
