@@ -1,14 +1,14 @@
 <idea-plugin>
     <id>com.github.ycyz.starrocks.support</id>
     <name>StarRocks Support</name>
-    <version>1.2.6</version>
+    <version>1.2.7</version>
     <vendor>ycyz</vendor>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
 
     <description><![CDATA[
-        StarRocks Support adds StarRocks SQL dialect integration for JetBrains IDEs, including syntax highlighting, function completion, and compatibility handling for common StarRocks SQL statements.<br>
+        StarRocks Support adds StarRocks SQL dialect integration for JetBrains IDEs, including syntax highlighting, SQL completion, and compatibility handling for common StarRocks SQL statements.<br>
     ]]></description>
 
     <extensions defaultExtensionNs="com.intellij">

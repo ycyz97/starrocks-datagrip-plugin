@@ -8,7 +8,7 @@ The plugin uses JetBrains MySQL SQL support as the baseline and applies StarRock
 
 - StarRocks dialect and data source registration.
 - Keyword highlighting and lenient parsing for common StarRocks query, DDL, DML, and management statements.
-- Function completion and highlighting backed by the local StarRocks function registry.
+- Function, keyword, snippet, and property completion for common StarRocks SQL editing workflows.
 - Formatting support for common StarRocks-specific statement clauses.
 
 ## Requirements
@@ -52,10 +52,6 @@ Or run from the command line:
 .\gradlew.bat runIde --no-daemon
 ```
 
-## Version
-
-Current plugin version: `1.2.5`
-
 ## License
 
 This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
@@ -72,7 +68,7 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 - StarRocks 方言和数据源注册。
 - 为常见 StarRocks 查询、DDL、DML 和管理语句提供关键字高亮和宽松解析。
-- 基于本地 StarRocks 函数注册表提供函数补全和高亮。
+- 为常见 StarRocks SQL 编辑流程提供函数、关键字、片段和属性补全。
 - 为常见 StarRocks 专属语句子句提供格式化支持。
 
 ## 环境要求
@@ -115,10 +111,6 @@ build/distributions/
 ```powershell
 .\gradlew.bat runIde --no-daemon
 ```
-
-## 版本
-
-当前插件版本：`1.2.5`
 
 ## 许可证
 
