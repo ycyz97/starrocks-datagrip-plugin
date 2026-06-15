@@ -31,9 +31,11 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
 
     private fun formatStarRocksQueryClauses(sql: String): String =
         normalizeFunctionCallSpacing(
-            normalizeTopLevelQualify(
-                normalizeGroupingClauses(
-                    normalizeUnnestFromItems(sql)
+            normalizeQualifyQueryIndent(
+                normalizeTopLevelQualify(
+                    normalizeGroupingClauses(
+                        normalizeUnnestFromItems(sql)
+                    )
                 )
             )
         )
@@ -86,6 +88,65 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
         sql.replace(WINDOW_FUNCTION_WITH_SPACE_BEFORE_PAREN) { match ->
             "${match.groupValues[1]}("
         }
+
+    private fun normalizeQualifyQueryIndent(sql: String): String {
+        if (!containsTopLevelWord(sql, "QUALIFY")) return sql
+
+        val result = StringBuilder(sql.length)
+        var copiedUntil = 0
+        var statementStart = 0
+        var changed = false
+
+        while (statementStart < sql.length) {
+            val statementEnd = findStatementEnd(sql, statementStart)
+            val statement = sql.substring(statementStart, statementEnd)
+            if (containsTopLevelWord(statement, "QUALIFY")) {
+                val normalized = normalizeQueryStatementClauseIndent(statement)
+                if (normalized != statement) {
+                    result.append(sql, copiedUntil, statementStart)
+                    result.append(normalized)
+                    copiedUntil = statementEnd
+                    changed = true
+                }
+            }
+            statementStart = if (statementEnd < sql.length) statementEnd + 1 else sql.length
+        }
+
+        if (!changed) return sql
+        result.append(sql, copiedUntil, sql.length)
+        return result.toString()
+    }
+
+    private fun normalizeQueryStatementClauseIndent(statement: String): String {
+        val baseIndent = findFirstTopLevelClauseIndent(statement) ?: return statement
+        val result = StringBuilder(statement.length)
+        var copiedUntil = 0
+        var lineStart = 0
+        var state = ScanState()
+        var changed = false
+
+        while (lineStart < statement.length) {
+            val lineEnd = findLineEnd(statement, lineStart)
+            val line = statement.substring(lineStart, lineEnd)
+            val trimmed = line.trimStart()
+            if (state.isTopLevel && isQueryClauseLine(trimmed)) {
+                val currentIndent = line.takeWhile { it == ' ' || it == '\t' }
+                if (currentIndent != baseIndent) {
+                    result.append(statement, copiedUntil, lineStart)
+                    result.append(baseIndent)
+                    result.append(trimmed)
+                    copiedUntil = lineEnd
+                    changed = true
+                }
+            }
+            state = advanceState(statement, state, lineStart until skipLineSeparator(statement, lineEnd))
+            lineStart = skipLineSeparator(statement, lineEnd)
+        }
+
+        if (!changed) return statement
+        result.append(statement, copiedUntil, statement.length)
+        return result.toString()
+    }
 
     private fun normalizeGroupingClauses(sql: String): String {
         val lineSeparator = detectLineSeparator(sql)
@@ -287,6 +348,57 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
         return ""
     }
 
+    private fun findFirstTopLevelClauseIndent(text: String): String? {
+        var lineStart = 0
+        var state = ScanState()
+        while (lineStart < text.length) {
+            val lineEnd = findLineEnd(text, lineStart)
+            val line = text.substring(lineStart, lineEnd)
+            val trimmed = line.trimStart()
+            if (state.isTopLevel && isQueryClauseLine(trimmed)) {
+                return line.takeWhile { it == ' ' || it == '\t' }
+            }
+            state = advanceState(text, state, lineStart until skipLineSeparator(text, lineEnd))
+            lineStart = skipLineSeparator(text, lineEnd)
+        }
+        return null
+    }
+
+    private fun isQueryClauseLine(trimmedLine: String): Boolean =
+        QUERY_CLAUSE_KEYWORDS.any { keyword ->
+            trimmedLine.startsWith(keyword, ignoreCase = true) &&
+                isWordBoundary(trimmedLine, keyword.length)
+        }
+
+    private fun findStatementEnd(text: String, startIndex: Int): Int {
+        var index = startIndex
+        var state = ScanState()
+        while (index < text.length) {
+            val char = text[index]
+            if (char == ';' && state.isTopLevel) return index
+            state = state.advance(char)
+            index++
+        }
+        return text.length
+    }
+
+    private fun containsTopLevelWord(text: String, word: String): Boolean {
+        var index = 0
+        var state = ScanState()
+        while (index < text.length) {
+            if (state.isTopLevel &&
+                text.regionMatches(index, word, 0, word.length, ignoreCase = true) &&
+                isWordBoundary(text, index - 1) &&
+                isWordBoundary(text, index + word.length)
+            ) {
+                return true
+            }
+            state = state.advance(text[index])
+            index++
+        }
+        return false
+    }
+
     private fun detectFromItemIndent(text: String, index: Int): String {
         val sameLineIndent = detectLineIndent(text, index)
         if (sameLineIndent.isNotEmpty()) return sameLineIndent
@@ -365,6 +477,17 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
         val WINDOW_FUNCTION_WITH_SPACE_BEFORE_PAREN = Regex(
             "\\b(ROW_NUMBER|RANK|DENSE_RANK|NTILE|LAG|LEAD|FIRST_VALUE|LAST_VALUE)\\s+\\(",
             RegexOption.IGNORE_CASE
+        )
+
+        val QUERY_CLAUSE_KEYWORDS = listOf(
+            "SELECT",
+            "FROM",
+            "WHERE",
+            "GROUP",
+            "HAVING",
+            "QUALIFY",
+            "ORDER",
+            "LIMIT"
         )
     }
 }
