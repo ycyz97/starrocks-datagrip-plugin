@@ -236,34 +236,34 @@ class StarRocksFunctionCompletionContributor : CompletionContributor() {
             ),
             SnippetCompletion(
                 lookup = "QUALIFY row_number",
-                presentableText = "QUALIFY row_number() OVER (...) = 1",
+                presentableText = "QUALIFY row_number() OVER(...) = 1",
                 tailText = "latest row filter",
-                insertText = "QUALIFY row_number() OVER () = 1",
-                caretOffset = "QUALIFY row_number() OVER (".length,
+                insertText = "QUALIFY row_number() OVER() = 1",
+                caretOffset = "QUALIFY row_number() OVER(".length,
                 lookupStrings = setOf("qualify", "QUALIFY", "row_number", "ROW_NUMBER")
             ),
             SnippetCompletion(
                 lookup = "GROUP BY ROLLUP",
-                presentableText = "GROUP BY ROLLUP (...)",
+                presentableText = "GROUP BY ROLLUP(...)",
                 tailText = "grouping extension",
-                insertText = "GROUP BY ROLLUP ()",
-                caretOffset = "GROUP BY ROLLUP (".length,
+                insertText = "GROUP BY ROLLUP()",
+                caretOffset = "GROUP BY ROLLUP(".length,
                 lookupStrings = setOf("rollup", "ROLLUP")
             ),
             SnippetCompletion(
                 lookup = "GROUP BY CUBE",
-                presentableText = "GROUP BY CUBE (...)",
+                presentableText = "GROUP BY CUBE(...)",
                 tailText = "grouping extension",
-                insertText = "GROUP BY CUBE ()",
-                caretOffset = "GROUP BY CUBE (".length,
+                insertText = "GROUP BY CUBE()",
+                caretOffset = "GROUP BY CUBE(".length,
                 lookupStrings = setOf("cube", "CUBE")
             ),
             SnippetCompletion(
                 lookup = "GROUP BY GROUPING SETS",
-                presentableText = "GROUP BY GROUPING SETS (...)",
+                presentableText = "GROUP BY GROUPING SETS(...)",
                 tailText = "grouping extension",
-                insertText = "GROUP BY GROUPING SETS ()",
-                caretOffset = "GROUP BY GROUPING SETS (".length,
+                insertText = "GROUP BY GROUPING SETS()",
+                caretOffset = "GROUP BY GROUPING SETS(".length,
                 lookupStrings = setOf("grouping sets", "GROUPING SETS")
             )
         )
