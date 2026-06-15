@@ -1,14 +1,14 @@
 <idea-plugin>
     <id>com.github.ycyz.starrocks.support</id>
     <name>StarRocks Support</name>
-    <version>1.2.5</version>
+    <version>1.2.8</version>
     <vendor>ycyz</vendor>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
 
     <description><![CDATA[
-        StarRocks Support adds StarRocks SQL dialect integration for JetBrains IDEs, including syntax highlighting, function completion, formatting helpers, and compatibility handling for common StarRocks SQL statements.<br>
+        StarRocks Support adds StarRocks SQL dialect integration for JetBrains IDEs, including syntax highlighting, SQL completion, and compatibility handling for common StarRocks SQL statements.<br>
     ]]></description>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -35,6 +35,7 @@
         <addToHSet item="STARROCKS" set="MYSQL_LIKE"/>
         <dialect dbms="STARROCKS" implementationClass="com.intellij.database.dialects.mysql.MysqlDialect"/>
         <typeSystem dbms="STARROCKS" implementationClass="com.intellij.database.dialects.mysqlbase.types.MysqlBaseTypeSystem"/>
+        <definitionProvider dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.ddl.StarRocksDefinitionProvider"/>
         <!--suppress PluginXmlValidity -->
         <driversConfig config="databaseDrivers/starrocks-drivers.xml"/>
     </extensions>

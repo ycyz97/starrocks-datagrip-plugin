@@ -48,7 +48,8 @@ class StarRocksDdlColumnAlignmentPreFormatProcessor : PreFormatProcessor {
             }
 
             val content = sql.substring(openParen + 1, closeParen)
-            val aligned = alignColumnBlock(content, detectLineSeparator(sql))
+            val columnIndent = detectLineIndent(sql, match.range.first) + DEFAULT_INDENT_UNIT
+            val aligned = alignColumnBlock(content, detectLineSeparator(sql), columnIndent)
             if (aligned == null) {
                 searchFrom = closeParen + 1
                 continue
@@ -145,6 +146,14 @@ class StarRocksDdlColumnAlignmentPreFormatProcessor : PreFormatProcessor {
         return text.substring(lineStart).takeWhile { it == ' ' || it == '\t' }
     }
 
+    private fun detectLineIndent(text: String, index: Int): String {
+        val lineStart = text.lastIndexOf('\n', (index - 1).coerceAtLeast(0)).let { if (it < 0) 0 else it + 1 }
+        return text.substring(lineStart, index).takeWhile { it == ' ' || it == '\t' }
+    }
+
+    private fun parentIndent(indent: String): String =
+        if (indent.endsWith(DEFAULT_INDENT_UNIT)) indent.dropLast(DEFAULT_INDENT_UNIT.length) else ""
+
     private fun findTopLevelWord(text: String, word: String, startIndex: Int): Int? {
         var index = startIndex
         var parenDepth = 0
@@ -220,7 +229,7 @@ class StarRocksDdlColumnAlignmentPreFormatProcessor : PreFormatProcessor {
         return text.length
     }
 
-    private fun alignColumnBlock(content: String, lineSeparator: String): String? {
+    private fun alignColumnBlock(content: String, lineSeparator: String, indent: String): String? {
         val items = splitTopLevelCommaItems(content).map { it.trim() }.filter { it.isNotEmpty() }
         if (items.size < 2) return null
 
@@ -230,11 +239,18 @@ class StarRocksDdlColumnAlignmentPreFormatProcessor : PreFormatProcessor {
 
         val nameWidth = parsed.filterNotNull().maxOf { it.name.length }
         val typeWidth = parsed.filterNotNull().maxOf { it.type.length }
-        val indent = lineSeparator + "    "
         val lines = items.mapIndexed { index, item ->
             val column = parsed[index]
             val body = if (column == null) {
                 item
+            } else if (column.type.isEmpty()) {
+                buildString {
+                    append(column.name.padEnd(nameWidth))
+                    if (column.tail.isNotBlank()) {
+                        append(' ')
+                        append(column.tail)
+                    }
+                }
             } else {
                 buildString {
                     append(column.name.padEnd(nameWidth))
@@ -246,9 +262,9 @@ class StarRocksDdlColumnAlignmentPreFormatProcessor : PreFormatProcessor {
                     }
                 }
             }
-            indent + body + if (index < items.lastIndex) "," else ""
+            lineSeparator + indent + body + if (index < items.lastIndex) "," else ""
         }
-        return lines.joinToString("") + lineSeparator
+        return lines.joinToString("") + lineSeparator + parentIndent(indent)
     }
 
     private fun parseColumnDefinition(text: String): ColumnDefinition? {
@@ -263,7 +279,7 @@ class StarRocksDdlColumnAlignmentPreFormatProcessor : PreFormatProcessor {
 
         val tailStart = tokens.firstOrNull { it.value.uppercase() in COLUMN_TAIL_HEADS }?.start
         val type = if (tailStart == null) rest.trim() else rest.substring(0, tailStart).trim()
-        if (type.isEmpty()) return null
+        if (type.isEmpty() && tailStart != 0) return null
 
         val tail = if (tailStart == null) "" else rest.substring(tailStart).trim()
         return ColumnDefinition(name, type, tail)
@@ -373,6 +389,8 @@ class StarRocksDdlColumnAlignmentPreFormatProcessor : PreFormatProcessor {
     private data class Token(val value: String, val start: Int)
 
     private companion object {
+        const val DEFAULT_INDENT_UNIT = "    "
+
         val NON_COLUMN_HEADS = setOf(
             "AGGREGATE",
             "CONSTRAINT",

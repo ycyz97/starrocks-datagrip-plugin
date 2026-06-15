@@ -19,6 +19,20 @@ class StarRocksParserDefinition : SqlParserDefinitionBase() {
     override fun getFileNodeType(): IFileElementType = STARROCKS_SQL_FILE
 
     private companion object {
-        val STARROCKS_SQL_FILE: IFileElementType = IFileElementType("STARROCKS_SQL_FILE", StarRocksDialect.INSTANCE)
+        const val SQL_FILE_ELEMENT_TYPE_CLASS = "com.intellij.sql.psi.stubs.SqlFileElementType"
+
+        val STARROCKS_SQL_FILE: IFileElementType = createSqlFileElementType()
+
+        fun createSqlFileElementType(): IFileElementType {
+            return try {
+                val typeClass = Class.forName(SQL_FILE_ELEMENT_TYPE_CLASS)
+                val constructor = typeClass.getConstructor(String::class.java, com.intellij.lang.Language::class.java)
+                constructor.newInstance("STARROCKS_SQL_FILE", StarRocksDialect.INSTANCE) as IFileElementType
+            } catch (_: ReflectiveOperationException) {
+                IFileElementType("STARROCKS_SQL_FILE", StarRocksDialect.INSTANCE)
+            } catch (_: LinkageError) {
+                IFileElementType("STARROCKS_SQL_FILE", StarRocksDialect.INSTANCE)
+            }
+        }
     }
 }

@@ -30,9 +30,13 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
     }
 
     private fun formatStarRocksQueryClauses(sql: String): String =
-        normalizeTopLevelQualify(
-            normalizeGroupingClauses(
-                normalizeUnnestFromItems(sql)
+        normalizeFunctionCallSpacing(
+            normalizeQualifyQueryIndent(
+                normalizeTopLevelQualify(
+                    normalizeGroupingClauses(
+                        normalizeUnnestFromItems(sql)
+                    )
+                )
             )
         )
 
@@ -75,7 +79,74 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
     }
 
     private fun normalizeTopLevelQualify(sql: String): String =
-        normalizeTopLevelClauseStart(sql, "QUALIFY")
+        normalizeClauseLineIndent(
+            normalizeTopLevelClauseStart(sql, "QUALIFY", ::detectQueryClauseIndent),
+            "QUALIFY"
+        )
+
+    private fun normalizeFunctionCallSpacing(sql: String): String =
+        sql.replace(WINDOW_FUNCTION_WITH_SPACE_BEFORE_PAREN) { match ->
+            "${match.groupValues[1]}("
+        }.replace(WINDOW_OVER_WITH_SPACE_BEFORE_PAREN, "OVER(")
+
+    private fun normalizeQualifyQueryIndent(sql: String): String {
+        if (!containsTopLevelWord(sql, "QUALIFY")) return sql
+
+        val result = StringBuilder(sql.length)
+        var copiedUntil = 0
+        var statementStart = 0
+        var changed = false
+
+        while (statementStart < sql.length) {
+            val statementEnd = findStatementEnd(sql, statementStart)
+            val statement = sql.substring(statementStart, statementEnd)
+            if (containsTopLevelWord(statement, "QUALIFY")) {
+                val normalized = normalizeQueryStatementClauseIndent(statement)
+                if (normalized != statement) {
+                    result.append(sql, copiedUntil, statementStart)
+                    result.append(normalized)
+                    copiedUntil = statementEnd
+                    changed = true
+                }
+            }
+            statementStart = if (statementEnd < sql.length) statementEnd + 1 else sql.length
+        }
+
+        if (!changed) return sql
+        result.append(sql, copiedUntil, sql.length)
+        return result.toString()
+    }
+
+    private fun normalizeQueryStatementClauseIndent(statement: String): String {
+        val baseIndent = findFirstTopLevelClauseIndent(statement) ?: return statement
+        val result = StringBuilder(statement.length)
+        var copiedUntil = 0
+        var lineStart = 0
+        var state = ScanState()
+        var changed = false
+
+        while (lineStart < statement.length) {
+            val lineEnd = findLineEnd(statement, lineStart)
+            val line = statement.substring(lineStart, lineEnd)
+            val trimmed = line.trimStart()
+            if (state.isTopLevel && isQueryClauseLine(trimmed)) {
+                val currentIndent = line.takeWhile { it == ' ' || it == '\t' }
+                if (currentIndent != baseIndent) {
+                    result.append(statement, copiedUntil, lineStart)
+                    result.append(baseIndent)
+                    result.append(trimmed)
+                    copiedUntil = lineEnd
+                    changed = true
+                }
+            }
+            state = advanceState(statement, state, lineStart until skipLineSeparator(statement, lineEnd))
+            lineStart = skipLineSeparator(statement, lineEnd)
+        }
+
+        if (!changed) return statement
+        result.append(statement, copiedUntil, statement.length)
+        return result.toString()
+    }
 
     private fun normalizeGroupingClauses(sql: String): String {
         val lineSeparator = detectLineSeparator(sql)
@@ -93,7 +164,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
             }
 
             if (match != null && !isAtLineStart(sql, index)) {
-                appendLineBreakAndIndent(result, detectLineIndent(sql, index), lineSeparator)
+                appendLineBreakAndIndent(result, detectQueryClauseIndent(sql, index), lineSeparator)
                 result.append(match.normalized)
                 state = advanceState(sql, state, index until match.end)
                 index = match.end
@@ -110,7 +181,11 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
         return if (changed) result.toString() else sql
     }
 
-    private fun normalizeTopLevelClauseStart(sql: String, keyword: String): String {
+    private fun normalizeTopLevelClauseStart(
+        sql: String,
+        keyword: String,
+        indentProvider: (String, Int) -> String,
+    ): String {
         val lineSeparator = detectLineSeparator(sql)
         val result = StringBuilder(sql.length)
         var index = 0
@@ -119,7 +194,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
 
         while (index < sql.length) {
             if (state.isTopLevel && startsWithWordSequence(sql, index, keyword) && !isAtLineStart(sql, index)) {
-                appendLineBreakAndIndent(result, detectLineIndent(sql, index), lineSeparator)
+                appendLineBreakAndIndent(result, indentProvider(sql, index), lineSeparator)
                 result.append(sql, index, index + keyword.length)
                 state = advanceState(sql, state, index until index + keyword.length)
                 index += keyword.length
@@ -134,6 +209,39 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
         }
 
         return if (changed) result.toString() else sql
+    }
+
+    private fun normalizeClauseLineIndent(sql: String, keyword: String): String {
+        val result = StringBuilder(sql.length)
+        var copiedUntil = 0
+        var lineStart = 0
+        var changed = false
+
+        while (lineStart < sql.length) {
+            val lineEnd = findLineEnd(sql, lineStart)
+            val line = sql.substring(lineStart, lineEnd)
+            val trimmed = line.trimStart()
+            if (
+                trimmed.startsWith(keyword, ignoreCase = true) &&
+                isWordBoundary(trimmed, keyword.length)
+            ) {
+                val currentIndent = line.takeWhile { it == ' ' || it == '\t' }
+                val expectedIndent = detectQueryClauseIndent(sql, lineStart)
+                if (currentIndent != expectedIndent) {
+                    result.append(sql, copiedUntil, lineStart)
+                    result.append(expectedIndent)
+                    result.append(trimmed)
+                    copiedUntil = lineEnd
+                    changed = true
+                }
+            }
+
+            lineStart = skipLineSeparator(sql, lineEnd)
+        }
+
+        if (!changed) return sql
+        result.append(sql, copiedUntil, sql.length)
+        return result.toString()
     }
 
     private fun topLevelJoinMatch(sql: String, index: Int, state: ScanState): JoinMatch? {
@@ -202,6 +310,93 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
     private fun detectLineIndent(text: String, index: Int): String {
         val lineStart = text.lastIndexOf('\n', (index - 1).coerceAtLeast(0)).let { if (it < 0) 0 else it + 1 }
         return text.substring(lineStart, index).takeWhile { it == ' ' || it == '\t' }
+    }
+
+    private fun findLineEnd(text: String, start: Int): Int {
+        var index = start
+        while (index < text.length && text[index] != '\n' && text[index] != '\r') index++
+        return index
+    }
+
+    private fun skipLineSeparator(text: String, index: Int): Int {
+        if (index >= text.length) return index
+        if (text[index] == '\r' && index + 1 < text.length && text[index + 1] == '\n') return index + 2
+        return index + 1
+    }
+
+    private fun detectQueryClauseIndent(text: String, index: Int): String {
+        var cursor = index - 1
+        while (cursor >= 0) {
+            val lineEnd = cursor + 1
+            val lineStart = text.lastIndexOf('\n', cursor).let { if (it < 0) 0 else it + 1 }
+            val line = text.substring(lineStart, lineEnd)
+            if (line.isNotBlank()) {
+                val trimmed = line.trimStart()
+                if (trimmed.startsWith("SELECT", ignoreCase = true) ||
+                    trimmed.startsWith("FROM", ignoreCase = true) ||
+                    trimmed.startsWith("WHERE", ignoreCase = true) ||
+                    trimmed.startsWith("GROUP", ignoreCase = true) ||
+                    trimmed.startsWith("HAVING", ignoreCase = true) ||
+                    trimmed.startsWith("ORDER", ignoreCase = true) ||
+                    trimmed.startsWith("LIMIT", ignoreCase = true)
+                ) {
+                    return line.takeWhile { it == ' ' || it == '\t' }
+                }
+            }
+            cursor = lineStart - 2
+        }
+        return ""
+    }
+
+    private fun findFirstTopLevelClauseIndent(text: String): String? {
+        var lineStart = 0
+        var state = ScanState()
+        while (lineStart < text.length) {
+            val lineEnd = findLineEnd(text, lineStart)
+            val line = text.substring(lineStart, lineEnd)
+            val trimmed = line.trimStart()
+            if (state.isTopLevel && isQueryClauseLine(trimmed)) {
+                return line.takeWhile { it == ' ' || it == '\t' }
+            }
+            state = advanceState(text, state, lineStart until skipLineSeparator(text, lineEnd))
+            lineStart = skipLineSeparator(text, lineEnd)
+        }
+        return null
+    }
+
+    private fun isQueryClauseLine(trimmedLine: String): Boolean =
+        QUERY_CLAUSE_KEYWORDS.any { keyword ->
+            trimmedLine.startsWith(keyword, ignoreCase = true) &&
+                isWordBoundary(trimmedLine, keyword.length)
+        }
+
+    private fun findStatementEnd(text: String, startIndex: Int): Int {
+        var index = startIndex
+        var state = ScanState()
+        while (index < text.length) {
+            val char = text[index]
+            if (char == ';' && state.isTopLevel) return index
+            state = state.advance(char)
+            index++
+        }
+        return text.length
+    }
+
+    private fun containsTopLevelWord(text: String, word: String): Boolean {
+        var index = 0
+        var state = ScanState()
+        while (index < text.length) {
+            if (state.isTopLevel &&
+                text.regionMatches(index, word, 0, word.length, ignoreCase = true) &&
+                isWordBoundary(text, index - 1) &&
+                isWordBoundary(text, index + word.length)
+            ) {
+                return true
+            }
+            state = state.advance(text[index])
+            index++
+        }
+        return false
     }
 
     private fun detectFromItemIndent(text: String, index: Int): String {
@@ -277,6 +472,27 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
             arrayOf("LEFT", "JOIN", "UNNEST"),
             arrayOf("LEFT", "OUTER", "JOIN", "LATERAL", "UNNEST"),
             arrayOf("LEFT", "OUTER", "JOIN", "UNNEST")
+        )
+
+        val WINDOW_FUNCTION_WITH_SPACE_BEFORE_PAREN = Regex(
+            "\\b(ROW_NUMBER|RANK|DENSE_RANK|NTILE|LAG|LEAD|FIRST_VALUE|LAST_VALUE)\\s+\\(",
+            RegexOption.IGNORE_CASE
+        )
+
+        val WINDOW_OVER_WITH_SPACE_BEFORE_PAREN = Regex(
+            "\\bOVER\\s+\\(",
+            RegexOption.IGNORE_CASE
+        )
+
+        val QUERY_CLAUSE_KEYWORDS = listOf(
+            "SELECT",
+            "FROM",
+            "WHERE",
+            "GROUP",
+            "HAVING",
+            "QUALIFY",
+            "ORDER",
+            "LIMIT"
         )
     }
 }
