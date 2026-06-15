@@ -4,6 +4,8 @@ JetBrains DataGrip/IntelliJ plugin that adds StarRocks SQL dialect support.
 
 The plugin uses JetBrains MySQL SQL support as the baseline and applies StarRocks-specific behavior only when the file or data source is in a StarRocks context.
 
+JetBrains Marketplace: [StarRocks Support](https://plugins.jetbrains.com/plugin/32243-starrocks-support)
+
 ## Features
 
 - StarRocks dialect and data source registration.
@@ -63,6 +65,8 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 这是一个为 JetBrains DataGrip / IntelliJ 系列 IDE 提供 StarRocks SQL 方言支持的插件。
 
 插件以 JetBrains 内置 MySQL SQL 能力为基础，只在 StarRocks 方言文件或 StarRocks 数据源上下文中启用 StarRocks 专属增强。
+
+JetBrains 插件市场：[StarRocks Support](https://plugins.jetbrains.com/plugin/32243-starrocks-support)
 
 ## 功能
 
