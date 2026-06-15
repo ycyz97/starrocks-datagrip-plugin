@@ -87,7 +87,7 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
     private fun normalizeFunctionCallSpacing(sql: String): String =
         sql.replace(WINDOW_FUNCTION_WITH_SPACE_BEFORE_PAREN) { match ->
             "${match.groupValues[1]}("
-        }
+        }.replace(WINDOW_OVER_WITH_SPACE_BEFORE_PAREN, "OVER(")
 
     private fun normalizeQualifyQueryIndent(sql: String): String {
         if (!containsTopLevelWord(sql, "QUALIFY")) return sql
@@ -476,6 +476,11 @@ class StarRocksQueryPostFormatProcessor : PostFormatProcessor {
 
         val WINDOW_FUNCTION_WITH_SPACE_BEFORE_PAREN = Regex(
             "\\b(ROW_NUMBER|RANK|DENSE_RANK|NTILE|LAG|LEAD|FIRST_VALUE|LAST_VALUE)\\s+\\(",
+            RegexOption.IGNORE_CASE
+        )
+
+        val WINDOW_OVER_WITH_SPACE_BEFORE_PAREN = Regex(
+            "\\bOVER\\s+\\(",
             RegexOption.IGNORE_CASE
         )
 
