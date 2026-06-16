@@ -224,6 +224,7 @@ object StarRocksFunctionRegistry {
         bitmap("BITMAP_MIN"),
         bitmap("BITMAP_TO_ARRAY"),
         bitmap("BITMAP_TO_STRING"),
+        bitmap("BITMAP_UNION_INT"),
         scalar("CARDINALITY"),
         scalar("CAST"),
         scalar("COALESCE"),

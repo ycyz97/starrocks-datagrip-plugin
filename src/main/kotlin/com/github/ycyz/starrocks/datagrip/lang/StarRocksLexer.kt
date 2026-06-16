@@ -7,6 +7,7 @@ import com.intellij.sql.dialects.mysql.MysqlReservedKeywords.MYSQL_LEFT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT_DELIMITED
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_BRACKET
+import com.intellij.sql.psi.SqlTokens.SQL_LINE_COMMENT
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_BRACKET
 import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_PAREN
@@ -14,6 +15,10 @@ import com.intellij.sql.psi.SqlTokens.SQL_STRING_TOKEN
 
 class StarRocksLexer : DelegateLexer(MysqlLexer()) {
     override fun getTokenType(): IElementType? {
+        if (isDashSeparatorLineComment()) {
+            return SQL_LINE_COMMENT
+        }
+
         val tokenType = super.getTokenType()
         if (tokenType == SQL_IDENT_DELIMITED && isDoubleQuotedToken()) {
             return SQL_STRING_TOKEN
@@ -31,6 +36,49 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
             return SQL_RIGHT_PAREN
         }
         return tokenType
+    }
+
+    override fun getTokenEnd(): Int {
+        return if (isDashSeparatorLineComment()) dashSeparatorLineEnd(tokenStart) else super.getTokenEnd()
+    }
+
+    override fun advance() {
+        if (isDashSeparatorLineComment()) {
+            val commentEnd = dashSeparatorLineEnd(tokenStart)
+            while (super.getTokenType() != null && super.getTokenStart() < commentEnd) {
+                super.advance()
+            }
+            return
+        }
+        super.advance()
+    }
+
+    private fun isDashSeparatorLineComment(): Boolean {
+        val start = tokenStart
+        if (start + DASH_SEPARATOR_COMMENT_PREFIX.length > bufferEnd) return false
+        if (!bufferSequence.startsWith(DASH_SEPARATOR_COMMENT_PREFIX, start)) return false
+        return isOnlyWhitespaceBeforeOnLine(start)
+    }
+
+    private fun isOnlyWhitespaceBeforeOnLine(offset: Int): Boolean {
+        var index = offset - 1
+        while (index >= 0) {
+            val char = bufferSequence[index]
+            if (char == '\n' || char == '\r') return true
+            if (!char.isWhitespace()) return false
+            index--
+        }
+        return true
+    }
+
+    private fun dashSeparatorLineEnd(start: Int): Int {
+        var index = start
+        while (index < bufferEnd) {
+            val char = bufferSequence[index]
+            if (char == '\n' || char == '\r') break
+            index++
+        }
+        return index
     }
 
     private fun isDoubleQuotedToken(): Boolean {
@@ -156,5 +204,7 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
             "JOIN",
             "ON"
         )
+
+        const val DASH_SEPARATOR_COMMENT_PREFIX = "----"
     }
 }
