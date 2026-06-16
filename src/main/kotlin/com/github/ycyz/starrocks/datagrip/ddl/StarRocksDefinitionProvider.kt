@@ -36,7 +36,7 @@ class StarRocksDefinitionProvider : AbstractDefinitionProvider() {
             try {
                 if (!resultSet.next()) return ""
                 val columnCount = resultSet.metaData.columnCount
-                return resultSet.getString(columnCount) ?: ""
+                return resultSet.getString(if (columnCount >= 2) 2 else 1) ?: ""
             } finally {
                 resultSet.close()
             }
