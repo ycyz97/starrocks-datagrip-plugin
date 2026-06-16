@@ -35,6 +35,9 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
         if (isQueryWithStarRocksAnalyticClause(builder)) {
             return parseLenientStarRocksStatement(builder)
         }
+        if (isQueryWithStarRocksCastType(builder)) {
+            return parseLenientStarRocksStatement(builder)
+        }
         if (hasStarRocksQueryTail(builder)) {
             return parseStarRocksStatementWithQueryTail(builder)
         }
@@ -110,6 +113,41 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
         if (!isQueryStart(builder)) return false
         return statementContainsAny(builder, "QUALIFY", "ROLLUP", "CUBE") ||
             statementContainsSequence(builder, "GROUPING", "SETS")
+    }
+
+    private fun isQueryWithStarRocksCastType(builder: PsiBuilder): Boolean {
+        if (!isQueryStart(builder)) return false
+        return statementContainsCastType(builder, STARROCKS_CAST_TYPES)
+    }
+
+    private fun statementContainsCastType(builder: PsiBuilder, castTypes: Set<String>): Boolean {
+        val marker = builder.mark()
+        var scanned = 0
+        var sawCast = false
+        var sawAsAfterCast = false
+        var found = false
+        while (!builder.eof() && builder.tokenText != ";" && scanned < MAX_LOOKAHEAD_TOKENS) {
+            val text = builder.tokenText?.uppercase()
+            when {
+                text == "CAST" -> {
+                    sawCast = true
+                    sawAsAfterCast = false
+                }
+                sawCast && text == "AS" -> sawAsAfterCast = true
+                sawCast && sawAsAfterCast && text in castTypes -> {
+                    found = true
+                    break
+                }
+                text == ")" -> {
+                    sawCast = false
+                    sawAsAfterCast = false
+                }
+            }
+            builder.advanceLexer()
+            scanned++
+        }
+        marker.rollbackTo()
+        return found
     }
 
     private fun statementContainsSequence(builder: PsiBuilder, vararg words: String): Boolean {
@@ -423,5 +461,34 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
         const val MAX_LOOKAHEAD_TOKENS = 512
         val CREATE_TABLE_MODIFIERS = setOf("TEMPORARY", "EXTERNAL")
         val QUERY_TAIL_CREATE_TARGETS = setOf("PIPE", "TASK", "DICTIONARY", "ANALYZE")
+        val STARROCKS_CAST_TYPES = setOf(
+            "ARRAY",
+            "BIGINT",
+            "BITMAP",
+            "BOOLEAN",
+            "CHAR",
+            "DATE",
+            "DATETIME",
+            "DECIMAL",
+            "DECIMAL32",
+            "DECIMAL64",
+            "DECIMAL128",
+            "DECIMALV2",
+            "DOUBLE",
+            "FLOAT",
+            "HLL",
+            "INT",
+            "INTEGER",
+            "JSON",
+            "LARGEINT",
+            "MAP",
+            "SMALLINT",
+            "STRING",
+            "STRUCT",
+            "TEXT",
+            "TIME",
+            "TINYINT",
+            "VARCHAR"
+        )
     }
 }
