@@ -108,7 +108,7 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
 
     private fun isQueryWithStarRocksAnalyticClause(builder: PsiBuilder): Boolean {
         if (!isQueryStart(builder)) return false
-        return statementContainsAny(builder, "ROLLUP", "CUBE") ||
+        return statementContainsAny(builder, "QUALIFY", "ROLLUP", "CUBE") ||
             statementContainsSequence(builder, "GROUPING", "SETS")
     }
 
