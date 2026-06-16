@@ -15,7 +15,7 @@ import com.intellij.sql.psi.SqlTokens.SQL_STRING_TOKEN
 
 class StarRocksLexer : DelegateLexer(MysqlLexer()) {
     override fun getTokenType(): IElementType? {
-        if (isDashSeparatorLineComment()) {
+        if (isLineStartDoubleDashComment()) {
             return SQL_LINE_COMMENT
         }
 
@@ -39,12 +39,12 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
     }
 
     override fun getTokenEnd(): Int {
-        return if (isDashSeparatorLineComment()) dashSeparatorLineEnd(tokenStart) else super.getTokenEnd()
+        return if (isLineStartDoubleDashComment()) lineCommentEnd(tokenStart) else super.getTokenEnd()
     }
 
     override fun advance() {
-        if (isDashSeparatorLineComment()) {
-            val commentEnd = dashSeparatorLineEnd(tokenStart)
+        if (isLineStartDoubleDashComment()) {
+            val commentEnd = lineCommentEnd(tokenStart)
             while (super.getTokenType() != null && super.getTokenStart() < commentEnd) {
                 super.advance()
             }
@@ -53,10 +53,10 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
         super.advance()
     }
 
-    private fun isDashSeparatorLineComment(): Boolean {
+    private fun isLineStartDoubleDashComment(): Boolean {
         val start = tokenStart
-        if (start + DASH_SEPARATOR_COMMENT_PREFIX.length > bufferEnd) return false
-        if (!bufferSequence.startsWith(DASH_SEPARATOR_COMMENT_PREFIX, start)) return false
+        if (start + LINE_COMMENT_PREFIX.length > bufferEnd) return false
+        if (!bufferSequence.startsWith(LINE_COMMENT_PREFIX, start)) return false
         return isOnlyWhitespaceBeforeOnLine(start)
     }
 
@@ -71,7 +71,7 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
         return true
     }
 
-    private fun dashSeparatorLineEnd(start: Int): Int {
+    private fun lineCommentEnd(start: Int): Int {
         var index = start
         while (index < bufferEnd) {
             val char = bufferSequence[index]
@@ -205,6 +205,6 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
             "ON"
         )
 
-        const val DASH_SEPARATOR_COMMENT_PREFIX = "----"
+        const val LINE_COMMENT_PREFIX = "--"
     }
 }
