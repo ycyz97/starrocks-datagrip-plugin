@@ -3,6 +3,7 @@ package com.github.ycyz.starrocks.datagrip.lang
 import com.intellij.lexer.DelegateLexer
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.dialects.mysql.MysqlLexer
+import com.intellij.sql.dialects.mysql.MysqlReservedKeywords.MYSQL_HAVING
 import com.intellij.sql.dialects.mysql.MysqlReservedKeywords.MYSQL_LEFT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT_DELIMITED
@@ -28,6 +29,9 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
         }
         if (isFullJoinModifierToken()) {
             return MYSQL_LEFT
+        }
+        if (isQualifyClauseToken()) {
+            return MYSQL_HAVING
         }
         if (tokenType == SQL_LEFT_BRACKET && isArrayLiteralStart()) {
             return SQL_LEFT_PAREN
@@ -100,6 +104,11 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
         val tokenText = bufferSequence.subSequence(tokenStart, tokenEnd).toString()
         if (!tokenText.equals("UNNEST", ignoreCase = true)) return false
         return nextSignificantChar(tokenEnd) != '('
+    }
+
+    private fun isQualifyClauseToken(): Boolean {
+        val tokenText = bufferSequence.subSequence(tokenStart, tokenEnd).toString()
+        return tokenText.equals("QUALIFY", ignoreCase = true)
     }
 
     private fun isArrayLiteralStart(): Boolean {
