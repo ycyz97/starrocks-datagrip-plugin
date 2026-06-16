@@ -203,6 +203,10 @@
     <name>BITMAP_UNION_COUNT</name>
     <prototype>(bitmap:ANY):N</prototype>
   </function>
+  <function aggregate='true'>
+    <name>BITMAP_UNION_INT</name>
+    <prototype>(expr:ANY):ANY</prototype>
+  </function>
   <function>
     <name>CHAR_LENGTH</name>
     <prototype>(str:str):N</prototype>
@@ -229,7 +233,7 @@
   </function>
   <function>
     <name>CAST</name>
-    <prototype>(ANY:ANY AS datatype:cast_datatype):P2</prototype>
+    <prototype>(ANY:ANY AS datatype:datatype):P2</prototype>
   </function>
   <function aggregate='true'>
     <name>COUNT_IF</name>

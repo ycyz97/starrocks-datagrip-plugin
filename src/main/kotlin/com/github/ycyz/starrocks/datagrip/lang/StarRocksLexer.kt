@@ -3,10 +3,12 @@ package com.github.ycyz.starrocks.datagrip.lang
 import com.intellij.lexer.DelegateLexer
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.dialects.mysql.MysqlLexer
+import com.intellij.sql.dialects.mysql.MysqlReservedKeywords.MYSQL_HAVING
 import com.intellij.sql.dialects.mysql.MysqlReservedKeywords.MYSQL_LEFT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT_DELIMITED
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_BRACKET
+import com.intellij.sql.psi.SqlTokens.SQL_LINE_COMMENT
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_BRACKET
 import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_PAREN
@@ -14,6 +16,10 @@ import com.intellij.sql.psi.SqlTokens.SQL_STRING_TOKEN
 
 class StarRocksLexer : DelegateLexer(MysqlLexer()) {
     override fun getTokenType(): IElementType? {
+        if (isLineStartDoubleDashComment()) {
+            return SQL_LINE_COMMENT
+        }
+
         val tokenType = super.getTokenType()
         if (tokenType == SQL_IDENT_DELIMITED && isDoubleQuotedToken()) {
             return SQL_STRING_TOKEN
@@ -24,6 +30,9 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
         if (isFullJoinModifierToken()) {
             return MYSQL_LEFT
         }
+        if (isQualifyClauseToken()) {
+            return MYSQL_HAVING
+        }
         if (tokenType == SQL_LEFT_BRACKET && isArrayLiteralStart()) {
             return SQL_LEFT_PAREN
         }
@@ -31,6 +40,49 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
             return SQL_RIGHT_PAREN
         }
         return tokenType
+    }
+
+    override fun getTokenEnd(): Int {
+        return if (isLineStartDoubleDashComment()) lineCommentEnd(tokenStart) else super.getTokenEnd()
+    }
+
+    override fun advance() {
+        if (isLineStartDoubleDashComment()) {
+            val commentEnd = lineCommentEnd(tokenStart)
+            while (super.getTokenType() != null && super.getTokenStart() < commentEnd) {
+                super.advance()
+            }
+            return
+        }
+        super.advance()
+    }
+
+    private fun isLineStartDoubleDashComment(): Boolean {
+        val start = tokenStart
+        if (start + LINE_COMMENT_PREFIX.length > bufferEnd) return false
+        if (!bufferSequence.startsWith(LINE_COMMENT_PREFIX, start)) return false
+        return isOnlyWhitespaceBeforeOnLine(start)
+    }
+
+    private fun isOnlyWhitespaceBeforeOnLine(offset: Int): Boolean {
+        var index = offset - 1
+        while (index >= 0) {
+            val char = bufferSequence[index]
+            if (char == '\n' || char == '\r') return true
+            if (!char.isWhitespace()) return false
+            index--
+        }
+        return true
+    }
+
+    private fun lineCommentEnd(start: Int): Int {
+        var index = start
+        while (index < bufferEnd) {
+            val char = bufferSequence[index]
+            if (char == '\n' || char == '\r') break
+            index++
+        }
+        return index
     }
 
     private fun isDoubleQuotedToken(): Boolean {
@@ -52,6 +104,11 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
         val tokenText = bufferSequence.subSequence(tokenStart, tokenEnd).toString()
         if (!tokenText.equals("UNNEST", ignoreCase = true)) return false
         return nextSignificantChar(tokenEnd) != '('
+    }
+
+    private fun isQualifyClauseToken(): Boolean {
+        val tokenText = bufferSequence.subSequence(tokenStart, tokenEnd).toString()
+        return tokenText.equals("QUALIFY", ignoreCase = true)
     }
 
     private fun isArrayLiteralStart(): Boolean {
@@ -156,5 +213,7 @@ class StarRocksLexer : DelegateLexer(MysqlLexer()) {
             "JOIN",
             "ON"
         )
+
+        const val LINE_COMMENT_PREFIX = "--"
     }
 }

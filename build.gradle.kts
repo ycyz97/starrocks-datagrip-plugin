@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.github.ycyz.starrocks.datagrip"
-version = "1.2.8"
+version = "1.2.7"
 
 repositories {
     mavenCentral()
