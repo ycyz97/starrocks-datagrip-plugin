@@ -233,7 +233,7 @@
   </function>
   <function>
     <name>CAST</name>
-    <prototype>(ANY:ANY AS datatype:cast_datatype):P2</prototype>
+    <prototype>(ANY:ANY AS datatype:ANY):P2</prototype>
   </function>
   <function aggregate='true'>
     <name>COUNT_IF</name>
