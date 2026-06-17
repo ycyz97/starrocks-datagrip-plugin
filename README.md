@@ -12,6 +12,7 @@ JetBrains Marketplace: [StarRocks Support](https://plugins.jetbrains.com/plugin/
 - Keyword highlighting and lenient parsing for common StarRocks query, DDL, DML, and management statements.
 - Function, keyword, snippet, and property completion for common StarRocks SQL editing workflows.
 - Formatting support for common StarRocks-specific statement clauses.
+- Native StarRocks `SHOW CREATE` support for viewing object DDL from StarRocks data sources.
 
 ## Requirements
 
@@ -74,6 +75,7 @@ JetBrains 插件市场：[StarRocks Support](https://plugins.jetbrains.com/plugi
 - 为常见 StarRocks 查询、DDL、DML 和管理语句提供关键字高亮和宽松解析。
 - 为常见 StarRocks SQL 编辑流程提供函数、关键字、片段和属性补全。
 - 为常见 StarRocks 专属语句子句提供格式化支持。
+- 在 StarRocks 数据源下使用原生 `SHOW CREATE` 获取对象 DDL。
 
 ## 环境要求
 

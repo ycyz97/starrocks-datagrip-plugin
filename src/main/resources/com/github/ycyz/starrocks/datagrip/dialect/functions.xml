@@ -47,6 +47,11 @@
     <prototype>(expr:ANY):ANY</prototype>
   </function>
   <function>
+    <name>ALL_MATCH</name>
+    <name>ANY_MATCH</name>
+    <prototype>(lambda:ANY, array:ANY):N</prototype>
+  </function>
+  <function>
     <name>ARRAY_AVG</name>
     <prototype>(array:ANY):N</prototype>
   </function>
@@ -169,15 +174,28 @@
   </function>
   <function>
     <name>UNNEST</name>
+    <name>UNNEST_BITMAP</name>
     <prototype>(array:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>BASE64_TO_BITMAP</name>
+    <prototype>(str:str):ANY</prototype>
   </function>
   <function>
     <name>BITMAP_COUNT</name>
     <prototype>(bitmap:ANY):N</prototype>
   </function>
   <function>
+    <name>BITMAP_CONTAINS</name>
+    <prototype>(bitmap:ANY, value:ANY):N</prototype>
+  </function>
+  <function>
     <name>BITMAP_EMPTY</name>
     <prototype>():ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_FROM_BINARY</name>
+    <prototype>(binary:ANY):ANY</prototype>
   </function>
   <function>
     <name>BITMAP_FROM_STRING</name>
@@ -185,11 +203,44 @@
   </function>
   <function>
     <name>BITMAP_HASH</name>
+    <name>BITMAP_HASH64</name>
     <prototype>(expr:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_REMOVE</name>
+    <prototype>(bitmap:ANY, value:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_SUBSET_IN_RANGE</name>
+    <prototype>(bitmap:ANY, range_start:N, range_end:N):ANY</prototype>
+  </function>
+  <function>
+    <name>BITMAP_SUBSET_LIMIT</name>
+    <prototype>(bitmap:ANY, range_start:N, cardinality_limit:N):ANY</prototype>
   </function>
   <function>
     <name>BITMAP_TO_STRING</name>
     <prototype>(bitmap:ANY):str</prototype>
+  </function>
+  <function>
+    <name>BITMAP_TO_BASE64</name>
+    <prototype>(bitmap:ANY):str</prototype>
+  </function>
+  <function>
+    <name>BITMAP_TO_BINARY</name>
+    <prototype>(bitmap:ANY):ANY</prototype>
+  </function>
+  <function>
+    <name>SUB_BITMAP</name>
+    <prototype>(bitmap:ANY, offset:N, cardinality_limit:N):ANY</prototype>
+  </function>
+  <function>
+    <name>SUBDIVIDE_BITMAP</name>
+    <prototype>(bitmap:ANY, bucket_count:N):ANY</prototype>
+  </function>
+  <function>
+    <name>INTERSECT_COUNT</name>
+    <prototype>(bitmap:ANY...):N</prototype>
   </function>
   <function>
     <name>CARDINALITY</name>
@@ -242,7 +293,18 @@
   <function>
     <name>DATE_ADD</name>
     <name>ADDDATE</name>
+    <name>DAYS_ADD</name>
     <prototype>(date:date, INTERVAL expr:N time_unit):date</prototype>
+    <prototype>(date:date, days:N):date</prototype>
+  </function>
+  <function>
+    <name>ADD_MONTHS</name>
+    <name>MONTHS_ADD</name>
+    <prototype>(date:date, months:N):date</prototype>
+  </function>
+  <function>
+    <name>CONVERT_TZ</name>
+    <prototype>(dt:datetime, from_tz:str, to_tz:str):date</prototype>
   </function>
   <function>
     <name>DATE</name>
@@ -255,7 +317,13 @@
   <function>
     <name>DATE_SUB</name>
     <name>SUBDATE</name>
+    <name>DAYS_SUB</name>
     <prototype>(date:date, INTERVAL expr:N time_unit):date</prototype>
+    <prototype>(date:date, days:N):date</prototype>
+  </function>
+  <function>
+    <name>DATE_SLICE</name>
+    <prototype>(dt:datetime, interval:N, unit:str):datetime</prototype>
   </function>
   <function>
     <name>DATE_TRUNC</name>
@@ -263,6 +331,7 @@
   </function>
   <function>
     <name>DATEDIFF</name>
+    <name>DAYS_DIFF</name>
     <prototype>(date1:date, date2:date):N</prototype>
   </function>
   <function>
@@ -450,6 +519,7 @@
   </function>
   <function>
     <name>DAYOFWEEK</name>
+    <name>DAYOFWEEK_ISO</name>
     <prototype>(date:date):N</prototype>
   </function>
   <function>
@@ -462,8 +532,38 @@
     <prototype>(unix_time:N, format:str):str</prototype>
   </function>
   <function>
+    <name>HOURS_ADD</name>
+    <name>HOURS_SUB</name>
+    <name>MINUTES_ADD</name>
+    <name>MINUTES_SUB</name>
+    <name>SECONDS_ADD</name>
+    <name>SECONDS_SUB</name>
+    <name>MICROSECONDS_ADD</name>
+    <name>MICROSECONDS_SUB</name>
+    <name>WEEKS_ADD</name>
+    <name>WEEKS_SUB</name>
+    <name>YEARS_ADD</name>
+    <name>YEARS_SUB</name>
+    <prototype>(dt:datetime, value:N):datetime</prototype>
+  </function>
+  <function>
+    <name>HOURS_DIFF</name>
+    <name>MINUTES_DIFF</name>
+    <name>SECONDS_DIFF</name>
+    <name>MILLISECONDS_DIFF</name>
+    <name>WEEKS_DIFF</name>
+    <name>MONTHS_DIFF</name>
+    <name>YEARS_DIFF</name>
+    <prototype>(datetime1:datetime, datetime2:datetime):N</prototype>
+  </function>
+  <function>
     <name>HOUR</name>
     <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>JODATIME_FORMAT</name>
+    <name>STR_TO_JODATIME</name>
+    <prototype>(dt:datetime, format:str):str</prototype>
   </function>
   <function>
     <name>LAST_DAY</name>
@@ -486,15 +586,30 @@
     <prototype>(date:date):N</prototype>
   </function>
   <function>
+    <name>NEXT_DAY</name>
+    <name>PREVIOUS_DAY</name>
+    <prototype>(date:date, day:str):date</prototype>
+  </function>
+  <function>
+    <name>SEC_TO_TIME</name>
+    <prototype>(seconds:N):date</prototype>
+  </function>
+  <function>
     <name>SECOND</name>
     <prototype>(date:date):N</prototype>
   </function>
   <function>
     <name>STR_TO_DATE</name>
+    <name>STR2DATE</name>
     <prototype>(str:str, format:str):date</prototype>
   </function>
   <function>
+    <name>TIME_FORMAT</name>
+    <prototype>(time:date, format:str):str</prototype>
+  </function>
+  <function>
     <name>WEEK</name>
+    <name>WEEK_ISO</name>
     <prototype>(date:date):N</prototype>
   </function>
   <function>
@@ -658,6 +773,10 @@
     <prototype>(dt:datetime, interval:N, unit:str):datetime</prototype>
   </function>
   <function>
+    <name>TIME_TO_SEC</name>
+    <prototype>(time:date):N</prototype>
+  </function>
+  <function>
     <name>TIMESTAMPDIFF</name>
     <prototype>(unit:str, datetime1:datetime, datetime2:datetime):N</prototype>
   </function>
@@ -666,8 +785,24 @@
     <prototype>(dt:datetime):date</prototype>
   </function>
   <function>
+    <name>TO_DATETIME</name>
+    <name>TO_DATETIME_NTZ</name>
+    <prototype>(expr:ANY):date</prototype>
+  </function>
+  <function>
     <name>TO_DAYS</name>
     <prototype>(date:date):N</prototype>
+  </function>
+  <function>
+    <name>TO_ISO8601</name>
+    <name>TO_TERA_DATE</name>
+    <name>TO_TERA_TIMESTAMP</name>
+    <prototype>(dt:datetime):str</prototype>
+  </function>
+  <function>
+    <name>UTC_TIME</name>
+    <name>CURRENT_TIMEZONE</name>
+    <prototype>():date</prototype>
   </function>
   <function>
     <name>UPPER</name>
