@@ -7,6 +7,12 @@ import com.intellij.sql.psi.SqlElementTypes.SQL_STATEMENT
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 
 class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
+    override fun parseQueryExpression(builder: PsiBuilder, level: Int): Boolean {
+        val parsed = super.parseQueryExpression(builder, level)
+        parseStarRocksQueryTailClauses(builder)
+        return parsed
+    }
+
     override fun parseSqlStatement(builder: PsiBuilder, level: Int): Boolean {
         if (isCreateMaterializedView(builder)) {
             return parseCreateMaterializedView(builder)
@@ -42,6 +48,42 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
             return parseLenientStarRocksStatement(builder)
         }
         return super.parseSqlStatement(builder, level)
+    }
+
+    private fun parseStarRocksQueryTailClauses(builder: PsiBuilder) {
+        while (!builder.eof()) {
+            if (isCurrentWord(builder, "QUALIFY")) {
+                parseQualifyClause(builder)
+                continue
+            }
+            break
+        }
+    }
+
+    private fun parseQualifyClause(builder: PsiBuilder) {
+        builder.advanceLexer()
+        if (!parseValueExpression(builder, 0, false, false)) {
+            consumeQualifyExpressionRemainder(builder)
+            return
+        }
+        consumeQualifyExpressionRemainder(builder)
+    }
+
+    private fun consumeQualifyExpressionRemainder(builder: PsiBuilder) {
+        var parenDepth = 0
+        while (!builder.eof()) {
+            val text = builder.tokenText
+            when (text) {
+                "(" -> parenDepth++
+                ")" -> {
+                    if (parenDepth == 0) return
+                    parenDepth--
+                }
+                ";", "," -> if (parenDepth == 0) return
+            }
+            if (parenDepth == 0 && text != null && QUERY_TAIL_BOUNDARY_WORDS.contains(text.uppercase())) return
+            builder.advanceLexer()
+        }
     }
 
     private fun isCreateMaterializedView(builder: PsiBuilder): Boolean {
@@ -423,5 +465,18 @@ class StarRocksParser : MysqlParser(StarRocksDialect.INSTANCE) {
         const val MAX_LOOKAHEAD_TOKENS = 512
         val CREATE_TABLE_MODIFIERS = setOf("TEMPORARY", "EXTERNAL")
         val QUERY_TAIL_CREATE_TARGETS = setOf("PIPE", "TASK", "DICTIONARY", "ANALYZE")
+        val QUERY_TAIL_BOUNDARY_WORDS = setOf(
+            "ORDER",
+            "LIMIT",
+            "UNION",
+            "INTERSECT",
+            "EXCEPT",
+            "MINUS",
+            "FETCH",
+            "OFFSET",
+            "INTO",
+            "PROCEDURE",
+            "FOR"
+        )
     }
 }
