@@ -53,7 +53,7 @@ class StarRocksDdlClausePostFormatProcessor : PostFormatProcessor {
     private fun normalizeDdlClauseBreaks(sql: String): String {
         val lineSeparator = detectLineSeparator(sql)
         return sql
-            .replace(Regex("\\)\\s+(COMMENT\\s+)", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
+            .replace(Regex("(^[\\t ]*\\))\\s+(COMMENT\\s+)", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE)), "$1" + lineSeparator + "$2")
             .replace(Regex("\\)\\s+(REFRESH\\s+(?:IMMEDIATE|DEFERRED|MANUAL|ASYNC|SCHEDULE|EVERY))", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
             .replace(Regex("\\)\\s+(DISTRIBUTED\\s+BY)", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
             .replace(Regex("\\)\\s+(ORDER\\s+BY\\s*\\()", RegexOption.IGNORE_CASE), ")" + lineSeparator + "$1")
