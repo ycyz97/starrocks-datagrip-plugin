@@ -13,7 +13,7 @@ class StarRocksDialect private constructor() : SqlLanguageDialectBase("StarRocks
     override fun getDbms(): Dbms = StarRocksDbms.INSTANCE
     override fun getIcon(): Icon = StarRocksIcons.Dialect
     override fun createTokensHelper(): TokensHelper = createTokensHelper(StarRocksTokens::class.java)
-    override fun isOperatorSupported(token: IElementType): Boolean = true
+    override fun isOperatorSupported(token: IElementType?): Boolean = true
     override fun getSystemVariables(): Set<String> = emptySet()
 
     companion object {

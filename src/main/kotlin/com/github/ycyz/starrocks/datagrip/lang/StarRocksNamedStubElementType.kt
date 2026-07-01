@@ -10,9 +10,9 @@ import com.intellij.psi.stubs.StubInputStream
 import com.intellij.psi.stubs.StubOutputStream
 
 class StarRocksNamedStubElementType(
-    private val externalName: String
+    externalName: String
 ) : IStubElementType<StarRocksNamedStub, StarRocksNamedStubElement>(externalName, StarRocksDialect.INSTANCE) {
-    override fun getExternalId(): String = "sql.$externalName"
+    override fun getExternalId(): String = "sql.${super.toString()}"
 
     override fun createPsi(stub: StarRocksNamedStub): StarRocksNamedStubElement {
         return StarRocksNamedStubElement(stub, this)

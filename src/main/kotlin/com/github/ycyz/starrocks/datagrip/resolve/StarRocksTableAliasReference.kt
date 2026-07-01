@@ -2,6 +2,7 @@ package com.github.ycyz.starrocks.datagrip.resolve
 
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
@@ -73,21 +74,6 @@ class StarRocksTableAliasReference(element: PsiElement) :
     }
 
     private companion object {
-        private val STATEMENT_TYPES = setOf(
-            StarRocksElementTypes.QUERY_STATEMENT,
-            StarRocksElementTypes.DML_STATEMENT,
-            StarRocksElementTypes.TABLE_DDL_STATEMENT,
-            StarRocksElementTypes.VIEW_STATEMENT,
-            StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT,
-            StarRocksElementTypes.CATALOG_STATEMENT,
-            StarRocksElementTypes.RESOURCE_STATEMENT,
-            StarRocksElementTypes.LOAD_STATEMENT,
-            StarRocksElementTypes.ROUTINE_LOAD_STATEMENT,
-            StarRocksElementTypes.TASK_STATEMENT,
-            StarRocksElementTypes.EXPORT_STATEMENT,
-            StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
-            StarRocksElementTypes.ADMIN_STATEMENT,
-            StarRocksElementTypes.UNKNOWN_STATEMENT
-        )
+        private val STATEMENT_TYPES = StarRocksStatementElementSets.STATEMENT_TYPES
     }
 }

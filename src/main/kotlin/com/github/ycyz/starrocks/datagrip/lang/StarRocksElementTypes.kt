@@ -1,8 +1,6 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
 object StarRocksElementTypes {
-    val QUERY_STATEMENT = StarRocksElementType("STARROCKS_QUERY_STATEMENT")
-    val DML_STATEMENT = StarRocksElementType("STARROCKS_DML_STATEMENT")
     val TABLE_DDL_STATEMENT = StarRocksElementType("STARROCKS_TABLE_DDL_STATEMENT")
     val VIEW_STATEMENT = StarRocksElementType("STARROCKS_VIEW_STATEMENT")
     val MATERIALIZED_VIEW_STATEMENT = StarRocksElementType("STARROCKS_MATERIALIZED_VIEW_STATEMENT")
@@ -15,7 +13,6 @@ object StarRocksElementTypes {
     val EXPORT_STATEMENT = StarRocksElementType("STARROCKS_EXPORT_STATEMENT")
     val BACKUP_RESTORE_STATEMENT = StarRocksElementType("STARROCKS_BACKUP_RESTORE_STATEMENT")
     val ADMIN_STATEMENT = StarRocksElementType("STARROCKS_ADMIN_STATEMENT")
-    val UNKNOWN_STATEMENT = StarRocksElementType("STARROCKS_UNKNOWN_STATEMENT")
     val SELECT_CLAUSE = StarRocksElementType("STARROCKS_SELECT_CLAUSE")
     val FROM_CLAUSE = StarRocksElementType("STARROCKS_FROM_CLAUSE")
     val WHERE_CLAUSE = StarRocksElementType("STARROCKS_WHERE_CLAUSE")
@@ -40,6 +37,8 @@ object StarRocksElementTypes {
     val AS_SELECT_QUERY = StarRocksElementType("STARROCKS_AS_SELECT_QUERY")
     val CTE_DEFINITION = StarRocksElementType("STARROCKS_CTE_DEFINITION")
     val CTE_NAME = StarRocksStubElementTypes.STARROCKS_CTE_NAME
+    val CTE_COLUMN_LIST = StarRocksElementType("STARROCKS_CTE_COLUMN_LIST")
+    val CTE_COLUMN_NAME = StarRocksStubElementTypes.STARROCKS_CTE_COLUMN_NAME
     val CTE_QUERY = StarRocksElementType("STARROCKS_CTE_QUERY")
     val TABLE_NAME = StarRocksStubElementTypes.STARROCKS_TABLE_NAME
     val COLUMN_NAME = StarRocksStubElementTypes.STARROCKS_COLUMN_NAME
@@ -56,6 +55,8 @@ object StarRocksElementTypes {
     val BUCKETS_CLAUSE = StarRocksElementType("STARROCKS_BUCKETS_CLAUSE")
     val TABLE_REFERENCE_NAME = StarRocksElementType("STARROCKS_TABLE_REFERENCE_NAME")
     val TABLE_ALIAS = StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS
+    val TABLE_ALIAS_COLUMN_LIST = StarRocksElementType("STARROCKS_TABLE_ALIAS_COLUMN_LIST")
+    val TABLE_ALIAS_COLUMN_NAME = StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS_COLUMN_NAME
     val QUALIFIED_COLUMN_PREFIX = StarRocksElementType("STARROCKS_QUALIFIED_COLUMN_PREFIX")
     val COLUMN_REFERENCE_NAME = StarRocksElementType("STARROCKS_COLUMN_REFERENCE_NAME")
     val COMMENT_CLAUSE = StarRocksElementType("STARROCKS_COMMENT_CLAUSE")
@@ -77,23 +78,4 @@ object StarRocksElementTypes {
     val CAST_TYPE = StarRocksElementType("STARROCKS_CAST_TYPE")
     val DATA_TYPE = StarRocksElementType("STARROCKS_DATA_TYPE")
     val IDENTIFIER_REFERENCE = StarRocksElementType("STARROCKS_IDENTIFIER_REFERENCE")
-
-    fun statementType(family: StarRocksStatementFamily?): StarRocksElementType {
-        return when (family) {
-            StarRocksStatementFamily.QUERY -> QUERY_STATEMENT
-            StarRocksStatementFamily.DML -> DML_STATEMENT
-            StarRocksStatementFamily.TABLE_DDL -> TABLE_DDL_STATEMENT
-            StarRocksStatementFamily.VIEW -> VIEW_STATEMENT
-            StarRocksStatementFamily.MATERIALIZED_VIEW -> MATERIALIZED_VIEW_STATEMENT
-            StarRocksStatementFamily.CATALOG -> CATALOG_STATEMENT
-            StarRocksStatementFamily.RESOURCE -> RESOURCE_STATEMENT
-            StarRocksStatementFamily.LOAD -> LOAD_STATEMENT
-            StarRocksStatementFamily.ROUTINE_LOAD -> ROUTINE_LOAD_STATEMENT
-            StarRocksStatementFamily.TASK -> TASK_STATEMENT
-            StarRocksStatementFamily.EXPORT -> EXPORT_STATEMENT
-            StarRocksStatementFamily.BACKUP_RESTORE -> BACKUP_RESTORE_STATEMENT
-            StarRocksStatementFamily.ADMIN -> ADMIN_STATEMENT
-            null -> UNKNOWN_STATEMENT
-        }
-    }
 }

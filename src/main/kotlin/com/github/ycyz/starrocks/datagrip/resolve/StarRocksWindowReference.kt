@@ -2,6 +2,7 @@ package com.github.ycyz.starrocks.datagrip.resolve
 
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
@@ -57,12 +58,6 @@ class StarRocksWindowReference(element: PsiElement) :
     }
 
     private companion object {
-        private val QUERY_SCOPE_TYPES = setOf(
-            StarRocksElementTypes.QUERY_STATEMENT,
-            StarRocksElementTypes.DML_STATEMENT,
-            StarRocksElementTypes.AS_SELECT_QUERY,
-            StarRocksElementTypes.CTE_QUERY,
-            StarRocksElementTypes.SUBQUERY_EXPRESSION
-        )
+        private val QUERY_SCOPE_TYPES = StarRocksStatementElementSets.QUERY_SCOPE_TYPES
     }
 }

@@ -14,8 +14,10 @@ class StarRocksSemanticAnnotator : Annotator {
             StarRocksElementTypes.TABLE_NAME,
             StarRocksElementTypes.TABLE_REFERENCE_NAME,
             StarRocksElementTypes.CTE_NAME -> SqlColors.SQL_TABLE
-            StarRocksElementTypes.COLUMN_NAME -> SqlColors.SQL_COLUMN
-            StarRocksElementTypes.COLUMN_REFERENCE_NAME -> columnReferenceAttributes(element)
+            StarRocksElementTypes.COLUMN_NAME,
+            StarRocksElementTypes.CTE_COLUMN_NAME,
+            StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME -> SqlColors.SQL_COLUMN
+            StarRocksElementTypes.COLUMN_REFERENCE_NAME -> SqlColors.SQL_COLUMN
             StarRocksElementTypes.TABLE_ALIAS,
             StarRocksElementTypes.SELECT_ALIAS,
             StarRocksElementTypes.QUALIFIED_COLUMN_PREFIX,
@@ -38,12 +40,4 @@ class StarRocksSemanticAnnotator : Annotator {
             .create()
     }
 
-    private fun columnReferenceAttributes(element: PsiElement): TextAttributesKey {
-        val target = element.references.firstOrNull()?.resolve()
-        return if (target?.node?.elementType == StarRocksElementTypes.SELECT_ALIAS) {
-            SqlColors.SQL_LOCAL_ALIAS
-        } else {
-            SqlColors.SQL_COLUMN
-        }
-    }
 }

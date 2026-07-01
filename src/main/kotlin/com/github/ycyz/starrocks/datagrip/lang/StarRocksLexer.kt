@@ -14,7 +14,6 @@ import com.intellij.sql.psi.SqlTokens.SQL_FLOAT_TOKEN
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT_DELIMITED
 import com.intellij.sql.psi.SqlTokens.SQL_INTEGER_TOKEN
-import com.intellij.sql.psi.SqlTokens.SQL_KEYWORD_TOKEN
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_BRACE
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_BRACKET
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_PAREN
@@ -43,9 +42,11 @@ import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_SEMICOLON
 import com.intellij.sql.psi.SqlTokens.SQL_STRING_TOKEN
 
-class StarRocksLexer(
+open class StarRocksLexer protected constructor(
     private val highlightCategories: Boolean = false
 ) : LexerBase() {
+    constructor() : this(false)
+
     private var buffer: CharSequence = ""
     private var endOffset: Int = 0
     private var currentStart: Int = 0
@@ -199,10 +200,14 @@ class StarRocksLexer(
             highlightCategories && isBuiltinFunctionCall(word) -> StarRocksHighlightTokenTypes.FUNCTION
             highlightCategories && word in DATA_TYPE_NAMES -> StarRocksHighlightTokenTypes.DATA_TYPE
             highlightCategories && isFunctionLikeKeywordCall(word) -> StarRocksHighlightTokenTypes.FUNCTION
-            StarRocksKeywordCatalog.isKeyword(word) -> SQL_KEYWORD_TOKEN
+            StarRocksKeywordCatalog.isKeyword(word) -> keywordToken(word)
             highlightCategories && isUserFunctionCall() -> StarRocksHighlightTokenTypes.FUNCTION
             else -> currentToken
         }
+    }
+
+    private fun keywordToken(word: String): IElementType {
+        return StarRocksElementFactory.token(word)
     }
 
     private fun isBuiltinFunctionCall(word: String): Boolean {
@@ -324,5 +329,6 @@ class StarRocksLexer(
             "GROUPING_ID",
             "PERCENTILE"
         )
+
     }
 }

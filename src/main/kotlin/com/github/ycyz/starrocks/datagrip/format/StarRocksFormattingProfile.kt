@@ -1,8 +1,6 @@
 package com.github.ycyz.starrocks.datagrip.format
 
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksLexer
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementFamily
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementWordsClassifier
 
 object StarRocksFormattingProfile {
     val QUERY_CLAUSE_ORDER: List<String> = listOf(
@@ -68,12 +66,6 @@ object StarRocksFormattingProfile {
     const val USE_SAFE_DDL_FORMATTER: Boolean = true
     const val USE_WHOLE_FILE_STRING_REWRITE: Boolean = false
 
-    private val SAFE_FORMATTER_FAMILIES: Set<StarRocksStatementFamily> = setOf(
-        StarRocksStatementFamily.TABLE_DDL,
-        StarRocksStatementFamily.VIEW,
-        StarRocksStatementFamily.MATERIALIZED_VIEW
-    )
-
     private val STARROCKS_DDL_PHRASES: List<List<String>> = listOf(
         listOf("DISTRIBUTED", "BY"),
         listOf("PARTITION", "BY"),
@@ -82,7 +74,6 @@ object StarRocksFormattingProfile {
         listOf("UNIQUE", "KEY"),
         listOf("AGGREGATE", "KEY"),
         listOf("PROPERTIES"),
-        listOf("CREATE", "VIEW"),
         listOf("CREATE", "MATERIALIZED", "VIEW"),
         listOf("REFRESH", "MATERIALIZED", "VIEW"),
         listOf("CANCEL", "REFRESH", "MATERIALIZED", "VIEW")
@@ -113,9 +104,7 @@ object StarRocksFormattingProfile {
         if (words.isEmpty()) {
             return false
         }
-        val family = StarRocksStatementWordsClassifier.classify(words)
-        return family in SAFE_FORMATTER_FAMILIES ||
-            STARROCKS_DDL_PHRASES.any { phrase -> words.containsPhrase(phrase) }
+        return STARROCKS_DDL_PHRASES.any { phrase -> words.containsPhrase(phrase) }
     }
 
     private fun List<String>.containsPhrase(phrase: List<String>): Boolean {

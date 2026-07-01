@@ -2,10 +2,12 @@ package com.github.ycyz.starrocks.datagrip.resolve
 
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.tree.IElementType
+import com.intellij.sql.psi.SqlCompositeElementTypes
 import java.util.Locale
 
 class StarRocksColumnReference(element: PsiElement) :
@@ -26,8 +28,9 @@ class StarRocksColumnReference(element: PsiElement) :
         val alias = resolveQualifierAlias() ?: return null
         val tableReferenceScope = containingElement(alias, StarRocksElementTypes.TABLE_REFERENCE) ?: return null
         val tableReference = nearestTableReferenceBeforeAlias(alias)
-        val tableTarget = tableReference?.references?.firstOrNull()?.resolve()
-        return tableTarget?.let { resolveColumnOnTable(it, columnName) }
+        val tableTarget = tableReference?.let { resolveLocalTableReferenceTarget(it) }
+        return resolveColumnOnTableAlias(alias, columnName)
+            ?: tableTarget?.let { resolveColumnOnTable(it, columnName) }
             ?: resolveColumnOnDerivedTable(tableReferenceScope, columnName)
     }
 
@@ -36,13 +39,16 @@ class StarRocksColumnReference(element: PsiElement) :
         val tableReferences = mutableListOf<PsiElement>()
         collectTopLevelFromTableReferences(queryScope, queryScope, tableReferences)
         val tableTargets = tableReferences
-            .mapNotNull { it.references.firstOrNull()?.resolve() }
+            .mapNotNull { resolveLocalTableReferenceTarget(it) }
             .mapNotNull { resolveColumnOnTable(it, columnName) }
         val derivedTableScopes = mutableListOf<PsiElement>()
         collectTopLevelFromTableReferenceScopes(queryScope, queryScope, derivedTableScopes)
+        val aliasColumnTargets = derivedTableScopes
+            .flatMap { tableReferenceScope -> tableAliasColumns(tableReferenceScope) }
+            .filter { matchesName(it, columnName) }
         val derivedTargets = derivedTableScopes
             .mapNotNull { resolveColumnOnDerivedTable(it, columnName) }
-        val targets = (tableTargets + derivedTargets)
+        val targets = (tableTargets + aliasColumnTargets + derivedTargets)
             .distinctBy { "${it.containingFile?.virtualFile?.path.orEmpty()}:${it.textRange.startOffset}" }
         return targets.singleOrNull()
     }
@@ -75,19 +81,63 @@ class StarRocksColumnReference(element: PsiElement) :
         tableTarget: PsiElement,
         columnName: String
     ): PsiElement? {
+        if (tableTarget.node?.elementType == StarRocksElementTypes.CTE_NAME) {
+            return resolveColumnOnCte(tableTarget, columnName)
+        }
         val tableStatement = containingStatement(tableTarget) ?: tableTarget.containingFile ?: return null
         val candidates = mutableListOf<PsiElement>()
         collectElements(tableStatement, StarRocksElementTypes.COLUMN_NAME, candidates)
         return candidates.firstOrNull { matchesName(it, columnName) }
     }
 
+    private fun resolveLocalTableReferenceTarget(tableReference: PsiElement): PsiElement? {
+        val referenceName = StarRocksNamedStubElement.normalizeName(tableReference.text)
+        if (referenceName.isBlank()) {
+            return null
+        }
+        val containingFile = tableReference.containingFile ?: return null
+        val candidates = mutableListOf<PsiElement>()
+        collectElements(containingFile, StarRocksElementTypes.CTE_NAME, candidates)
+        collectElements(containingFile, StarRocksElementTypes.TABLE_NAME, candidates)
+        val referenceOffset = tableReference.textRange.startOffset
+        return candidates
+            .filter { it.textRange.startOffset < referenceOffset && matchesTableName(it, referenceName) }
+            .maxByOrNull { it.textRange.startOffset }
+    }
+
+    private fun resolveColumnOnCte(
+        cteName: PsiElement,
+        columnName: String
+    ): PsiElement? {
+        val cteDefinition = containingElement(cteName, StarRocksElementTypes.CTE_DEFINITION) ?: return null
+        val explicitColumns = mutableListOf<PsiElement>()
+        collectCteColumnNames(cteDefinition, cteDefinition, explicitColumns)
+        if (explicitColumns.isNotEmpty()) {
+            return explicitColumns.firstOrNull { matchesName(it, columnName) }
+        }
+        val outputs = mutableListOf<PsiElement>()
+        collectDerivedTableSelectOutputs(cteDefinition, cteDefinition, outputs)
+        return outputs.firstOrNull { matchesName(it, columnName) }
+    }
+
     private fun resolveColumnOnDerivedTable(
         tableReferenceScope: PsiElement,
         columnName: String
     ): PsiElement? {
+        tableAliasColumns(tableReferenceScope)
+            .firstOrNull { matchesName(it, columnName) }
+            ?.let { return it }
         val candidates = mutableListOf<PsiElement>()
         collectDerivedTableSelectOutputs(tableReferenceScope, tableReferenceScope, candidates)
         return candidates.firstOrNull { matchesName(it, columnName) }
+    }
+
+    private fun resolveColumnOnTableAlias(
+        alias: PsiElement,
+        columnName: String
+    ): PsiElement? {
+        return immediateTableAliasColumns(alias)
+            .firstOrNull { matchesName(it, columnName) }
     }
 
     private fun previousQualifiedColumnPrefix(element: PsiElement): PsiElement? {
@@ -234,7 +284,7 @@ class StarRocksColumnReference(element: PsiElement) :
         current: PsiElement,
         result: MutableList<PsiElement>
     ) {
-        if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES && current.parent != root) {
+        if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES && !isPrimaryQueryScope(root, current)) {
             return
         }
         if (current.node?.elementType == StarRocksElementTypes.SELECT_CLAUSE) {
@@ -242,6 +292,51 @@ class StarRocksColumnReference(element: PsiElement) :
             return
         }
         current.children.forEach { collectDerivedTableSelectOutputs(root, it, result) }
+    }
+
+    private fun isPrimaryQueryScope(root: PsiElement, current: PsiElement): Boolean {
+        val type = current.node?.elementType
+        if (type == StarRocksElementTypes.CTE_QUERY || type == StarRocksElementTypes.SUBQUERY_EXPRESSION) {
+            return current.parent == root
+        }
+        if (type == SqlCompositeElementTypes.SQL_SELECT_STATEMENT) {
+            val parentType = current.parent?.node?.elementType
+            return parentType == StarRocksElementTypes.CTE_QUERY || parentType == StarRocksElementTypes.SUBQUERY_EXPRESSION
+        }
+        return current.parent == root
+    }
+
+    private fun tableAliasColumns(tableReferenceScope: PsiElement): List<PsiElement> {
+        val columns = mutableListOf<PsiElement>()
+        collectElements(tableReferenceScope, StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME, columns)
+        return columns
+    }
+
+    private fun immediateTableAliasColumns(alias: PsiElement): List<PsiElement> {
+        var current = alias.nextSibling
+        while (current != null && current.text.isBlank()) {
+            current = current.nextSibling
+        }
+        if (current?.node?.elementType != StarRocksElementTypes.TABLE_ALIAS_COLUMN_LIST) {
+            return emptyList()
+        }
+        val columns = mutableListOf<PsiElement>()
+        collectElements(current, StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME, columns)
+        return columns
+    }
+
+    private fun collectCteColumnNames(
+        root: PsiElement,
+        current: PsiElement,
+        result: MutableList<PsiElement>
+    ) {
+        if (current != root && current.node?.elementType == StarRocksElementTypes.CTE_QUERY) {
+            return
+        }
+        if (current.node?.elementType == StarRocksElementTypes.CTE_COLUMN_NAME) {
+            result += current
+        }
+        current.children.forEach { collectCteColumnNames(root, it, result) }
     }
 
     private fun collectSelectOutputsWithoutNestedQueries(
@@ -306,29 +401,25 @@ class StarRocksColumnReference(element: PsiElement) :
         return StarRocksNamedStubElement.normalizeName(candidateName).lowercase(Locale.ROOT) == referenceName
     }
 
+    private fun matchesTableName(
+        candidate: PsiElement,
+        referenceName: String
+    ): Boolean {
+        val candidateName = when (candidate) {
+            is StarRocksNamedStubElement -> candidate.name
+            else -> candidate.text
+        }
+        val normalizedCandidate = StarRocksNamedStubElement.normalizeName(candidateName).lowercase(Locale.ROOT)
+        val normalizedReference = StarRocksNamedStubElement.normalizeName(referenceName).lowercase(Locale.ROOT)
+        return if ("." in normalizedReference) {
+            normalizedCandidate == normalizedReference || normalizedCandidate.endsWith(".$normalizedReference")
+        } else {
+            normalizedCandidate == normalizedReference || normalizedCandidate.substringAfterLast(".") == normalizedReference
+        }
+    }
+
     private companion object {
-        private val STATEMENT_TYPES = setOf(
-            StarRocksElementTypes.QUERY_STATEMENT,
-            StarRocksElementTypes.DML_STATEMENT,
-            StarRocksElementTypes.TABLE_DDL_STATEMENT,
-            StarRocksElementTypes.VIEW_STATEMENT,
-            StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT,
-            StarRocksElementTypes.CATALOG_STATEMENT,
-            StarRocksElementTypes.RESOURCE_STATEMENT,
-            StarRocksElementTypes.LOAD_STATEMENT,
-            StarRocksElementTypes.ROUTINE_LOAD_STATEMENT,
-            StarRocksElementTypes.TASK_STATEMENT,
-            StarRocksElementTypes.EXPORT_STATEMENT,
-            StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
-            StarRocksElementTypes.ADMIN_STATEMENT,
-            StarRocksElementTypes.UNKNOWN_STATEMENT
-        )
-        private val QUERY_SCOPE_TYPES = setOf(
-            StarRocksElementTypes.QUERY_STATEMENT,
-            StarRocksElementTypes.DML_STATEMENT,
-            StarRocksElementTypes.AS_SELECT_QUERY,
-            StarRocksElementTypes.CTE_QUERY,
-            StarRocksElementTypes.SUBQUERY_EXPRESSION
-        )
+        private val STATEMENT_TYPES = StarRocksStatementElementSets.STATEMENT_TYPES
+        private val QUERY_SCOPE_TYPES = StarRocksStatementElementSets.QUERY_SCOPE_TYPES
     }
 }

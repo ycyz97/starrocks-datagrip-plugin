@@ -1,74 +1,65 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
-import com.intellij.lang.ASTNode
+import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.intellij.lang.PsiBuilder
-import com.intellij.lang.PsiParser
 import com.intellij.psi.tree.IElementType
+import com.intellij.psi.tree.TokenSet
+import com.intellij.sql.dialects.SqlLanguageDialectEx
+import com.intellij.sql.dialects.base.SqlGeneratedParserUtil
+import com.intellij.sql.dialects.base.SqlParser
+import com.intellij.sql.dialects.base.SqlParserUtil
+import com.intellij.sql.injection.SqlSuggestedInjection
+import com.intellij.sql.psi.SqlTokens.SQL_STRING_TOKEN
+import com.intellij.database.DatabaseBundle
 
-class StarRocksParser : PsiParser {
-    override fun parse(root: IElementType, builder: PsiBuilder): ASTNode {
-        val rootMarker = builder.mark()
-        while (!builder.eof()) {
-            if (builder.tokenText == ";") {
-                builder.advanceLexer()
-                continue
-            }
-            parseStatement(builder)
-        }
-        rootMarker.done(root)
-        return builder.treeBuilt
+class StarRocksParser : SqlParser(StarRocksDialect.INSTANCE) {
+    override fun getLanguage(): SqlLanguageDialectEx = StarRocksDialect.INSTANCE
+
+    override fun getCurrentSqlInjection(): SqlSuggestedInjection = STARROCKS_INJECTION
+
+    override fun getExtendsTokenSets(): Array<TokenSet> = StarRocksGeneratedParser.EXTENDS_SETS_
+
+    override fun parseExtraRoots(root: IElementType, builder: PsiBuilder, level: Int): Boolean {
+        return StarRocksGeneratedParser.parse_root_(root, builder, level)
     }
 
-    private fun parseStatement(builder: PsiBuilder) {
-        val marker = builder.mark()
-        val family = StarRocksStatementClassifier.classify(builder)
-        val boundaries = StarRocksClauseBoundaryScanner.scan(builder, family)
-        val statementEndOffset = statementEndOffset(builder)
-        var parenDepth = 0
-        var nextBoundaryIndex = 0
-        var segmentMarker: PsiBuilder.Marker? = null
-        var segmentType: IElementType = StarRocksElementTypes.STATEMENT_SEGMENT
-        val firstBoundaryOffset = boundaries.firstOrNull()?.startOffset ?: statementEndOffset
-        if (builder.currentOffset < firstBoundaryOffset) {
-            val headerMarker = builder.mark()
-            StarRocksSegmentParser.parseHeader(builder, family, firstBoundaryOffset)
-            headerMarker.done(StarRocksElementTypes.STATEMENT_HEADER)
-        }
-        while (!builder.eof()) {
-            if (parenDepth == 0 && nextBoundaryIndex < boundaries.size && builder.currentOffset == boundaries[nextBoundaryIndex].startOffset) {
-                segmentMarker?.done(segmentType)
-                segmentType = boundaries[nextBoundaryIndex].elementType
-                segmentMarker = builder.mark()
-                val endOffset = boundaries.getOrNull(nextBoundaryIndex + 1)?.startOffset ?: statementEndOffset
-                nextBoundaryIndex++
-                StarRocksSegmentParser.parseSegment(builder, segmentType, endOffset)
-                continue
-            }
-            when (builder.tokenText) {
-                "(" -> parenDepth++
-                ")" -> if (parenDepth > 0) parenDepth--
-                ";" -> if (parenDepth == 0) break
-            }
-            builder.advanceLexer()
-        }
-        segmentMarker?.done(segmentType)
-        marker.done(StarRocksElementTypes.statementType(family))
+    override fun parseSqlStatement(builder: PsiBuilder, level: Int): Boolean {
+        return StarRocksGeneratedParser.statement(builder, level)
     }
 
-    private fun statementEndOffset(builder: PsiBuilder): Int {
-        val marker = builder.mark()
-        var parenDepth = 0
-        var endOffset = builder.currentOffset
-        while (!builder.eof()) {
-            when (builder.tokenText) {
-                "(" -> parenDepth++
-                ")" -> if (parenDepth > 0) parenDepth--
-                ";" -> if (parenDepth == 0) break
-            }
-            endOffset = builder.currentOffset + (builder.tokenText?.length ?: 0)
-            builder.advanceLexer()
+    override fun parseQueryExpression(builder: PsiBuilder, level: Int): Boolean {
+        return StarRocksDmlParsing.top_query_expression(builder, level)
+    }
+
+    override fun parseDataType(builder: PsiBuilder, level: Int, ext: Boolean): Boolean {
+        return if (ext) {
+            StarRocksDdlParsing.type_element_ext(builder, level)
+        } else {
+            StarRocksDdlParsing.type_element(builder, level)
         }
-        marker.rollbackTo()
-        return endOffset
+    }
+
+    override fun parseValueExpression(builder: PsiBuilder, level: Int, immediate: Boolean, strict: Boolean): Boolean {
+        val parsed = StarRocksExpressionParsing.value_expression(builder, level)
+        if (!parsed && !immediate) {
+            builder.error(DatabaseBundle.message("parsing.error.expression.expected"))
+        }
+        return parsed
+    }
+
+    override fun parseEvaluableExpression(builder: PsiBuilder, level: Int): Boolean {
+        return SqlGeneratedParserUtil.parseAndRemapToGenericReference(builder, level, StarRocksExpressionParsing::evaluable_expression)
+    }
+
+    override fun parseForeignKeyRefList(builder: PsiBuilder, level: Int): Boolean {
+        return StarRocksGeneratedParser.table_column_list(builder, level)
+    }
+
+    override fun allowNoopStringConcatenation(builder: PsiBuilder, strict: Boolean): Boolean {
+        return SqlParserUtil.nextTokenIs(builder, SQL_STRING_TOKEN)
+    }
+
+    private companion object {
+        val STARROCKS_INJECTION = SqlSuggestedInjection("StarRocks")
     }
 }

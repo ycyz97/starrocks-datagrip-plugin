@@ -1,8 +1,8 @@
 package com.github.ycyz.starrocks.datagrip.highlight
 
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightingLexer
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksLexer
 import com.intellij.lexer.Lexer
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
@@ -15,7 +15,7 @@ class StarRocksSyntaxHighlighter(
     project: Project?,
     file: VirtualFile?
 ) : SqlSyntaxHighlighter(StarRocksDialect.INSTANCE, project, file) {
-    override fun getHighlightingLexer(): Lexer = StarRocksLexer(highlightCategories = true)
+    override fun getHighlightingLexer(): Lexer = StarRocksHighlightingLexer()
 
     override fun getTokenHighlights(tokenType: IElementType): Array<TextAttributesKey> {
         return when (tokenType) {
