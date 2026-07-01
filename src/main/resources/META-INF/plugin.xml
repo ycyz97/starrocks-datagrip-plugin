@@ -1,41 +1,47 @@
 <idea-plugin>
     <id>com.github.ycyz.starrocks.support</id>
     <name>StarRocks Support</name>
-    <version>1.2.8</version>
+    <version>2.0.0</version>
     <vendor>ycyz</vendor>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
 
     <description><![CDATA[
-        StarRocks Support adds StarRocks SQL dialect integration for JetBrains IDEs, including syntax highlighting, SQL completion, and compatibility handling for common StarRocks SQL statements.<br>
+        StarRocks Support provides a StarRocks plugin foundation for JetBrains IDEs. This rewrite branch is rebuilding SQL parsing, data source integration, completion, and formatting on a native StarRocks architecture.<br>
     ]]></description>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- StarRocks SQL dialect registration -->
         <sql.dialect dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect"/>
         <sql.dialectCodeStyleProvider implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksCodeStyleProvider"/>
         <lang.parserDefinition language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition"/>
         <lang.syntaxHighlighterFactory language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighterFactory"/>
-        <lang.formatter language="StarRocks" implementationClass="com.intellij.sql.formatter.SqlFormattingModelBuilder"/>
-
-        <!-- SQL dialect-aware highlighting enhancement -->
-        <annotator language="SQL" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSqlAnnotator"/>
-        <annotator language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSqlAnnotator"/>
-        <completion.contributor language="SQL" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksFunctionCompletionContributor"/>
-        <completion.contributor language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksFunctionCompletionContributor"/>
-        <preFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlColumnAlignmentPreFormatProcessor"/>
-        <postFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksDdlClausePostFormatProcessor"/>
-        <postFormatProcessor implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksQueryPostFormatProcessor"/>
-        <sql.inspectionSuppressorDelegate implementation="com.github.ycyz.starrocks.datagrip.inspections.StarRocksUnnestInspectionSuppressor"/>
+        <annotator language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSemanticAnnotator"/>
+        <lang.formatter language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingModelBuilder"/>
+        <completion.contributor language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksCompletionContributor"/>
+        <stubElementTypeHolder class="com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes" externalIdPrefix="sql."/>
+        <stubIndex implementation="com.github.ycyz.starrocks.datagrip.lang.StarRocksTableNameIndex"/>
+        <stubIndex implementation="com.github.ycyz.starrocks.datagrip.lang.StarRocksColumnNameIndex"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
-        <dbms id="STARROCKS" instance="com.github.ycyz.starrocks.datagrip.dialect.StarRocksDbmsHolder.INSTANCE"/>
-        <addToHSet item="STARROCKS" set="MYSQL_LIKE"/>
-        <dialect dbms="STARROCKS" implementationClass="com.intellij.database.dialects.mysql.MysqlDialect"/>
-        <typeSystem dbms="STARROCKS" implementationClass="com.intellij.database.dialects.mysqlbase.types.MysqlBaseTypeSystem"/>
-        <definitionProvider dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.ddl.StarRocksDefinitionProvider"/>
+        <dbms id="STARROCKS" instance="com.github.ycyz.starrocks.datagrip.database.StarRocksDbms.INSTANCE"/>
+        <dialect dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.GenericDialect"/>
+        <modelFacade dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.model.GenericModelFacade"/>
+        <introspector dbms="STARROCKS" implementationClass="com.intellij.database.dialects.base.introspector.jdbc.JdbcIntrospector$Factory"/>
+        <jdbcMetadataWrapper dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.introspector.jdbc.GenericMetadataWrapper$Factory"/>
+        <jdbcSourceLoader dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.introspector.jdbc.GenericJdbcSourceLoader"/>
+        <scriptGenerator dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.generator.GenericScriptGenerator"/>
+        <namingService dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.naming.GenericNamingService$Provider"/>
+        <sqlObjectBuilder dbms="STARROCKS" implementationClass="com.intellij.database.dialects.sql92.Sql92ObjectBuilder"/>
+        <definitionProvider dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksDefinitionProvider"/>
+        <typeSystem dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem"/>
+        <executionEnvironmentHelper dbms="STARROCKS" implementationClass="com.intellij.database.dialects.base.BaseExecutionEnvironmentHelper"/>
+        <dmlHelper dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.GenericDmlHelper"/>
+        <gridHelper dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.GenericGridHelper"/>
+        <hookUpHelper dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.GenericHookUpHelper"/>
+        <errorHandler dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
+        <jdbcHelper dbms="STARROCKS" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>
         <!--suppress PluginXmlValidity -->
         <driversConfig config="databaseDrivers/starrocks-drivers.xml"/>
     </extensions>

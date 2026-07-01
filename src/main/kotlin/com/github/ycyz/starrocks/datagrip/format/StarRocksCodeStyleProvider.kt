@@ -1,11 +1,10 @@
 package com.github.ycyz.starrocks.datagrip.format
 
-import com.intellij.sql.dialects.base.BaseSqlDialectCodeStyleProvider
-import com.intellij.sql.dialects.mysql.MysqlCodeStyleSettings
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
+import com.intellij.sql.dialects.base.BaseSqlDialectCodeStyleProvider
 
-class StarRocksCodeStyleProvider : BaseSqlDialectCodeStyleProvider<MysqlCodeStyleSettings>(
+class StarRocksCodeStyleProvider : BaseSqlDialectCodeStyleProvider<StarRocksCodeStyleSettings>(
     StarRocksDialect.INSTANCE,
-    MysqlCodeStyleSettings::class.java,
+    StarRocksCodeStyleSettings::class.java,
     "StarRocks"
 )
