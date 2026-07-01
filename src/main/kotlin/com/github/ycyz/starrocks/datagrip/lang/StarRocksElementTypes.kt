@@ -1,0 +1,99 @@
+package com.github.ycyz.starrocks.datagrip.lang
+
+object StarRocksElementTypes {
+    val QUERY_STATEMENT = StarRocksElementType("STARROCKS_QUERY_STATEMENT")
+    val DML_STATEMENT = StarRocksElementType("STARROCKS_DML_STATEMENT")
+    val TABLE_DDL_STATEMENT = StarRocksElementType("STARROCKS_TABLE_DDL_STATEMENT")
+    val VIEW_STATEMENT = StarRocksElementType("STARROCKS_VIEW_STATEMENT")
+    val MATERIALIZED_VIEW_STATEMENT = StarRocksElementType("STARROCKS_MATERIALIZED_VIEW_STATEMENT")
+    val STATEMENT_HEADER = StarRocksElementType("STARROCKS_STATEMENT_HEADER")
+    val CATALOG_STATEMENT = StarRocksElementType("STARROCKS_CATALOG_STATEMENT")
+    val RESOURCE_STATEMENT = StarRocksElementType("STARROCKS_RESOURCE_STATEMENT")
+    val LOAD_STATEMENT = StarRocksElementType("STARROCKS_LOAD_STATEMENT")
+    val ROUTINE_LOAD_STATEMENT = StarRocksElementType("STARROCKS_ROUTINE_LOAD_STATEMENT")
+    val TASK_STATEMENT = StarRocksElementType("STARROCKS_TASK_STATEMENT")
+    val EXPORT_STATEMENT = StarRocksElementType("STARROCKS_EXPORT_STATEMENT")
+    val BACKUP_RESTORE_STATEMENT = StarRocksElementType("STARROCKS_BACKUP_RESTORE_STATEMENT")
+    val ADMIN_STATEMENT = StarRocksElementType("STARROCKS_ADMIN_STATEMENT")
+    val UNKNOWN_STATEMENT = StarRocksElementType("STARROCKS_UNKNOWN_STATEMENT")
+    val SELECT_CLAUSE = StarRocksElementType("STARROCKS_SELECT_CLAUSE")
+    val FROM_CLAUSE = StarRocksElementType("STARROCKS_FROM_CLAUSE")
+    val WHERE_CLAUSE = StarRocksElementType("STARROCKS_WHERE_CLAUSE")
+    val GROUP_BY_CLAUSE = StarRocksElementType("STARROCKS_GROUP_BY_CLAUSE")
+    val HAVING_CLAUSE = StarRocksElementType("STARROCKS_HAVING_CLAUSE")
+    val QUALIFY_CLAUSE = StarRocksElementType("STARROCKS_QUALIFY_CLAUSE")
+    val ORDER_BY_CLAUSE = StarRocksElementType("STARROCKS_ORDER_BY_CLAUSE")
+    val LIMIT_CLAUSE = StarRocksElementType("STARROCKS_LIMIT_CLAUSE")
+    val WITH_CLAUSE = StarRocksElementType("STARROCKS_WITH_CLAUSE")
+    val SET_OPERATION_CLAUSE = StarRocksElementType("STARROCKS_SET_OPERATION_CLAUSE")
+    val SET_OPERATOR = StarRocksElementType("STARROCKS_SET_OPERATOR")
+    val WINDOW_CLAUSE = StarRocksElementType("STARROCKS_WINDOW_CLAUSE")
+    val WINDOW_DEFINITION = StarRocksElementType("STARROCKS_WINDOW_DEFINITION")
+    val WINDOW_NAME = StarRocksStubElementTypes.STARROCKS_WINDOW_NAME
+    val WINDOW_REFERENCE_NAME = StarRocksElementType("STARROCKS_WINDOW_REFERENCE_NAME")
+    val TABLE_COLUMN_LIST = StarRocksElementType("STARROCKS_TABLE_COLUMN_LIST")
+    val PARTITION_CLAUSE = StarRocksElementType("STARROCKS_PARTITION_CLAUSE")
+    val DISTRIBUTION_CLAUSE = StarRocksElementType("STARROCKS_DISTRIBUTION_CLAUSE")
+    val PROPERTIES_CLAUSE = StarRocksElementType("STARROCKS_PROPERTIES_CLAUSE")
+    val REFRESH_CLAUSE = StarRocksElementType("STARROCKS_REFRESH_CLAUSE")
+    val AS_SELECT_CLAUSE = StarRocksElementType("STARROCKS_AS_SELECT_CLAUSE")
+    val AS_SELECT_QUERY = StarRocksElementType("STARROCKS_AS_SELECT_QUERY")
+    val CTE_DEFINITION = StarRocksElementType("STARROCKS_CTE_DEFINITION")
+    val CTE_NAME = StarRocksStubElementTypes.STARROCKS_CTE_NAME
+    val CTE_QUERY = StarRocksElementType("STARROCKS_CTE_QUERY")
+    val TABLE_NAME = StarRocksStubElementTypes.STARROCKS_TABLE_NAME
+    val COLUMN_NAME = StarRocksStubElementTypes.STARROCKS_COLUMN_NAME
+    val INSERT_TARGET_CLAUSE = StarRocksElementType("STARROCKS_INSERT_TARGET_CLAUSE")
+    val DML_TARGET_TABLE = StarRocksElementType("STARROCKS_DML_TARGET_TABLE")
+    val SET_CLAUSE = StarRocksElementType("STARROCKS_SET_CLAUSE")
+    val SET_ASSIGNMENT = StarRocksElementType("STARROCKS_SET_ASSIGNMENT")
+    val VALUES_CLAUSE = StarRocksElementType("STARROCKS_VALUES_CLAUSE")
+    val VALUES_ROW = StarRocksElementType("STARROCKS_VALUES_ROW")
+    val KEY_MODEL_CLAUSE = StarRocksElementType("STARROCKS_KEY_MODEL_CLAUSE")
+    val KEY_COLUMN = StarRocksElementType("STARROCKS_KEY_COLUMN")
+    val PARTITION_EXPRESSION = StarRocksElementType("STARROCKS_PARTITION_EXPRESSION")
+    val DISTRIBUTION_EXPRESSION = StarRocksElementType("STARROCKS_DISTRIBUTION_EXPRESSION")
+    val BUCKETS_CLAUSE = StarRocksElementType("STARROCKS_BUCKETS_CLAUSE")
+    val TABLE_REFERENCE_NAME = StarRocksElementType("STARROCKS_TABLE_REFERENCE_NAME")
+    val TABLE_ALIAS = StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS
+    val QUALIFIED_COLUMN_PREFIX = StarRocksElementType("STARROCKS_QUALIFIED_COLUMN_PREFIX")
+    val COLUMN_REFERENCE_NAME = StarRocksElementType("STARROCKS_COLUMN_REFERENCE_NAME")
+    val COMMENT_CLAUSE = StarRocksElementType("STARROCKS_COMMENT_CLAUSE")
+    val STATEMENT_SEGMENT = StarRocksElementType("STARROCKS_STATEMENT_SEGMENT")
+    val SELECT_ITEM = StarRocksElementType("STARROCKS_SELECT_ITEM")
+    val SELECT_ALIAS = StarRocksStubElementTypes.STARROCKS_SELECT_ALIAS
+    val GROUPING_ITEM = StarRocksElementType("STARROCKS_GROUPING_ITEM")
+    val ORDERING_ITEM = StarRocksElementType("STARROCKS_ORDERING_ITEM")
+    val LIMIT_EXPRESSION = StarRocksElementType("STARROCKS_LIMIT_EXPRESSION")
+    val TABLE_REFERENCE = StarRocksElementType("STARROCKS_TABLE_REFERENCE")
+    val PREDICATE_EXPRESSION = StarRocksElementType("STARROCKS_PREDICATE_EXPRESSION")
+    val QUALIFY_EXPRESSION = StarRocksElementType("STARROCKS_QUALIFY_EXPRESSION")
+    val PROPERTY_PAIR = StarRocksElementType("STARROCKS_PROPERTY_PAIR")
+    val PROPERTY_KEY = StarRocksElementType("STARROCKS_PROPERTY_KEY")
+    val PROPERTY_VALUE = StarRocksElementType("STARROCKS_PROPERTY_VALUE")
+    val COLUMN_DEFINITION = StarRocksElementType("STARROCKS_COLUMN_DEFINITION")
+    val FUNCTION_CALL = StarRocksElementType("STARROCKS_FUNCTION_CALL")
+    val SUBQUERY_EXPRESSION = StarRocksElementType("STARROCKS_SUBQUERY_EXPRESSION")
+    val CAST_TYPE = StarRocksElementType("STARROCKS_CAST_TYPE")
+    val DATA_TYPE = StarRocksElementType("STARROCKS_DATA_TYPE")
+    val IDENTIFIER_REFERENCE = StarRocksElementType("STARROCKS_IDENTIFIER_REFERENCE")
+
+    fun statementType(family: StarRocksStatementFamily?): StarRocksElementType {
+        return when (family) {
+            StarRocksStatementFamily.QUERY -> QUERY_STATEMENT
+            StarRocksStatementFamily.DML -> DML_STATEMENT
+            StarRocksStatementFamily.TABLE_DDL -> TABLE_DDL_STATEMENT
+            StarRocksStatementFamily.VIEW -> VIEW_STATEMENT
+            StarRocksStatementFamily.MATERIALIZED_VIEW -> MATERIALIZED_VIEW_STATEMENT
+            StarRocksStatementFamily.CATALOG -> CATALOG_STATEMENT
+            StarRocksStatementFamily.RESOURCE -> RESOURCE_STATEMENT
+            StarRocksStatementFamily.LOAD -> LOAD_STATEMENT
+            StarRocksStatementFamily.ROUTINE_LOAD -> ROUTINE_LOAD_STATEMENT
+            StarRocksStatementFamily.TASK -> TASK_STATEMENT
+            StarRocksStatementFamily.EXPORT -> EXPORT_STATEMENT
+            StarRocksStatementFamily.BACKUP_RESTORE -> BACKUP_RESTORE_STATEMENT
+            StarRocksStatementFamily.ADMIN -> ADMIN_STATEMENT
+            null -> UNKNOWN_STATEMENT
+        }
+    }
+}

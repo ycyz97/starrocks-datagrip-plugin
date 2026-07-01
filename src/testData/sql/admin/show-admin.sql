@@ -1,0 +1,12 @@
+SHOW DATABASES;
+SHOW TABLES FROM dws;
+SHOW CREATE TABLE dws.dws_trade_sale_by_order_ri;
+SHOW MATERIALIZED VIEWS;
+SHOW PARTITIONS FROM dws.dws_trade_sale_by_order_ri;
+SHOW PROC '/frontends';
+
+ADMIN SHOW FRONTEND CONFIG;
+ADMIN SHOW BACKEND CONFIG;
+
+SET enable_profile = true;
+UNSET VARIABLE enable_profile;

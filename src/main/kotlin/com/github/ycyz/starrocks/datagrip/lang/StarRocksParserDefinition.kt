@@ -6,11 +6,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.sql.dialects.base.SqlElementFactoryBase
 import com.intellij.sql.dialects.base.SqlParserDefinitionBase
-import com.intellij.sql.dialects.mysql.MysqlElementFactory
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 
 class StarRocksParserDefinition : SqlParserDefinitionBase() {
-    override fun createElementFactory(): SqlElementFactoryBase = MysqlElementFactory()
+    override fun createElementFactory(): SqlElementFactoryBase = StarRocksElementFactory()
 
     override fun createLexer(project: Project?): Lexer = StarRocksLexer()
 

@@ -1,11 +1,11 @@
 package com.github.ycyz.starrocks.datagrip.dialect
 
-import com.intellij.database.Dbms
-import com.github.ycyz.starrocks.datagrip.StarRocksIcons
+import com.github.ycyz.starrocks.datagrip.database.StarRocksDbms
 
+@Deprecated("Use com.github.ycyz.starrocks.datagrip.database.StarRocksDbms instead.")
 class StarRocksDbmsHolder private constructor() {
     companion object {
         @JvmField
-        val INSTANCE: Dbms = Dbms.create("STARROCKS", "StarRocks", { StarRocksIcons.DataSource })
+        val INSTANCE = StarRocksDbms.INSTANCE
     }
 }

@@ -1,219 +1,328 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
-import com.intellij.lexer.DelegateLexer
+import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
+import com.github.ycyz.starrocks.datagrip.dialect.StarRocksFunctionCatalog
+import com.intellij.lexer.LexerBase
+import com.intellij.psi.TokenType.BAD_CHARACTER
+import com.intellij.psi.TokenType.WHITE_SPACE
 import com.intellij.psi.tree.IElementType
-import com.intellij.sql.dialects.mysql.MysqlLexer
-import com.intellij.sql.dialects.mysql.MysqlReservedKeywords.MYSQL_HAVING
-import com.intellij.sql.dialects.mysql.MysqlReservedKeywords.MYSQL_LEFT
+import com.intellij.sql.psi.SqlTokens.SQL_ASTERISK
+import com.intellij.sql.psi.SqlTokens.SQL_BLOCK_COMMENT
+import com.intellij.sql.psi.SqlTokens.SQL_COLON
+import com.intellij.sql.psi.SqlTokens.SQL_COMMA
+import com.intellij.sql.psi.SqlTokens.SQL_FLOAT_TOKEN
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT_DELIMITED
+import com.intellij.sql.psi.SqlTokens.SQL_INTEGER_TOKEN
+import com.intellij.sql.psi.SqlTokens.SQL_KEYWORD_TOKEN
+import com.intellij.sql.psi.SqlTokens.SQL_LEFT_BRACE
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_BRACKET
-import com.intellij.sql.psi.SqlTokens.SQL_LINE_COMMENT
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_PAREN
+import com.intellij.sql.psi.SqlTokens.SQL_LINE_COMMENT
+import com.intellij.sql.psi.SqlTokens.SQL_OP_BITWISE_AND
+import com.intellij.sql.psi.SqlTokens.SQL_OP_BITWISE_OR
+import com.intellij.sql.psi.SqlTokens.SQL_OP_CONCAT
+import com.intellij.sql.psi.SqlTokens.SQL_OP_DIV
+import com.intellij.sql.psi.SqlTokens.SQL_OP_EQ
+import com.intellij.sql.psi.SqlTokens.SQL_OP_GE
+import com.intellij.sql.psi.SqlTokens.SQL_OP_GT
+import com.intellij.sql.psi.SqlTokens.SQL_OP_LE
+import com.intellij.sql.psi.SqlTokens.SQL_OP_LEFT_SHIFT
+import com.intellij.sql.psi.SqlTokens.SQL_OP_LT
+import com.intellij.sql.psi.SqlTokens.SQL_OP_MINUS
+import com.intellij.sql.psi.SqlTokens.SQL_OP_MODULO
+import com.intellij.sql.psi.SqlTokens.SQL_OP_NEQ
+import com.intellij.sql.psi.SqlTokens.SQL_OP_NEQ2
+import com.intellij.sql.psi.SqlTokens.SQL_OP_NOT2
+import com.intellij.sql.psi.SqlTokens.SQL_OP_PLUS
+import com.intellij.sql.psi.SqlTokens.SQL_OP_RIGHT_SHIFT
+import com.intellij.sql.psi.SqlTokens.SQL_PERIOD
+import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_BRACE
 import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_BRACKET
 import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_PAREN
+import com.intellij.sql.psi.SqlTokens.SQL_SEMICOLON
 import com.intellij.sql.psi.SqlTokens.SQL_STRING_TOKEN
 
-class StarRocksLexer : DelegateLexer(MysqlLexer()) {
-    override fun getTokenType(): IElementType? {
-        if (isLineStartDoubleDashComment()) {
-            return SQL_LINE_COMMENT
-        }
+class StarRocksLexer(
+    private val highlightCategories: Boolean = false
+) : LexerBase() {
+    private var buffer: CharSequence = ""
+    private var endOffset: Int = 0
+    private var currentStart: Int = 0
+    private var currentEnd: Int = 0
+    private var currentToken: IElementType? = null
 
-        val tokenType = super.getTokenType()
-        if (tokenType == SQL_IDENT_DELIMITED && isDoubleQuotedToken()) {
-            return SQL_STRING_TOKEN
-        }
-        if (isBareUnnestColumnToken()) {
-            return SQL_IDENT
-        }
-        if (isFullJoinModifierToken()) {
-            return MYSQL_LEFT
-        }
-        if (isQualifyClauseToken()) {
-            return MYSQL_HAVING
-        }
-        if (tokenType == SQL_LEFT_BRACKET && isArrayLiteralStart()) {
-            return SQL_LEFT_PAREN
-        }
-        if (tokenType == SQL_RIGHT_BRACKET && isArrayLiteralEnd()) {
-            return SQL_RIGHT_PAREN
-        }
-        return tokenType
+    override fun start(buffer: CharSequence, startOffset: Int, endOffset: Int, initialState: Int) {
+        this.buffer = buffer
+        this.endOffset = endOffset
+        this.currentStart = startOffset
+        locateToken()
     }
 
-    override fun getTokenEnd(): Int {
-        return if (isLineStartDoubleDashComment()) lineCommentEnd(tokenStart) else super.getTokenEnd()
-    }
+    override fun getState(): Int = 0
+
+    override fun getTokenType(): IElementType? = currentToken
+
+    override fun getTokenStart(): Int = currentStart
+
+    override fun getTokenEnd(): Int = currentEnd
 
     override fun advance() {
-        if (isLineStartDoubleDashComment()) {
-            val commentEnd = lineCommentEnd(tokenStart)
-            while (super.getTokenType() != null && super.getTokenStart() < commentEnd) {
-                super.advance()
-            }
+        currentStart = currentEnd
+        locateToken()
+    }
+
+    override fun getBufferSequence(): CharSequence = buffer
+
+    override fun getBufferEnd(): Int = endOffset
+
+    private fun locateToken() {
+        if (currentStart >= endOffset) {
+            currentToken = null
+            currentEnd = currentStart
             return
         }
-        super.advance()
-    }
 
-    private fun isLineStartDoubleDashComment(): Boolean {
-        val start = tokenStart
-        if (start + LINE_COMMENT_PREFIX.length > bufferEnd) return false
-        if (!bufferSequence.startsWith(LINE_COMMENT_PREFIX, start)) return false
-        return isOnlyWhitespaceBeforeOnLine(start)
-    }
-
-    private fun isOnlyWhitespaceBeforeOnLine(offset: Int): Boolean {
-        var index = offset - 1
-        while (index >= 0) {
-            val char = bufferSequence[index]
-            if (char == '\n' || char == '\r') return true
-            if (!char.isWhitespace()) return false
-            index--
+        val char = buffer[currentStart]
+        when {
+            char.isWhitespace() -> locateWhile(WHITE_SPACE) { it.isWhitespace() }
+            isLineCommentStart(currentStart) -> locateLineComment()
+            isBlockCommentStart(currentStart) -> locateBlockComment()
+            char == '\'' || char == '"' -> locateQuotedString(char)
+            char == '`' -> locateDelimitedIdentifier()
+            highlightCategories && char == '@' -> locateVariable()
+            highlightCategories && char == ':' && isParameterStart(currentStart + 1) -> locateNamedParameter()
+            highlightCategories && isBracedParameterStart(currentStart) -> locateBracedParameter()
+            highlightCategories && char == '?' -> locateFixed(StarRocksHighlightTokenTypes.PARAMETER)
+            char.isDigit() -> locateNumber()
+            isIdentifierStart(char) -> locateWord()
+            char == ',' -> locateFixed(SQL_COMMA)
+            char == ';' -> locateFixed(SQL_SEMICOLON)
+            char in SYMBOL_CHARS -> locateSymbol()
+            else -> locateFixed(BAD_CHARACTER)
         }
-        return true
     }
 
-    private fun lineCommentEnd(start: Int): Int {
-        var index = start
-        while (index < bufferEnd) {
-            val char = bufferSequence[index]
-            if (char == '\n' || char == '\r') break
-            index++
-        }
-        return index
-    }
-
-    private fun isDoubleQuotedToken(): Boolean {
-        val start = tokenStart
-        val end = tokenEnd
-        return start < end && bufferSequence[start] == '"'
-    }
-
-    private fun isFullJoinModifierToken(): Boolean {
-        val tokenText = bufferSequence.subSequence(tokenStart, tokenEnd).toString()
-        if (!tokenText.equals("FULL", ignoreCase = true)) return false
-
-        val nextWords = readNextWords(tokenEnd, limit = 2)
-        return nextWords.firstOrNull() == "JOIN" ||
-            nextWords.size >= 2 && nextWords[0] == "OUTER" && nextWords[1] == "JOIN"
-    }
-
-    private fun isBareUnnestColumnToken(): Boolean {
-        val tokenText = bufferSequence.subSequence(tokenStart, tokenEnd).toString()
-        if (!tokenText.equals("UNNEST", ignoreCase = true)) return false
-        return nextSignificantChar(tokenEnd) != '('
-    }
-
-    private fun isQualifyClauseToken(): Boolean {
-        val tokenText = bufferSequence.subSequence(tokenStart, tokenEnd).toString()
-        return tokenText.equals("QUALIFY", ignoreCase = true)
-    }
-
-    private fun isArrayLiteralStart(): Boolean {
-        val previous = previousSignificantChar(tokenStart)
-        val next = nextSignificantChar(tokenEnd)
-        return next != null &&
-            next != ']' &&
-            isArrayLiteralBoundaryBefore(previous, tokenStart) &&
-            isArrayLiteralFirstChar(next)
-    }
-
-    private fun isArrayLiteralEnd(): Boolean {
-        val previous = previousSignificantChar(tokenStart)
-        val next = nextSignificantChar(tokenEnd)
-        return previous != null &&
-            previous != '[' &&
-            isArrayLiteralBoundaryAfter(next, tokenEnd)
-    }
-
-    private fun isArrayLiteralBoundaryBefore(char: Char?, offset: Int): Boolean =
-        char == null ||
-            char in "([,{=+-*/%<>" ||
-            previousWord(offset) in ARRAY_LITERAL_PREFIX_WORDS
-
-    private fun isArrayLiteralBoundaryAfter(char: Char?, offset: Int): Boolean =
-        char == null ||
-            char in "),;+-*/%<>" ||
-            nextWord(offset) in ARRAY_LITERAL_SUFFIX_WORDS
-
-    private fun isArrayLiteralFirstChar(char: Char): Boolean =
-        char.isDigit() || char == '\'' || char == '"' || char == '-' || char == '+' || char.isLetter()
-
-    private fun previousSignificantChar(startOffset: Int): Char? {
-        var index = startOffset - 1
-        while (index >= 0) {
-            val char = bufferSequence[index]
-            if (!char.isWhitespace()) return char
-            index--
-        }
-        return null
-    }
-
-    private fun nextSignificantChar(startOffset: Int): Char? {
-        var index = startOffset
-        while (index < bufferEnd) {
-            val char = bufferSequence[index]
-            if (!char.isWhitespace()) return char
-            index++
-        }
-        return null
-    }
-
-    private fun previousWord(startOffset: Int): String? {
-        var index = startOffset - 1
-        while (index >= 0 && bufferSequence[index].isWhitespace()) index--
-        val end = index + 1
-        while (index >= 0 && (bufferSequence[index].isLetterOrDigit() || bufferSequence[index] == '_')) index--
-        val start = index + 1
-        if (start >= end) return null
-        return bufferSequence.subSequence(start, end).toString().uppercase()
-    }
-
-    private fun nextWord(startOffset: Int): String? {
-        var index = startOffset
-        while (index < bufferEnd && bufferSequence[index].isWhitespace()) index++
-        val start = index
-        while (index < bufferEnd && (bufferSequence[index].isLetterOrDigit() || bufferSequence[index] == '_')) index++
-        if (start == index) return null
-        return bufferSequence.subSequence(start, index).toString().uppercase()
-    }
-
-    private fun readNextWords(startOffset: Int, limit: Int): List<String> {
-        val words = mutableListOf<String>()
-        var index = startOffset
-        while (index < bufferEnd && words.size < limit) {
-            while (index < bufferEnd && bufferSequence[index].isWhitespace()) index++
-            if (index >= bufferEnd) break
-
-            val start = index
-            while (index < bufferEnd && (bufferSequence[index].isLetterOrDigit() || bufferSequence[index] == '_')) {
-                index++
+    private fun locateBlockComment() {
+        currentToken = SQL_BLOCK_COMMENT
+        currentEnd = currentStart + 2
+        while (currentEnd + 1 < endOffset) {
+            if (buffer[currentEnd] == '*' && buffer[currentEnd + 1] == '/') {
+                currentEnd += 2
+                return
             }
-            if (start == index) break
-            words.add(bufferSequence.subSequence(start, index).toString().uppercase())
+            currentEnd++
         }
-        return words
+        currentEnd = endOffset
     }
+
+    private fun locateLineComment() {
+        currentToken = SQL_LINE_COMMENT
+        currentEnd = currentStart + 2
+        while (currentEnd < endOffset && buffer[currentEnd] != '\n' && buffer[currentEnd] != '\r') {
+            currentEnd++
+        }
+    }
+
+    private fun locateQuotedString(quote: Char) {
+        currentToken = SQL_STRING_TOKEN
+        currentEnd = currentStart + 1
+        while (currentEnd < endOffset) {
+            val char = buffer[currentEnd]
+            currentEnd++
+            if (char == quote) {
+                if (currentEnd < endOffset && buffer[currentEnd] == quote) {
+                    currentEnd++
+                    continue
+                }
+                break
+            }
+            if (char == '\\' && currentEnd < endOffset) {
+                currentEnd++
+            }
+        }
+    }
+
+    private fun locateDelimitedIdentifier() {
+        currentToken = SQL_IDENT_DELIMITED
+        currentEnd = currentStart + 1
+        while (currentEnd < endOffset) {
+            val char = buffer[currentEnd]
+            currentEnd++
+            if (char == '`') break
+        }
+    }
+
+    private fun locateNumber() {
+        currentEnd = currentStart
+        var hasDot = false
+        while (currentEnd < endOffset && (buffer[currentEnd].isDigit() || buffer[currentEnd] == '.')) {
+            if (buffer[currentEnd] == '.') {
+                hasDot = true
+            }
+            currentEnd++
+        }
+        currentToken = if (hasDot) SQL_FLOAT_TOKEN else SQL_INTEGER_TOKEN
+    }
+
+    private fun locateVariable() {
+        currentToken = StarRocksHighlightTokenTypes.VARIABLE
+        currentEnd = currentStart + 1
+        while (currentEnd < endOffset && isVariablePart(buffer[currentEnd])) {
+            currentEnd++
+        }
+    }
+
+    private fun locateNamedParameter() {
+        currentToken = StarRocksHighlightTokenTypes.PARAMETER
+        currentEnd = currentStart + 2
+        while (currentEnd < endOffset && isParameterPart(buffer[currentEnd])) {
+            currentEnd++
+        }
+    }
+
+    private fun locateBracedParameter() {
+        currentToken = StarRocksHighlightTokenTypes.PARAMETER
+        currentEnd = currentStart + 2
+        while (currentEnd < endOffset && buffer[currentEnd] != '}') {
+            currentEnd++
+        }
+        if (currentEnd < endOffset) {
+            currentEnd++
+        }
+    }
+
+    private fun locateWord() {
+        locateWhile(SQL_IDENT) { isIdentifierPart(it) }
+        val word = buffer.subSequence(currentStart, currentEnd).toString().uppercase()
+        currentToken = when {
+            highlightCategories && isBuiltinFunctionCall(word) -> StarRocksHighlightTokenTypes.FUNCTION
+            highlightCategories && word in DATA_TYPE_NAMES -> StarRocksHighlightTokenTypes.DATA_TYPE
+            highlightCategories && isFunctionLikeKeywordCall(word) -> StarRocksHighlightTokenTypes.FUNCTION
+            StarRocksKeywordCatalog.isKeyword(word) -> SQL_KEYWORD_TOKEN
+            highlightCategories && isUserFunctionCall() -> StarRocksHighlightTokenTypes.FUNCTION
+            else -> currentToken
+        }
+    }
+
+    private fun isBuiltinFunctionCall(word: String): Boolean {
+        if (word !in FUNCTION_NAMES) {
+            return false
+        }
+        return nextNonWhitespaceChar(currentEnd) == '('
+    }
+
+    private fun isUserFunctionCall(): Boolean {
+        return nextNonWhitespaceChar(currentEnd) == '('
+    }
+
+    private fun isFunctionLikeKeywordCall(word: String): Boolean {
+        if (word !in FUNCTION_LIKE_KEYWORDS) {
+            return false
+        }
+        return nextNonWhitespaceChar(currentEnd) == '('
+    }
+
+    private fun nextNonWhitespaceChar(offset: Int): Char? {
+        var cursor = offset
+        while (cursor < endOffset && buffer[cursor].isWhitespace()) {
+            cursor++
+        }
+        return if (cursor < endOffset) buffer[cursor] else null
+    }
+
+    private fun locateFixed(token: IElementType) {
+        currentToken = token
+        currentEnd = currentStart + 1
+    }
+
+    private fun locateSymbol() {
+        val next = if (currentStart + 1 < endOffset) buffer[currentStart + 1] else null
+        val current = buffer[currentStart]
+
+        when {
+            current == '<' && next == '=' -> locateFixed(SQL_OP_LE, 2)
+            current == '>' && next == '=' -> locateFixed(SQL_OP_GE, 2)
+            current == '<' && next == '>' -> locateFixed(SQL_OP_NEQ, 2)
+            current == '!' && next == '=' -> locateFixed(SQL_OP_NEQ2, 2)
+            current == '<' && next == '<' -> locateFixed(SQL_OP_LEFT_SHIFT, 2)
+            current == '>' && next == '>' -> locateFixed(SQL_OP_RIGHT_SHIFT, 2)
+            current == '|' && next == '|' -> locateFixed(SQL_OP_CONCAT, 2)
+            else -> locateFixed(SYMBOL_TOKENS[current] ?: SQL_IDENT)
+        }
+    }
+
+    private fun locateFixed(token: IElementType, length: Int) {
+        currentToken = token
+        currentEnd = currentStart + length
+    }
+
+    private fun locateWhile(token: IElementType, predicate: (Char) -> Boolean) {
+        currentToken = token
+        currentEnd = currentStart
+        while (currentEnd < endOffset && predicate(buffer[currentEnd])) {
+            currentEnd++
+        }
+    }
+
+    private fun isLineCommentStart(offset: Int): Boolean =
+        offset + 1 < endOffset && buffer[offset] == '-' && buffer[offset + 1] == '-'
+
+    private fun isBlockCommentStart(offset: Int): Boolean =
+        offset + 1 < endOffset && buffer[offset] == '/' && buffer[offset + 1] == '*'
+
+    private fun isBracedParameterStart(offset: Int): Boolean =
+        offset + 1 < endOffset && buffer[offset] == '$' && buffer[offset + 1] == '{'
+
+    private fun isParameterStart(offset: Int): Boolean =
+        offset < endOffset && (buffer[offset] == '_' || buffer[offset].isLetter())
+
+    private fun isParameterPart(char: Char): Boolean = char == '_' || char == '$' || char.isLetterOrDigit()
+
+    private fun isVariablePart(char: Char): Boolean = char == '_' || char == '@' || char == '$' || char == '.' || char.isLetterOrDigit()
+
+    private fun isIdentifierStart(char: Char): Boolean = char == '_' || char == '@' || char.isLetter()
+
+    private fun isIdentifierPart(char: Char): Boolean = char == '_' || char == '@' || char == '$' || char.isLetterOrDigit()
 
     private companion object {
-        val ARRAY_LITERAL_PREFIX_WORDS = setOf("SELECT", "AS", "IN", "THEN", "ELSE", "VALUES", "ARRAY")
-        val ARRAY_LITERAL_SUFFIX_WORDS = setOf(
-            "AS",
-            "FROM",
-            "WHERE",
-            "GROUP",
-            "HAVING",
-            "ORDER",
-            "LIMIT",
-            "UNION",
-            "INTERSECT",
-            "EXCEPT",
-            "JOIN",
-            "ON"
+        const val SYMBOL_CHARS = "()[]{}.+-*/%=<>!|&:"
+
+        val SYMBOL_TOKENS: Map<Char, IElementType> = mapOf(
+            '(' to SQL_LEFT_PAREN,
+            ')' to SQL_RIGHT_PAREN,
+            '[' to SQL_LEFT_BRACKET,
+            ']' to SQL_RIGHT_BRACKET,
+            '{' to SQL_LEFT_BRACE,
+            '}' to SQL_RIGHT_BRACE,
+            '.' to SQL_PERIOD,
+            '+' to SQL_OP_PLUS,
+            '-' to SQL_OP_MINUS,
+            '*' to SQL_ASTERISK,
+            '/' to SQL_OP_DIV,
+            '%' to SQL_OP_MODULO,
+            '=' to SQL_OP_EQ,
+            '<' to SQL_OP_LT,
+            '>' to SQL_OP_GT,
+            '!' to SQL_OP_NOT2,
+            '|' to SQL_OP_BITWISE_OR,
+            '&' to SQL_OP_BITWISE_AND,
+            ':' to SQL_COLON
         )
 
-        const val LINE_COMMENT_PREFIX = "--"
+        val FUNCTION_NAMES: Set<String> = StarRocksFunctionCatalog.BUILTIN_FUNCTION_NAMES
+
+        val DATA_TYPE_NAMES: Set<String> = buildSet {
+            addAll(StarRocksTypeSystem.SCALAR_TYPES)
+            addAll(StarRocksTypeSystem.COMPLEX_TYPES)
+            addAll(listOf("BOOL", "INTEGER", "DECIMAL", "DECIMALV2", "VARCHAR2", "TEXT"))
+        }
+
+        val FUNCTION_LIKE_KEYWORDS: Set<String> = setOf(
+            "EXTRACT",
+            "GROUPING",
+            "GROUPING_ID",
+            "PERCENTILE"
+        )
     }
 }
