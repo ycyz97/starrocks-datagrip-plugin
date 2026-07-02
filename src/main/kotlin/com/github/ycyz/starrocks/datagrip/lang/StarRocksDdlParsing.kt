@@ -2,9 +2,63 @@ package com.github.ycyz.starrocks.datagrip.lang
 
 import com.intellij.lang.PsiBuilder
 import com.intellij.psi.tree.IElementType
+import com.intellij.sql.dialects.base.SqlGeneratedParserUtil
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlReferenceElementType
 
 object StarRocksDdlParsing {
+    @JvmStatic
+    fun ddl_statement(builder: PsiBuilder, level: Int): Boolean =
+        create_statement(builder, level + 1) ||
+            alter_statement(builder, level + 1) ||
+            drop_statement(builder, level + 1) ||
+            truncate_table_statement(builder, level + 1) ||
+            refresh_materialized_view_statement(builder, level + 1) ||
+            grant_statement(builder, level + 1) ||
+            revoke_statement(builder, level + 1)
+
+    @JvmStatic
+    fun create_statement(builder: PsiBuilder, level: Int): Boolean =
+        create_materialized_view_statement(builder, level + 1) ||
+            create_view_statement(builder, level + 1) ||
+            create_table_statement(builder, level + 1) ||
+            create_catalog_statement(builder, level + 1) ||
+            create_resource_statement(builder, level + 1) ||
+            create_routine_load_statement(builder, level + 1) ||
+            create_repository_statement(builder, level + 1) ||
+            create_user_statement(builder, level + 1) ||
+            create_role_statement(builder, level + 1) ||
+            create_database_statement(builder, level + 1) ||
+            create_schema_statement(builder, level + 1) ||
+            create_index_statement(builder, level + 1)
+
+    @JvmStatic
+    fun alter_statement(builder: PsiBuilder, level: Int): Boolean =
+        alter_user_statement(builder, level + 1) ||
+            alter_role_statement(builder, level + 1) ||
+            alter_database_statement(builder, level + 1) ||
+            alter_schema_statement(builder, level + 1) ||
+            alter_table_statement(builder, level + 1) ||
+            alter_view_statement(builder, level + 1) ||
+            alter_materialized_view_statement(builder, level + 1) ||
+            alter_catalog_statement(builder, level + 1) ||
+            alter_resource_statement(builder, level + 1) ||
+            alter_routine_load_statement(builder, level + 1)
+
+    @JvmStatic
+    fun drop_statement(builder: PsiBuilder, level: Int): Boolean =
+        drop_user_statement(builder, level + 1) ||
+            drop_role_statement(builder, level + 1) ||
+            drop_database_statement(builder, level + 1) ||
+            drop_schema_statement(builder, level + 1) ||
+            drop_index_statement(builder, level + 1) ||
+            drop_table_statement(builder, level + 1) ||
+            drop_view_statement(builder, level + 1) ||
+            drop_materialized_view_statement(builder, level + 1) ||
+            drop_catalog_statement(builder, level + 1) ||
+            drop_resource_statement(builder, level + 1) ||
+            drop_repository_statement(builder, level + 1)
+
     @JvmStatic
     fun type_element(builder: PsiBuilder, level: Int): Boolean {
         val word = StarRocksParsingUtil.word(builder)
@@ -58,7 +112,7 @@ object StarRocksDdlParsing {
         StarRocksParsingUtil.skipNoise(builder)
         consumeOptionalWords(builder, "IF", "NOT", "EXISTS")
         StarRocksParsingUtil.skipNoise(builder)
-        parseTableName(builder)
+        parseDefinitionReference(builder, level + 1, SqlCompositeElementTypes.SQL_TABLE_REFERENCE)
         StarRocksParsingUtil.skipNoise(builder)
         table_column_list(builder, level + 1)
         while (!builder.eof() && builder.tokenText != ";") {
@@ -215,7 +269,7 @@ object StarRocksDdlParsing {
             return marker.rollbackFalse()
         }
         StarRocksParsingUtil.skipNoise(builder)
-        StarRocksParsingUtil.consumeQualifiedIdentifier(builder)
+        parseDefinitionReference(builder, level + 1, SqlCompositeElementTypes.SQL_MATERIALIZED_VIEW_REFERENCE)
         while (!builder.eof() && builder.tokenText != ";") {
             when {
                 partition_clause(builder, level + 1) -> continue
@@ -255,7 +309,7 @@ object StarRocksDdlParsing {
         StarRocksParsingUtil.skipNoise(builder)
         consumeOptionalWords(builder, "IF", "NOT", "EXISTS")
         StarRocksParsingUtil.skipNoise(builder)
-        parseTableName(builder)
+        parseDefinitionReference(builder, level + 1, SqlCompositeElementTypes.SQL_VIEW_REFERENCE)
         StarRocksParsingUtil.skipNoise(builder)
         table_column_list(builder, level + 1)
         while (!builder.eof() && builder.tokenText != ";") {
@@ -276,19 +330,158 @@ object StarRocksDdlParsing {
         return true
     }
 
-    private fun parseTableName(builder: PsiBuilder): Boolean {
+    @JvmStatic
+    fun create_catalog_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT, "CREATE", "CATALOG") ||
+            prefixedStatement(builder, SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT, "CREATE", "EXTERNAL", "CATALOG")
+
+    @JvmStatic
+    fun create_resource_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.RESOURCE_STATEMENT, "CREATE", "RESOURCE")
+
+    @JvmStatic
+    fun create_routine_load_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.ROUTINE_LOAD_STATEMENT, "CREATE", "ROUTINE", "LOAD")
+
+    @JvmStatic
+    fun create_repository_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT, "CREATE", "REPOSITORY")
+
+    @JvmStatic
+    fun create_user_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.CREATE_USER_STATEMENT, "CREATE", "USER")
+
+    @JvmStatic
+    fun create_role_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.CREATE_ROLE_STATEMENT, "CREATE", "ROLE")
+
+    @JvmStatic
+    fun create_database_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT, "CREATE", "DATABASE")
+
+    @JvmStatic
+    fun create_schema_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT, "CREATE", "SCHEMA")
+
+    @JvmStatic
+    fun create_index_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT, "CREATE", "INDEX") ||
+            prefixedStatement(builder, SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT, "CREATE", "BITMAP", "INDEX")
+
+    @JvmStatic
+    fun alter_user_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.ALTER_USER_STATEMENT, "ALTER", "USER")
+
+    @JvmStatic
+    fun alter_role_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.ALTER_ROLE_STATEMENT, "ALTER", "ROLE")
+
+    @JvmStatic
+    fun alter_database_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT, "ALTER", "DATABASE")
+
+    @JvmStatic
+    fun alter_schema_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT, "ALTER", "SCHEMA")
+
+    @JvmStatic
+    fun alter_table_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT, "ALTER", "TABLE")
+
+    @JvmStatic
+    fun alter_view_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT, "ALTER", "VIEW")
+
+    @JvmStatic
+    fun alter_materialized_view_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "ALTER", "MATERIALIZED", "VIEW")
+
+    @JvmStatic
+    fun alter_catalog_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT, "ALTER", "CATALOG")
+
+    @JvmStatic
+    fun alter_resource_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.RESOURCE_STATEMENT, "ALTER", "RESOURCE")
+
+    @JvmStatic
+    fun alter_routine_load_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.ROUTINE_LOAD_STATEMENT, "ALTER", "ROUTINE", "LOAD")
+
+    @JvmStatic
+    fun drop_user_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.DROP_USER_STATEMENT, "DROP", "USER")
+
+    @JvmStatic
+    fun drop_role_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.DROP_ROLE_STATEMENT, "DROP", "ROLE")
+
+    @JvmStatic
+    fun drop_database_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.SCHEMA_STATEMENT, "DROP", "DATABASE")
+
+    @JvmStatic
+    fun drop_schema_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.SCHEMA_STATEMENT, "DROP", "SCHEMA")
+
+    @JvmStatic
+    fun drop_index_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.INDEX_STATEMENT, "DROP", "INDEX")
+
+    @JvmStatic
+    fun drop_table_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.TABLE_DDL_STATEMENT, "DROP", "TABLE")
+
+    @JvmStatic
+    fun drop_view_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.VIEW_STATEMENT, "DROP", "VIEW")
+
+    @JvmStatic
+    fun drop_materialized_view_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "DROP", "MATERIALIZED", "VIEW")
+
+    @JvmStatic
+    fun drop_catalog_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.CATALOG_STATEMENT, "DROP", "CATALOG")
+
+    @JvmStatic
+    fun drop_resource_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.RESOURCE_STATEMENT, "DROP", "RESOURCE")
+
+    @JvmStatic
+    fun drop_repository_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT, "DROP", "REPOSITORY")
+
+    @JvmStatic
+    fun truncate_table_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT, "TRUNCATE", "TABLE")
+
+    @JvmStatic
+    fun refresh_materialized_view_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "REFRESH", "MATERIALIZED", "VIEW") ||
+            prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "CANCEL", "REFRESH", "MATERIALIZED", "VIEW")
+
+    @JvmStatic
+    fun grant_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.GRANT_STATEMENT, "GRANT")
+
+    @JvmStatic
+    fun revoke_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.REVOKE_STATEMENT, "REVOKE")
+
+    private fun parseDefinitionReference(
+        builder: PsiBuilder,
+        level: Int,
+        referenceType: SqlReferenceElementType
+    ): Boolean {
         if (!StarRocksParsingUtil.isIdentifier(builder)) {
             return false
         }
-        val marker = builder.mark()
-        val parsed = StarRocksParsingUtil.consumeQualifiedIdentifier(builder)
-        return if (parsed) {
-            marker.done(StarRocksElementTypes.TABLE_NAME)
-            true
-        } else {
-            marker.rollbackTo()
-            false
-        }
+        return SqlGeneratedParserUtil.parseReference(
+            builder,
+            level + 1,
+            referenceType
+        )
     }
 
     private fun consumeOptionalWords(builder: PsiBuilder, vararg words: String): Boolean {
@@ -306,6 +499,53 @@ object StarRocksDdlParsing {
 
     private fun consumeTableConstraint(builder: PsiBuilder) {
         StarRocksParsingUtil.consumeBalancedTail(builder, setOf(","))
+    }
+
+    private fun prefixedStatement(builder: PsiBuilder, elementType: IElementType, vararg words: String): Boolean {
+        if (!hasWords(builder, *words)) {
+            return false
+        }
+        val marker = builder.mark()
+        val before = builder.currentOffset
+        while (!builder.eof() && builder.tokenText != ";") {
+            when {
+                properties_clause(builder, 0) -> continue
+                type_element(builder, 0) -> continue
+                StarRocksDmlParsing.qualify_clause(builder, 0) -> continue
+                StarRocksDmlParsing.table_function_call(builder, 0) -> continue
+                else -> builder.advanceLexer()
+            }
+        }
+        return if (builder.currentOffset > before) {
+            marker.done(elementType)
+            true
+        } else {
+            marker.rollbackTo()
+            false
+        }
+    }
+
+    private fun hasWords(builder: PsiBuilder, vararg words: String): Boolean {
+        return words.indices.all { index -> wordAt(builder, index) == words[index] }
+    }
+
+    private fun wordAt(builder: PsiBuilder, offset: Int): String? {
+        val marker = builder.mark()
+        var current = 0
+        var result: String? = null
+        while (!builder.eof() && builder.tokenText != ";" && current <= offset) {
+            val text = builder.tokenText
+            if (text != null && text.firstOrNull()?.isLetter() == true) {
+                if (current == offset) {
+                    result = text.uppercase()
+                    break
+                }
+                current++
+            }
+            builder.advanceLexer()
+        }
+        marker.rollbackTo()
+        return result
     }
 
     private fun parseKeyColumnList(builder: PsiBuilder): Boolean {

@@ -25,13 +25,9 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElementType
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParser
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserScenarioCatalog
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksAuxiliaryParsing
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksOtherParsing
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementFamily
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementWordsClassifier
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksStubIndexKeys
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksTableNameIndex
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokens
 import com.github.ycyz.starrocks.datagrip.resolve.StarRocksLocalSqlContextAnalyzer
 import com.intellij.database.model.ObjectKind
@@ -42,12 +38,18 @@ import com.intellij.sql.editor.SqlColors
 import com.intellij.sql.editor.SqlCodeBlockProviderUtils
 import com.intellij.sql.dialects.base.TokenClasses
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlExpression
+import com.intellij.sql.psi.SqlFromClause
+import com.intellij.sql.psi.SqlJoinConditionClause
+import com.intellij.sql.psi.SqlJoinExpression
 import com.intellij.sql.psi.SqlStatement
+import com.intellij.sql.psi.SqlTableExpression
 import com.intellij.sql.psi.SqlTokens.SQL_COMMA
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_PERIOD
 import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_SEMICOLON
+import com.intellij.sql.psi.SqlUsingClause
 import com.intellij.sql.util.SqlTokenRegistry
 import java.io.File
 
@@ -63,7 +65,6 @@ object StarRocksScenarioValidator {
             val sql = testDataDir.resolve(scenario.fileName).readText()
             val statements = splitStatements(sql)
             check(statements.isNotEmpty()) { "${scenario.fileName} does not contain SQL statements." }
-            validateStatementFamilies(scenario.fileName, statements)
         }
 
         validateCoreQuery(testDataDir.resolve("query/core-query.sql").readText())
@@ -82,7 +83,10 @@ object StarRocksScenarioValidator {
         validateFormattingProfile()
         validateElementFactory()
         validateDatabaseIntegration(projectDir)
-        validateDmlFamilies(testDataDir.resolve("dml/mutations.sql").readText())
+        validateLegacyTextAnalyzersAreTestOnly(projectDir)
+        validateDmlMutationFixtureCoverage(testDataDir.resolve("dml/mutations.sql").readText())
+        validateSecurityAndTransactionFixtureCoverage(testDataDir.resolve("admin/security-transaction.sql").readText())
+        validateSchemaAndIndexFixtureCoverage(testDataDir.resolve("ddl/schema-index.sql").readText())
     }
 
     private fun loadManifest(file: File): Map<String, ScenarioMetadata> {
@@ -120,14 +124,6 @@ object StarRocksScenarioValidator {
         }
     }
 
-    private fun validateStatementFamilies(fileName: String, statements: List<String>) {
-        statements.forEach { statement ->
-            val words = statementWords(statement)
-            val family = StarRocksStatementWordsClassifier.classify(words)
-            check(family != null) { "$fileName has an unclassified statement: ${statement.take(80)}" }
-        }
-    }
-
     private fun validateCoreQuery(sql: String) {
         check(sql.contains("QUALIFY", ignoreCase = true)) { "Core query fixture must cover QUALIFY." }
         check(sql.contains("CAST('20200101' AS BIGINT)", ignoreCase = true)) {
@@ -154,9 +150,6 @@ object StarRocksScenarioValidator {
         }
         val statements = splitStatements(sql)
         check(statements.size == 1) { "Set/window fixture should be a single compound query statement." }
-        check(StarRocksStatementWordsClassifier.classify(statementWords(statements.single())) == StarRocksStatementFamily.QUERY) {
-            "Set/window fixture must classify as a QUERY statement."
-        }
         val context = StarRocksLocalSqlContextAnalyzer.analyze(sql)
         check(context.ctes.map { it.normalizedName }.containsAll(listOf("base", "archived"))) {
             "Set/window fixture CTE names were not captured."
@@ -184,8 +177,8 @@ object StarRocksScenarioValidator {
 
     private fun validateMaterializedView(sql: String) {
         val statements = splitStatements(sql)
-        check(StarRocksStatementWordsClassifier.classify(statementWords(statements.first())) == StarRocksStatementFamily.MATERIALIZED_VIEW) {
-            "Materialized view fixture must classify as MATERIALIZED_VIEW."
+        check(statements.first().contains("CREATE MATERIALIZED VIEW", ignoreCase = true)) {
+            "Materialized view fixture must start from a CREATE MATERIALIZED VIEW statement."
         }
         val context = StarRocksLocalSqlContextAnalyzer.analyze(sql)
         check(context.queryTableReferences.any { it.normalizedName == "dws.dws_trade_sale_by_order_ri" }) {
@@ -195,11 +188,8 @@ object StarRocksScenarioValidator {
 
     private fun validateCreateView(sql: String) {
         val statements = splitStatements(sql)
-        check(StarRocksStatementWordsClassifier.classify(statementWords(statements.first())) == StarRocksStatementFamily.VIEW) {
-            "View fixture must classify as VIEW."
-        }
-        check(StarRocksStatementWordsClassifier.classify(statementWords("CREATE OR REPLACE VIEW v AS SELECT 1")) == StarRocksStatementFamily.VIEW) {
-            "CREATE OR REPLACE VIEW must classify as VIEW."
+        check(statements.first().contains("CREATE VIEW", ignoreCase = true)) {
+            "View fixture must start from a CREATE VIEW statement."
         }
         val context = StarRocksLocalSqlContextAnalyzer.analyze(sql)
         val view = context.resolveTable("dws.v_trade_sale_summary")
@@ -469,9 +459,14 @@ object StarRocksScenarioValidator {
             StarRocksGeneratedParser::class.java.getMethod("statement", builderClass, levelClass),
             StarRocksGeneratedParser::class.java.getMethod("expression", builderClass, levelClass),
             StarRocksGeneratedParser::class.java.getMethod("table_column_list", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("query_expression", builderClass, levelClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("simple_query_expression", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("select_clause", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("select_target_list", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("select_target", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("from_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("join_expression", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("atom_join_expression", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("with_clause", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("named_query_definition", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("cte_column_list", builderClass, levelClass),
@@ -487,24 +482,66 @@ object StarRocksScenarioValidator {
             StarRocksDmlParsing::class.java.getMethod("window_definition", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("limit_clause", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("parenthesized_query_expression", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("set_operation_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("set_operator", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("qualify_clause", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("table_function_call", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("insert_statement", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("update_statement", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("delete_statement", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("merge_statement", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("type_element", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("table_column_list", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("column_definition", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("properties_clause", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("create_table_statement", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("create_materialized_view_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("show_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("admin_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("use_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("explain_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("describe_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("load_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("create_resource_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("export_statement", builderClass, levelClass),
-            StarRocksAuxiliaryParsing::class.java.getMethod("backup_restore_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_catalog_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_resource_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_routine_load_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_repository_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("show_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("admin_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("use_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("explain_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("describe_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("load_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("export_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("backup_restore_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_user_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_role_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_database_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_schema_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("create_index_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_user_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_role_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_database_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_schema_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_table_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_view_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_materialized_view_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_catalog_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_resource_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("alter_routine_load_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_user_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_role_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_database_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_schema_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_index_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_table_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_view_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_materialized_view_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_catalog_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_resource_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("drop_repository_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("truncate_table_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("refresh_materialized_view_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("grant_statement", builderClass, levelClass),
+            StarRocksDdlParsing::class.java.getMethod("revoke_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("call_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("start_transaction_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("commit_statement", builderClass, levelClass),
+            StarRocksOtherParsing::class.java.getMethod("rollback_statement", builderClass, levelClass),
             StarRocksExpressionParsing::class.java.getMethod("value_expression", builderClass, levelClass)
         ).forEach { method ->
             check(method.returnType == Boolean::class.javaPrimitiveType) {
@@ -572,6 +609,46 @@ object StarRocksScenarioValidator {
             "Ordinary StarRocks INSERT must use the platform SQL_INSERT_STATEMENT formatter block."
         }
         listOf(
+            SqlCompositeElementTypes.SQL_CALL_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT,
+            SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT,
+            SqlCompositeElementTypes.SQL_COMMIT_STATEMENT,
+            SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT,
+            SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT,
+            StarRocksElementTypes.USER_STATEMENT,
+            StarRocksElementTypes.CREATE_USER_STATEMENT,
+            StarRocksElementTypes.ALTER_USER_STATEMENT,
+            StarRocksElementTypes.DROP_USER_STATEMENT,
+            StarRocksElementTypes.ROLE_STATEMENT,
+            StarRocksElementTypes.CREATE_ROLE_STATEMENT,
+            StarRocksElementTypes.ALTER_ROLE_STATEMENT,
+            StarRocksElementTypes.DROP_ROLE_STATEMENT,
+            StarRocksElementTypes.SET_PASSWORD_STATEMENT,
+            StarRocksElementTypes.GRANT_STATEMENT,
+            StarRocksElementTypes.REVOKE_STATEMENT,
+            StarRocksElementTypes.SCHEMA_STATEMENT,
+            StarRocksElementTypes.INDEX_STATEMENT
+        ).forEach { type ->
+            check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
+                "StarRocks common statement $type must have a formatter block."
+            }
+        }
+        check(StarRocksElementTypes.TABLE_EXPRESSION in StarRocksFormatterHelper().basicBlockCreation.keys) {
+            "Generated StarRocks table expressions must use a platform formatter block."
+        }
+        check(StarRocksElementTypes.JOIN_EXPRESSION in StarRocksFormatterHelper().basicBlockCreation.keys) {
+            "Generated StarRocks JOIN expressions must use a platform formatter block."
+        }
+        check(StarRocksElementTypes.JOIN_CONDITION_CLAUSE in StarRocksFormatterHelper().basicBlockCreation.keys) {
+            "Generated StarRocks JOIN conditions must use a platform formatter block."
+        }
+        listOf(
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
             StarRocksElementTypes.COMMENT_CLAUSE,
             StarRocksElementTypes.PARTITION_CLAUSE,
@@ -610,18 +687,21 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.SUBQUERY_EXPRESSION,
             StarRocksElementTypes.VALUES_CLAUSE,
             StarRocksElementTypes.VALUES_ROW,
+            StarRocksElementTypes.TABLE_EXPRESSION,
             StarRocksElementTypes.TABLE_REFERENCE,
             StarRocksElementTypes.SET_OPERATION_CLAUSE,
             StarRocksElementTypes.SET_OPERATOR,
+            StarRocksElementTypes.JOIN_EXPRESSION,
+            StarRocksElementTypes.PARENTHESIZED_JOIN_EXPRESSION,
+            StarRocksElementTypes.JOIN_CONDITION_CLAUSE,
+            StarRocksElementTypes.USING_CLAUSE,
             StarRocksElementTypes.WINDOW_CLAUSE,
             StarRocksElementTypes.WINDOW_DEFINITION,
             StarRocksElementTypes.WINDOW_NAME,
-            StarRocksElementTypes.CTE_NAME,
             StarRocksElementTypes.TABLE_ALIAS,
             StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME,
             StarRocksElementTypes.SELECT_ALIAS,
             StarRocksElementTypes.TABLE_REFERENCE_NAME,
-            StarRocksElementTypes.TABLE_NAME,
             StarRocksElementTypes.COLUMN_NAME,
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
             StarRocksElementTypes.KEY_COLUMN,
@@ -647,7 +727,20 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.TASK_STATEMENT,
             StarRocksElementTypes.EXPORT_STATEMENT,
             StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
-            StarRocksElementTypes.ADMIN_STATEMENT
+            StarRocksElementTypes.ADMIN_STATEMENT,
+            StarRocksElementTypes.USER_STATEMENT,
+            StarRocksElementTypes.CREATE_USER_STATEMENT,
+            StarRocksElementTypes.ALTER_USER_STATEMENT,
+            StarRocksElementTypes.DROP_USER_STATEMENT,
+            StarRocksElementTypes.ROLE_STATEMENT,
+            StarRocksElementTypes.CREATE_ROLE_STATEMENT,
+            StarRocksElementTypes.ALTER_ROLE_STATEMENT,
+            StarRocksElementTypes.DROP_ROLE_STATEMENT,
+            StarRocksElementTypes.SET_PASSWORD_STATEMENT,
+            StarRocksElementTypes.GRANT_STATEMENT,
+            StarRocksElementTypes.REVOKE_STATEMENT,
+            StarRocksElementTypes.SCHEMA_STATEMENT,
+            StarRocksElementTypes.INDEX_STATEMENT
         ).forEach { type ->
             val node = factory.createElementNode(type)
             check(node is SqlStatement) {
@@ -658,12 +751,44 @@ object StarRocksScenarioValidator {
             SqlCompositeElementTypes.SQL_USE_SCHEMA_STATEMENT,
             SqlCompositeElementTypes.SQL_USE_CATALOG_STATEMENT,
             SqlCompositeElementTypes.SQL_USE_NAMESPACE_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT
+            SqlCompositeElementTypes.SQL_INSERT_STATEMENT,
+            SqlCompositeElementTypes.SQL_UPDATE_STATEMENT,
+            SqlCompositeElementTypes.SQL_DELETE_STATEMENT,
+            SqlCompositeElementTypes.SQL_MERGE_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT,
+            SqlCompositeElementTypes.SQL_CALL_STATEMENT,
+            SqlCompositeElementTypes.SQL_GRANT_STATEMENT,
+            SqlCompositeElementTypes.SQL_REVOKE_STATEMENT,
+            SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT,
+            SqlCompositeElementTypes.SQL_COMMIT_STATEMENT,
+            SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT,
+            SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT
         ).forEach { type ->
             val node = factory.createElementNode(type)
             val psi = factory.createCompositeElement(node)
             check(psi is SqlStatement) {
                 "Platform statement node $type must stay runnable under the StarRocks element factory."
+            }
+        }
+        listOf(
+            StarRocksElementTypes.FROM_CLAUSE to SqlFromClause::class.java,
+            StarRocksElementTypes.TABLE_EXPRESSION to SqlTableExpression::class.java,
+            StarRocksElementTypes.PARENTHESIZED_JOIN_EXPRESSION to SqlTableExpression::class.java,
+            StarRocksElementTypes.JOIN_EXPRESSION to SqlJoinExpression::class.java,
+            StarRocksElementTypes.JOIN_CONDITION_CLAUSE to SqlJoinConditionClause::class.java,
+            StarRocksElementTypes.USING_CLAUSE to SqlUsingClause::class.java,
+            StarRocksElementTypes.PREDICATE_EXPRESSION to SqlExpression::class.java
+        ).forEach { (type, psiClass) ->
+            val node = factory.createElementNode(type)
+            check(psiClass.isInstance(node)) {
+                "StarRocks node $type must implement ${psiClass.simpleName}, matching mature SQL dialect PSI mappings."
             }
         }
         check(SqlCompositeElementTypes.SQL_SELECT_STATEMENT in StarRocksStatementElementSets.STATEMENT_TYPES) {
@@ -681,9 +806,7 @@ object StarRocksScenarioValidator {
             "Statement scope detection must not depend on legacy lightweight parser statement nodes."
         }
         listOf(
-            "TABLE_NAME" to StarRocksElementTypes.TABLE_NAME,
             "COLUMN_NAME" to StarRocksElementTypes.COLUMN_NAME,
-            "CTE_NAME" to StarRocksElementTypes.CTE_NAME,
             "CTE_COLUMN_NAME" to StarRocksElementTypes.CTE_COLUMN_NAME,
             "TABLE_ALIAS" to StarRocksElementTypes.TABLE_ALIAS,
             "TABLE_ALIAS_COLUMN_NAME" to StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME,
@@ -698,9 +821,7 @@ object StarRocksScenarioValidator {
             }
         }
         listOf(
-            StarRocksStubElementTypes.STARROCKS_TABLE_NAME,
             StarRocksStubElementTypes.STARROCKS_COLUMN_NAME,
-            StarRocksStubElementTypes.STARROCKS_CTE_NAME,
             StarRocksStubElementTypes.STARROCKS_CTE_COLUMN_NAME,
             StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS,
             StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS_COLUMN_NAME,
@@ -714,9 +835,6 @@ object StarRocksScenarioValidator {
         check(StarRocksNamedStubElementType::class.java.declaredFields.none { it.name == "externalName" }) {
             "StarRocks stub external ids must not depend on subclass constructor fields during IStubElementType initialization."
         }
-        check(StarRocksTableNameIndex.INDEX_NAME == "starrocks.table.name") {
-            "StarRocks table name stub index id is unstable."
-        }
         check(StarRocksColumnNameIndex.INDEX_NAME == "starrocks.column.name") {
             "StarRocks column name stub index id is unstable."
         }
@@ -728,11 +846,6 @@ object StarRocksScenarioValidator {
         }
         check(StarRocksDialect.INSTANCE.isOperatorSupported(null)) {
             "StarRocks dialect must tolerate the nullable operator token passed by the platform SqlParser."
-        }
-        check(StarRocksStubIndexKeys.tableKeys("DWS.Sample_Orders").containsAll(
-            listOf("DWS.Sample_Orders", "dws.sample_orders", "Sample_Orders", "sample_orders")
-        )) {
-            "StarRocks table name index keys must support full, short, and normalized lookups."
         }
     }
 
@@ -775,22 +888,60 @@ object StarRocksScenarioValidator {
             "<lang.formatter language=\"StarRocks\" implementationClass=\"com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingModelBuilder\"",
             "<sql.formatterHelper language=\"StarRocks\" implementationClass=\"com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper\"",
             "<stubElementTypeHolder class=\"com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes\" externalIdPrefix=\"sql.\"",
-            "<stubIndex implementation=\"com.github.ycyz.starrocks.datagrip.lang.StarRocksTableNameIndex\"",
             "<stubIndex implementation=\"com.github.ycyz.starrocks.datagrip.lang.StarRocksColumnNameIndex\""
         ).forEach { marker ->
             check(marker in pluginXml) { "plugin.xml is missing database integration marker $marker." }
         }
     }
 
-    private fun validateDmlFamilies(sql: String) {
-        val families = splitStatements(sql).map { StarRocksStatementWordsClassifier.classify(statementWords(it)) }
-        check(families == listOf(
-            StarRocksStatementFamily.DML,
-            StarRocksStatementFamily.DML,
-            StarRocksStatementFamily.DML,
-            StarRocksStatementFamily.DML
-        )) {
-            "DML mutations fixture did not classify all mutation statements as DML: $families"
+    private fun validateLegacyTextAnalyzersAreTestOnly(projectDir: File) {
+        listOf(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/resolve/StarRocksLocalSqlContext.kt",
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksStatementWordsClassifier.kt",
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksStatementFamily.kt"
+        ).forEach { path ->
+            check(!projectDir.resolve(path).exists()) {
+                "Legacy text analyzer/classifier must not stay in production sources: $path"
+            }
+        }
+        listOf(
+            "src/test/kotlin/com/github/ycyz/starrocks/datagrip/resolve/StarRocksLocalSqlContext.kt",
+            "src/test/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksStatementWordsClassifier.kt",
+            "src/test/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksStatementFamily.kt"
+        ).forEach { path ->
+            check(projectDir.resolve(path).isFile) {
+                "Legacy text analyzer/classifier should be isolated to test validation sources: $path"
+            }
+        }
+    }
+
+    private fun validateDmlMutationFixtureCoverage(sql: String) {
+        val statements = splitStatements(sql)
+        check(statements.size == 4) {
+            "DML mutations fixture should contain 4 standalone statements, found ${statements.size}."
+        }
+        listOf("INSERT OVERWRITE", "UPDATE", "DELETE", "MERGE").forEach { keyword ->
+            check(keyword in sql) { "DML mutations fixture must cover $keyword." }
+        }
+    }
+
+    private fun validateSecurityAndTransactionFixtureCoverage(sql: String) {
+        val statements = splitStatements(sql)
+        check(statements.size == 14) {
+            "Security/transaction fixture should contain 14 standalone statements, found ${statements.size}."
+        }
+        listOf("SET PASSWORD", "GRANT", "REVOKE", "CALL", "BEGIN", "START TRANSACTION", "COMMIT", "ROLLBACK").forEach { keyword ->
+            check(keyword in sql) { "Security/transaction fixture must cover $keyword." }
+        }
+    }
+
+    private fun validateSchemaAndIndexFixtureCoverage(sql: String) {
+        val statements = splitStatements(sql)
+        check(statements.size == 9) {
+            "Schema/index fixture should contain 9 standalone statements, found ${statements.size}."
+        }
+        listOf("CREATE DATABASE", "CREATE SCHEMA", "ALTER DATABASE", "ALTER SCHEMA", "CREATE INDEX", "DROP INDEX").forEach { keyword ->
+            check(keyword in sql) { "Schema/index fixture must cover $keyword." }
         }
     }
 
@@ -830,59 +981,6 @@ object StarRocksScenarioValidator {
         return result
     }
 
-    private fun statementWords(statement: String): List<String> {
-        val words = mutableListOf<String>()
-        var index = 0
-        while (index < statement.length) {
-            val char = statement[index]
-            when {
-                char == '\'' || char == '"' -> index = consumeQuoted(statement, index, char)
-                char == '`' -> index = consumeQuoted(statement, index, char)
-                char == '-' && statement.getOrNull(index + 1) == '-' -> {
-                    index += 2
-                    while (index < statement.length && statement[index] != '\n' && statement[index] != '\r') {
-                        index++
-                    }
-                }
-                char == '/' && statement.getOrNull(index + 1) == '*' -> {
-                    index += 2
-                    while (index + 1 < statement.length && !(statement[index] == '*' && statement[index + 1] == '/')) {
-                        index++
-                    }
-                    index = (index + 2).coerceAtMost(statement.length)
-                }
-                char == '_' || char.isLetter() -> {
-                    val start = index
-                    index++
-                    while (index < statement.length && (statement[index] == '_' || statement[index].isLetterOrDigit())) {
-                        index++
-                    }
-                    words += statement.substring(start, index).uppercase()
-                }
-                else -> index++
-            }
-        }
-        return words
-    }
-
-    private fun consumeQuoted(text: String, start: Int, quote: Char): Int {
-        var index = start + 1
-        while (index < text.length) {
-            val char = text[index]
-            index++
-            if (char == quote) {
-                if (index < text.length && text[index] == quote) {
-                    index++
-                    continue
-                }
-                break
-            }
-            if (char == '\\' && index < text.length) {
-                index++
-            }
-        }
-        return index
-    }
 }
 
 private data class ScenarioMetadata(

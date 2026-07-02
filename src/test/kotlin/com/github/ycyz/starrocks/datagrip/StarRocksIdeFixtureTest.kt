@@ -8,7 +8,6 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightingLexer
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksTableNameIndex
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.lang.ASTNode
@@ -28,7 +27,13 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.editor.SqlColors
 import com.intellij.sql.editor.SqlCodeBlockProviderUtils
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlFromClause
+import com.intellij.sql.psi.SqlJoinConditionClause
+import com.intellij.sql.psi.SqlJoinExpression
+import com.intellij.sql.psi.SqlDefinition
 import com.intellij.sql.psi.SqlStatement
+import com.intellij.sql.psi.SqlTableExpression
+import com.intellij.sql.psi.SqlUsingClause
 import com.intellij.sql.util.SqlTokenRegistry
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import javax.swing.Icon
@@ -103,6 +108,58 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         assertElementCountAtLeast(file, StarRocksElementTypes.VALUES_ROW, 2)
     }
 
+    fun testDmlEntrypointsUsePlatformPsiImplementations() {
+        val file = configureStarRocksText(DML_MUTATIONS_SQL)
+        val highlights = myFixture.doHighlighting()
+        val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java).toList()
+
+        assertEquals(
+            "Every DML mutation entry should produce runnable SqlStatement PSI. Actual statements: " +
+                statements.map { "${it.node.elementType}:${it.text.take(60)}" },
+            4,
+            statements.size
+        )
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_INSERT_STATEMENT, "SqlInsertStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_UPDATE_STATEMENT, "SqlUpdateStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_DELETE_STATEMENT, "SqlDeleteStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_MERGE_STATEMENT, "SqlMergeStatementImpl")
+        assertNoErrorHighlights(highlights)
+    }
+
+    fun testSetOperationsBuildStructuredPsi() {
+        val file = configureStarRocksText(SET_OPERATION_SQL)
+        val operators = psiElements(file, StarRocksElementTypes.SET_OPERATOR).map { normalizeSqlText(it.text) }
+
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_SELECT_STATEMENT)
+        assertElementCountAtLeast(file, StarRocksElementTypes.SET_OPERATION_CLAUSE, 3)
+        assertTrue("Expected compound query set operators in PSI: $operators", operators.containsAll(listOf("UNION ALL", "INTERSECT", "EXCEPT")))
+    }
+
+    fun testJoinExpressionsBuildStructuredPsi() {
+        val file = configureStarRocksText(JOIN_EXPRESSION_SQL)
+        val highlights = myFixture.doHighlighting()
+        val joinTexts = psiElements(file, StarRocksElementTypes.JOIN_EXPRESSION).map { normalizeSqlText(it.text) }
+        val joins = psiElements(file, StarRocksElementTypes.JOIN_EXPRESSION).filterIsInstance<SqlJoinExpression>()
+
+        assertContainsElement(file, StarRocksElementTypes.FROM_CLAUSE)
+        assertTrue(psiElements(file, StarRocksElementTypes.FROM_CLAUSE).all { it is SqlFromClause })
+        assertElementCountAtLeast(file, StarRocksElementTypes.TABLE_EXPRESSION, 5)
+        assertTrue(psiElements(file, StarRocksElementTypes.TABLE_EXPRESSION).all { it is SqlTableExpression })
+        assertElementCountAtLeast(file, StarRocksElementTypes.JOIN_EXPRESSION, 4)
+        assertTrue("JOIN nodes must implement platform SqlJoinExpression.", joins.size >= 4)
+        joins.forEach { join ->
+            assertNotNull("JOIN must expose a left SqlExpression operand: ${join.text}", join.lOperand)
+            assertNotNull("JOIN must expose a right SqlExpression operand: ${join.text}", join.rOperand)
+        }
+        assertElementCountAtLeast(file, StarRocksElementTypes.JOIN_CONDITION_CLAUSE, 1)
+        assertTrue(psiElements(file, StarRocksElementTypes.JOIN_CONDITION_CLAUSE).all { it is SqlJoinConditionClause })
+        assertContainsElement(file, StarRocksElementTypes.USING_CLAUSE)
+        assertTrue(psiElements(file, StarRocksElementTypes.USING_CLAUSE).all { it is SqlUsingClause })
+        assertTrue("Expected typed JOIN expressions in PSI: $joinTexts", joinTexts.any { "LEFT JOIN" in it })
+        assertTrue("Expected typed JOIN expressions in PSI: $joinTexts", joinTexts.any { "FULL OUTER JOIN" in it })
+        assertNoErrorHighlights(highlights)
+    }
+
     fun testStarRocksStatementEntrypointsUseConcretePsi() {
         val file = configureStarRocksText(
             """
@@ -115,6 +172,7 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
             ANALYZE TABLE dws.sample_orders;
             KILL 10001;
             SYNC;
+            CREATE EXTERNAL CATALOG hive_catalog PROPERTIES ("type" = "hive");
             ALTER TABLE dws.sample_orders ADD COLUMN remark VARCHAR(20);
             ALTER VIEW dws.v_sample_orders AS SELECT order_id FROM dws.sample_orders;
             ALTER MATERIALIZED VIEW dws.mv_sample_orders ACTIVE;
@@ -124,6 +182,7 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
             LOAD LABEL db1.label1 (DATA INFILE("s3://bucket/path/file.csv") INTO TABLE fact_order) WITH BROKER;
             CANCEL LOAD FROM db1 WHERE LABEL = "label1";
             CREATE RESOURCE spark_resource PROPERTIES ("type" = "spark");
+            TRUNCATE TABLE dws.sample_orders;
             EXPORT TABLE dws.sample_orders TO "s3://bucket/export/";
             BACKUP SNAPSHOT dws.snapshot1 TO repo_s3 ON (dws.sample_orders);
             """.trimIndent()
@@ -135,7 +194,7 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
             "Every StarRocks statement entry should produce runnable SqlStatement PSI. Actual statements: " +
                 statements.map { "${it.node.elementType}:${it.text.take(60)}" } +
                 " Element types: ${elementTypeNames(file)}",
-            20,
+            22,
             statements.size
         )
         assertContainsElement(file, SqlCompositeElementTypes.SQL_SELECT_STATEMENT)
@@ -147,10 +206,71 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         assertContainsElement(file, StarRocksElementTypes.ADMIN_STATEMENT)
         assertContainsElement(file, SqlCompositeElementTypes.SQL_USE_SCHEMA_STATEMENT)
         assertContainsElement(file, SqlCompositeElementTypes.SQL_EXPLAIN_STATEMENT)
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT)
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT)
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT)
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT)
         assertContainsElement(file, StarRocksElementTypes.LOAD_STATEMENT)
         assertContainsElement(file, StarRocksElementTypes.RESOURCE_STATEMENT)
         assertContainsElement(file, StarRocksElementTypes.EXPORT_STATEMENT)
         assertContainsElement(file, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT)
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT, "SqlCreateCatalogStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT, "SqlAlterTableStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT, "SqlTruncateTableStatementImpl")
+    }
+
+    fun testSecurityCallAndTransactionEntrypointsUseConcretePsi() {
+        val file = configureStarRocksText(SECURITY_TRANSACTION_SQL)
+        val highlights = myFixture.doHighlighting()
+        val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java).toList()
+
+        assertEquals(
+            "Every security, CALL, and transaction entry should produce runnable SqlStatement PSI. Actual statements: " +
+                statements.map { "${it.node.elementType}:${it.text.take(60)}" },
+            14,
+            statements.size
+        )
+        assertContainsElement(file, StarRocksElementTypes.CREATE_USER_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.ALTER_USER_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.DROP_USER_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.CREATE_ROLE_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.ALTER_ROLE_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.DROP_ROLE_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.SET_PASSWORD_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.GRANT_STATEMENT)
+        assertContainsElement(file, StarRocksElementTypes.REVOKE_STATEMENT)
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_CALL_STATEMENT)
+        assertElementCountAtLeast(file, SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT, 2)
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_COMMIT_STATEMENT)
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT)
+        assertElementPsiClass(file, StarRocksElementTypes.SET_PASSWORD_STATEMENT, "SqlStatementImpl")
+        assertElementPsiClass(file, StarRocksElementTypes.GRANT_STATEMENT, "SqlStatementImpl")
+        assertElementPsiClass(file, StarRocksElementTypes.REVOKE_STATEMENT, "SqlStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_CALL_STATEMENT, "SqlCallStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_COMMIT_STATEMENT, "SqlCommitStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT, "SqlRollbackStatementImpl")
+        assertNoErrorHighlights(highlights)
+    }
+
+    fun testSchemaAndIndexEntrypointsUseConcretePsi() {
+        val file = configureStarRocksText(SCHEMA_INDEX_SQL)
+        val highlights = myFixture.doHighlighting()
+        val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java).toList()
+
+        assertEquals(
+            "Every schema and index DDL entry should produce runnable SqlStatement PSI. Actual statements: " +
+                statements.map { "${it.node.elementType}:${it.text.take(60)}" },
+            9,
+            statements.size
+        )
+        assertElementCountAtLeast(file, SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT, 2)
+        assertElementCountAtLeast(file, SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT, 2)
+        assertElementCountAtLeast(file, SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT, 2)
+        assertElementCountAtLeast(file, StarRocksElementTypes.SCHEMA_STATEMENT, 2)
+        assertContainsElement(file, StarRocksElementTypes.INDEX_STATEMENT)
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT, "SqlCreateSchemaStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT, "SqlCreateIndexStatementImpl")
+        assertNoErrorHighlights(highlights)
     }
 
     fun testTopLevelStatementsUsePlatformSqlStatementPsi() {
@@ -203,7 +323,7 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         assertElementCountAtLeast(file, StarRocksElementTypes.WHERE_CLAUSE, 4)
     }
 
-    fun legacyParserMarksTableReferenceNames() {
+    fun testParserMarksTableReferencesAsPlatformSqlReferences() {
         val file = configureStarRocksText(LOCAL_TABLE_REFERENCE_SQL)
 
         val references = psiElements(file, StarRocksElementTypes.TABLE_REFERENCE_NAME).map { it.text }
@@ -212,23 +332,23 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         assertTrue("Expected DML target table reference name in PSI: $references", "sample_orders" in references)
     }
 
-    fun legacyParserUsesStubPsiForTableAndColumnNames() {
+    fun testParserUsesPlatformPsiForTableDefinitionsAndStubPsiForColumns() {
         val file = configureStarRocksText(CREATE_TABLE_SQL)
 
-        val tableNames = namedStubNames(file, StarRocksElementTypes.TABLE_NAME)
+        val tableNames = sqlDefinitionNames(file, SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT)
         val columnNames = namedStubNames(file, StarRocksElementTypes.COLUMN_NAME)
 
-        assertTrue("Expected StarRocks table name PSI to use named stubs: $tableNames", "dws.sample_orders" in tableNames)
+        assertTrue("Expected StarRocks table definitions to use platform SqlDefinition PSI: $tableNames", "dws.sample_orders" in tableNames)
         assertTrue("Expected StarRocks column name PSI to use named stubs: $columnNames", columnNames.containsAll(listOf("order_id", "amount")))
     }
 
     fun testParserUsesStubPsiForLocalNamedDefinitions() {
         val setWindowFile = configureStarRocksText(SET_WINDOW_SQL)
 
-        val cteNames = namedStubNames(setWindowFile, StarRocksElementTypes.CTE_NAME)
+        val cteNames = sqlDefinitionNames(setWindowFile, StarRocksElementTypes.CTE_DEFINITION)
         val windowNames = namedStubNames(setWindowFile, StarRocksElementTypes.WINDOW_NAME)
 
-        assertTrue("Expected StarRocks CTE name PSI to use named stubs: $cteNames", "base" in cteNames)
+        assertTrue("Expected StarRocks CTE definitions to use platform SqlDefinition PSI: $cteNames", "base" in cteNames)
         assertTrue("Expected StarRocks window name PSI to use named stubs: $windowNames", "recent_orders" in windowNames)
 
         val tableAliasFile = configureStarRocksText(LOCAL_TABLE_REFERENCE_SQL)
@@ -263,29 +383,35 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         assertColumnReferenceResolvesToElementType(file, "gross_amount", "gross_amount", StarRocksElementTypes.SELECT_ALIAS)
     }
 
-    fun legacyNamedStubIndexesExposeTableAndColumnNames() {
+    fun testNamedStubIndexesExposeColumnNames() {
         val file = configureStarRocksText(MIXED_CASE_CREATE_TABLE_SQL)
         val scope = GlobalSearchScope.fileScope(project, file.virtualFile)
+        val tableNames = sqlDefinitionNames(file, SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT)
 
-        assertStubIndexContains(StarRocksTableNameIndex.KEY, "dws.sample_orders", "DWS.Sample_Orders", scope)
-        assertStubIndexContains(StarRocksTableNameIndex.KEY, "sample_orders", "DWS.Sample_Orders", scope)
+        assertTrue("Expected platform table definition names: $tableNames", "DWS.Sample_Orders" in tableNames)
         assertStubIndexContains(StarRocksColumnNameIndex.KEY, "order_id", "Order_ID", scope)
     }
 
-    fun legacyTableReferencesResolveToLocalCreateTableStubs() {
+    fun testTableReferencesResolveToLocalCreateTableDefinitions() {
         val file = configureStarRocksText(LOCAL_TABLE_REFERENCE_SQL)
-        val scope = GlobalSearchScope.fileScope(project, file.virtualFile)
-
-        assertStubIndexContains(StarRocksTableNameIndex.KEY, "dws.sample_orders", "dws.sample_orders", scope)
 
         assertTableReferenceResolves(file, "dws.sample_orders", "dws.sample_orders")
-        assertTableReferenceResolves(file, "sample_orders", "dws.sample_orders")
+        assertTableReferenceUnresolved(file, "sample_orders")
+    }
+
+    fun testRemoteTableReferenceHighlightsWithoutLocalStubResolution() {
+        val file = configureStarRocksText("SELECT * FROM dws.sample_orders WHERE amount > 0;")
+
+        val highlights = myFixture.doHighlighting()
+
+        assertNoErrorHighlights(highlights)
+        assertTableReferenceUnresolved(file, "dws.sample_orders")
     }
 
     fun testTableReferencesResolveToLocalCtes() {
         val file = configureStarRocksText(CTE_REFERENCE_SQL)
 
-        val cteNames = psiElements(file, StarRocksElementTypes.CTE_NAME).map { it.text }
+        val cteNames = sqlDefinitionNames(file, StarRocksElementTypes.CTE_DEFINITION)
 
         assertTrue("Expected CTE names in PSI: $cteNames", "base" in cteNames)
         assertTableReferenceResolves(file, "base", "base")
@@ -458,16 +584,23 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
     fun testParserBuildsCreateViewPlatformStatementAndResolvesLocalView() {
         val file = configureStarRocksText(CREATE_VIEW_SQL)
 
-        val tableNames = namedStubNames(file, StarRocksElementTypes.TABLE_NAME)
+        val viewNames = sqlDefinitionNames(file, SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT)
         val columnNames = namedStubNames(file, StarRocksElementTypes.COLUMN_NAME)
 
         assertContainsElement(file, SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT)
         assertContainsElement(file, StarRocksElementTypes.TABLE_COLUMN_LIST)
         assertContainsElement(file, StarRocksElementTypes.AS_SELECT_CLAUSE)
-        assertTrue("Expected CREATE VIEW name to use table-name stubs: $tableNames", "dws.v_sample_order_totals" in tableNames)
+        assertTrue("Expected CREATE VIEW name to use platform SqlDefinition PSI: $viewNames", "dws.v_sample_order_totals" in viewNames)
         assertTrue("Expected CREATE VIEW columns to use column-name stubs: $columnNames", columnNames.containsAll(listOf("order_id", "total_amount")))
         assertTableReferenceResolves(file, "dws.v_sample_order_totals", "dws.v_sample_order_totals")
         assertColumnReferenceResolves(file, "total_amount", "total_amount")
+    }
+
+    fun testParserBuildsCreateOrReplaceViewPlatformStatement() {
+        val file = configureStarRocksText("CREATE OR REPLACE VIEW dws.v_daily AS SELECT 1 AS id;")
+
+        assertContainsElement(file, SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT)
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT, "SqlCreateViewStatementImpl")
     }
 
     fun testSyntaxHighlighterFactoryUsesStarRocksHighlightingLexer() {
@@ -553,21 +686,21 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
             );
             """.trimIndent()
         )
-        val tableNames = namedStubNames(file, StarRocksElementTypes.TABLE_NAME)
+        val tableNames = sqlDefinitionNames(file, SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT)
         val columnNames = namedStubNames(file, StarRocksElementTypes.COLUMN_NAME)
 
         assertContainsElement(file, SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT)
         assertContainsElement(file, StarRocksElementTypes.TABLE_COLUMN_LIST)
         assertContainsElement(file, StarRocksElementTypes.COLUMN_DEFINITION)
         assertContainsElement(file, SqlCompositeElementTypes.SQL_TYPE_ELEMENT)
-        assertTrue("Generated CREATE TABLE should expose table-name stub PSI. Actual: $tableNames", "dws.complex_type_sample" in tableNames)
+        assertTrue("Generated CREATE TABLE should expose platform SqlDefinition names. Actual: $tableNames", "dws.complex_type_sample" in tableNames)
         assertTrue(
             "Generated CREATE TABLE should expose column-name stub PSI without treating PRIMARY KEY columns as definitions. Actual: $columnNames",
             columnNames.containsAll(listOf("id", "tags", "attributes", "profile")) && columnNames.count { it == "id" } == 1
         )
     }
 
-    fun testGeneratedCreateTableNamedStubsAreIndexed() {
+    fun testGeneratedCreateTableUsesPlatformDefinitionAndIndexesColumnStubs() {
         val file = configureStarRocksText(
             """
             CREATE TABLE IF NOT EXISTS DWS.Sample_Orders (
@@ -577,9 +710,9 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
             """.trimIndent()
         )
         val scope = GlobalSearchScope.fileScope(project, file.virtualFile)
+        val tableNames = sqlDefinitionNames(file, SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT)
 
-        assertStubIndexContains(StarRocksTableNameIndex.KEY, "dws.sample_orders", "DWS.Sample_Orders", scope)
-        assertStubIndexContains(StarRocksTableNameIndex.KEY, "sample_orders", "DWS.Sample_Orders", scope)
+        assertTrue("Generated CREATE TABLE should use platform SqlDefinition names. Actual: $tableNames", "DWS.Sample_Orders" in tableNames)
         assertStubIndexContains(StarRocksColumnNameIndex.KEY, "order_id", "Order_ID", scope)
     }
 
@@ -912,6 +1045,14 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         )
     }
 
+    private fun assertElementPsiClass(file: PsiFile, elementType: IElementType, simpleClassName: String) {
+        val classes = psiElements(file, elementType).map { it::class.java.simpleName }
+        assertTrue(
+            "Expected ${elementType.debugName} to use $simpleClassName PSI. Actual classes: $classes",
+            simpleClassName in classes
+        )
+    }
+
     private fun containsElementType(node: ASTNode?, elementType: IElementType): Boolean {
         if (node == null) {
             return false
@@ -948,6 +1089,10 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         val result = mutableListOf<PsiElement>()
         collectPsiElements(file.node, elementType, result)
         return result
+    }
+
+    private fun normalizeSqlText(text: String): String {
+        return text.trim().replace(Regex("\\s+"), " ").uppercase()
     }
 
     private fun namedStubNames(file: PsiFile, elementType: IElementType): List<String> {
@@ -998,20 +1143,49 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
     ) {
         val resolvedNames = psiElements(file, StarRocksElementTypes.TABLE_REFERENCE_NAME)
             .filter { it.text == referenceText }
-            .mapNotNull { referenceName -> referenceName.references.firstOrNull()?.resolve() }
-            .map { target ->
-                when (target) {
-                    is StarRocksNamedStubElement -> target.name
-                    else -> target.text
-                }
-            }
+            .mapNotNull { referenceName -> referenceName.reference?.resolve() }
+            .map { target -> resolvedElementName(target) }
         val referenceClasses = psiElements(file, StarRocksElementTypes.TABLE_REFERENCE_NAME)
             .filter { it.text == referenceText }
-            .flatMap { referenceName -> referenceName.references.map { it::class.java.name } }
+            .mapNotNull { referenceName -> referenceName.reference?.let { it::class.java.name } }
         assertTrue(
             "Expected table reference $referenceText to resolve to $expectedTableName. Actual targets: $resolvedNames. References: $referenceClasses",
             expectedTableName in resolvedNames
         )
+    }
+
+    private fun assertTableReferenceUnresolved(
+        file: PsiFile,
+        referenceText: String
+    ) {
+        val resolved = psiElements(file, StarRocksElementTypes.TABLE_REFERENCE_NAME)
+            .filter { it.text == referenceText }
+            .mapNotNull { referenceName -> referenceName.reference?.resolve() }
+        assertTrue(
+            "Expected table reference $referenceText to stay unresolved without a local CTE/CREATE TABLE target. Actual targets: ${resolved.map { it.text }}",
+            resolved.isEmpty()
+        )
+    }
+
+    private fun resolvedElementName(target: PsiElement): String {
+        return when (target) {
+            is StarRocksNamedStubElement -> target.name
+            is SqlDefinition -> sqlDefinitionName(target)
+            else -> target.text
+        }
+    }
+
+    private fun sqlDefinitionNames(file: PsiFile, elementType: IElementType): List<String> {
+        return psiElements(file, elementType)
+            .filterIsInstance<SqlDefinition>()
+            .map { sqlDefinitionName(it) }
+            .filter { it.isNotBlank() }
+    }
+
+    private fun sqlDefinitionName(definition: SqlDefinition): String {
+        val nameElementText = definition.nameElement?.text
+        val normalizedNameElement = StarRocksNamedStubElement.normalizeName(nameElementText.orEmpty())
+        return normalizedNameElement.takeIf { it.isNotBlank() } ?: definition.name.orEmpty()
     }
 
     private fun assertQualifiedColumnPrefixResolves(
@@ -1245,6 +1419,82 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
                 row_number() OVER recent_orders AS rn
             FROM dws.history_orders
             WINDOW recent_orders AS (PARTITION BY store_id ORDER BY event_time DESC);
+        """.trimIndent()
+
+        private val SET_OPERATION_SQL = """
+            SELECT order_id, amount FROM dws.current_orders
+            UNION ALL
+            SELECT order_id, amount FROM dws.history_orders
+            INTERSECT
+            SELECT order_id, amount FROM dws.valid_orders
+            EXCEPT
+            SELECT order_id, amount FROM dws.refund_orders;
+        """.trimIndent()
+
+        private val JOIN_EXPRESSION_SQL = """
+            SELECT
+                o.order_id,
+                h.amount,
+                d.store_name,
+                r.refund_amt
+            FROM dws.current_orders o
+            LEFT JOIN dws.history_orders h ON h.order_id = o.order_id
+            FULL OUTER JOIN dws.refund_orders r USING (order_id)
+            CROSS JOIN (
+                SELECT store_id, store_name
+                FROM dim_store
+            ) d
+            JOIN UNNEST(o.tags) AS tag_table(tag)
+            WHERE tag IS NOT NULL;
+        """.trimIndent()
+
+        private val SECURITY_TRANSACTION_SQL = """
+            CREATE USER 'etl_user' IDENTIFIED BY 'pw';
+            ALTER USER 'etl_user' IDENTIFIED BY 'pw2';
+            DROP USER 'etl_user';
+            CREATE ROLE analyst_role;
+            ALTER ROLE analyst_role SET COMMENT "read only analysts";
+            DROP ROLE analyst_role;
+            SET PASSWORD FOR 'etl_user' = PASSWORD('pw3');
+            GRANT SELECT_PRIV ON TABLE dws.sample_orders TO ROLE analyst_role;
+            REVOKE SELECT_PRIV ON TABLE dws.sample_orders FROM ROLE analyst_role;
+            CALL refresh_order_stats();
+            BEGIN;
+            START TRANSACTION;
+            COMMIT;
+            ROLLBACK;
+        """.trimIndent()
+
+        private val SCHEMA_INDEX_SQL = """
+            CREATE DATABASE IF NOT EXISTS dws;
+            CREATE SCHEMA IF NOT EXISTS ods;
+
+            ALTER DATABASE dws SET DATA QUOTA 1024G;
+            ALTER SCHEMA ods SET DATA QUOTA 512G;
+
+            CREATE INDEX idx_order_id ON dws.sample_orders (order_id) USING BITMAP;
+            CREATE BITMAP INDEX idx_store_id ON dws.sample_orders (store_id);
+
+            DROP INDEX idx_order_id ON dws.sample_orders;
+            DROP DATABASE IF EXISTS old_dws;
+            DROP SCHEMA IF EXISTS old_ods;
+        """.trimIndent()
+
+        private val DML_MUTATIONS_SQL = """
+            INSERT OVERWRITE dws.sample_orders
+            SELECT order_id, amount FROM tmp_orders;
+
+            UPDATE dws.sample_orders
+            SET amount = amount + 1
+            WHERE order_id = 1;
+
+            DELETE FROM dws.sample_orders
+            WHERE order_id = 2;
+
+            MERGE INTO dws.sample_orders target
+            USING tmp_orders source
+            ON target.order_id = source.order_id
+            WHEN MATCHED THEN UPDATE SET target.amount = source.amount;
         """.trimIndent()
 
         private val NESTED_QUERY_SQL = """

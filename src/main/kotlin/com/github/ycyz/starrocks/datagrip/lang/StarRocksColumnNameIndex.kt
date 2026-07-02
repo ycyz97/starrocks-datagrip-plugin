@@ -6,7 +6,7 @@ import com.intellij.psi.stubs.StubIndexKey
 class StarRocksColumnNameIndex : StringStubIndexExtension<StarRocksNamedStubElement>() {
     override fun getKey(): StubIndexKey<String, StarRocksNamedStubElement> = KEY
 
-    override fun getVersion(): Int = VERSION
+    override fun getVersion(): Int = super.getVersion() + VERSION
 
     companion object {
         const val INDEX_NAME = "starrocks.column.name"

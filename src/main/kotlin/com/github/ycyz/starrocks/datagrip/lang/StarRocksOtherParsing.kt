@@ -4,41 +4,29 @@ import com.intellij.lang.PsiBuilder
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.psi.SqlCompositeElementTypes
 
-object StarRocksAuxiliaryParsing {
+object StarRocksOtherParsing {
     @JvmStatic
-    fun create_catalog_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, StarRocksElementTypes.CATALOG_STATEMENT, "CREATE", "CATALOG") ||
-            prefixedStatement(builder, StarRocksElementTypes.CATALOG_STATEMENT, "CREATE", "EXTERNAL", "CATALOG")
-
-    @JvmStatic
-    fun create_resource_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, StarRocksElementTypes.RESOURCE_STATEMENT, "CREATE", "RESOURCE")
-
-    @JvmStatic
-    fun create_routine_load_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, StarRocksElementTypes.ROUTINE_LOAD_STATEMENT, "CREATE", "ROUTINE", "LOAD")
-
-    @JvmStatic
-    fun create_repository_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT, "CREATE", "REPOSITORY")
-
-    @JvmStatic
-    fun alter_starrocks_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, StarRocksElementTypes.TABLE_DDL_STATEMENT, "ALTER", "TABLE") ||
-            prefixedStatement(builder, StarRocksElementTypes.VIEW_STATEMENT, "ALTER", "VIEW") ||
-            prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "ALTER", "MATERIALIZED", "VIEW") ||
-            prefixedStatement(builder, StarRocksElementTypes.CATALOG_STATEMENT, "ALTER", "CATALOG") ||
-            prefixedStatement(builder, StarRocksElementTypes.RESOURCE_STATEMENT, "ALTER", "RESOURCE") ||
-            prefixedStatement(builder, StarRocksElementTypes.ROUTINE_LOAD_STATEMENT, "ALTER", "ROUTINE", "LOAD")
-
-    @JvmStatic
-    fun drop_starrocks_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, StarRocksElementTypes.TABLE_DDL_STATEMENT, "DROP", "TABLE") ||
-            prefixedStatement(builder, StarRocksElementTypes.VIEW_STATEMENT, "DROP", "VIEW") ||
-            prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "DROP", "MATERIALIZED", "VIEW") ||
-            prefixedStatement(builder, StarRocksElementTypes.CATALOG_STATEMENT, "DROP", "CATALOG") ||
-            prefixedStatement(builder, StarRocksElementTypes.RESOURCE_STATEMENT, "DROP", "RESOURCE") ||
-            prefixedStatement(builder, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT, "DROP", "REPOSITORY")
+    fun other_statement(builder: PsiBuilder, level: Int): Boolean =
+        show_statement(builder, level + 1) ||
+            admin_statement(builder, level + 1) ||
+            analyze_statement(builder, level + 1) ||
+            set_password_statement(builder, level + 1) ||
+            set_statement(builder, level + 1) ||
+            unset_statement(builder, level + 1) ||
+            kill_statement(builder, level + 1) ||
+            sync_statement(builder, level + 1) ||
+            call_statement(builder, level + 1) ||
+            start_transaction_statement(builder, level + 1) ||
+            commit_statement(builder, level + 1) ||
+            rollback_statement(builder, level + 1) ||
+            use_statement(builder, level + 1) ||
+            explain_statement(builder, level + 1) ||
+            describe_statement(builder, level + 1) ||
+            load_statement(builder, level + 1) ||
+            cancel_load_statement(builder, level + 1) ||
+            task_statement(builder, level + 1) ||
+            export_statement(builder, level + 1) ||
+            backup_restore_statement(builder, level + 1)
 
     @JvmStatic
     fun show_statement(builder: PsiBuilder, level: Int): Boolean {
@@ -75,6 +63,10 @@ object StarRocksAuxiliaryParsing {
         prefixedStatement(builder, SqlCompositeElementTypes.SQL_SET_STATEMENT, "SET")
 
     @JvmStatic
+    fun set_password_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, StarRocksElementTypes.SET_PASSWORD_STATEMENT, "SET", "PASSWORD")
+
+    @JvmStatic
     fun unset_statement(builder: PsiBuilder, level: Int): Boolean =
         prefixedStatement(builder, StarRocksElementTypes.ADMIN_STATEMENT, "UNSET")
 
@@ -85,6 +77,23 @@ object StarRocksAuxiliaryParsing {
     @JvmStatic
     fun sync_statement(builder: PsiBuilder, level: Int): Boolean =
         prefixedStatement(builder, StarRocksElementTypes.ADMIN_STATEMENT, "SYNC")
+
+    @JvmStatic
+    fun call_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_CALL_STATEMENT, "CALL")
+
+    @JvmStatic
+    fun start_transaction_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT, "BEGIN") ||
+            prefixedStatement(builder, SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT, "START", "TRANSACTION")
+
+    @JvmStatic
+    fun commit_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_COMMIT_STATEMENT, "COMMIT")
+
+    @JvmStatic
+    fun rollback_statement(builder: PsiBuilder, level: Int): Boolean =
+        prefixedStatement(builder, SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT, "ROLLBACK")
 
     @JvmStatic
     fun use_statement(builder: PsiBuilder, level: Int): Boolean =
@@ -121,25 +130,6 @@ object StarRocksAuxiliaryParsing {
         prefixedStatement(builder, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT, "BACKUP") ||
             prefixedStatement(builder, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT, "RESTORE") ||
             prefixedStatement(builder, StarRocksElementTypes.BACKUP_RESTORE_STATEMENT, "RECOVER")
-
-    @JvmStatic
-    fun refresh_materialized_view_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "REFRESH", "MATERIALIZED", "VIEW") ||
-            prefixedStatement(builder, StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT, "CANCEL", "REFRESH", "MATERIALIZED", "VIEW")
-
-    @JvmStatic
-    fun truncate_table_statement(builder: PsiBuilder, level: Int): Boolean =
-        prefixedStatement(builder, SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT, "TRUNCATE", "TABLE")
-
-    @JvmStatic
-    fun dml_statement(builder: PsiBuilder, level: Int): Boolean {
-        return when (StarRocksParsingUtil.word(builder)) {
-            "UPDATE" -> prefixedStatement(builder, SqlCompositeElementTypes.SQL_UPDATE_STATEMENT, "UPDATE")
-            "DELETE" -> prefixedStatement(builder, SqlCompositeElementTypes.SQL_DELETE_STATEMENT, "DELETE")
-            "MERGE" -> prefixedStatement(builder, SqlCompositeElementTypes.SQL_MERGE_STATEMENT, "MERGE")
-            else -> false
-        }
-    }
 
     private fun prefixedStatement(builder: PsiBuilder, elementType: IElementType, vararg words: String): Boolean {
         if (!hasWords(builder, *words)) {

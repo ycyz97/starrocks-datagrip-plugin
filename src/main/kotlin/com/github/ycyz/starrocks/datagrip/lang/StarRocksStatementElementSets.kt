@@ -11,6 +11,10 @@ object StarRocksStatementElementSets {
         SqlCompositeElementTypes.SQL_DELETE_STATEMENT,
         SqlCompositeElementTypes.SQL_MERGE_STATEMENT,
         SqlCompositeElementTypes.SQL_SET_STATEMENT,
+        SqlCompositeElementTypes.SQL_CALL_STATEMENT,
+        SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT,
+        SqlCompositeElementTypes.SQL_COMMIT_STATEMENT,
+        SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT,
         SqlCompositeElementTypes.SQL_USE_SCHEMA_STATEMENT,
         SqlCompositeElementTypes.SQL_USE_CATALOG_STATEMENT,
         SqlCompositeElementTypes.SQL_USE_NAMESPACE_STATEMENT,
@@ -18,7 +22,14 @@ object StarRocksStatementElementSets {
         SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT,
         SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
         SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
-        SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
+        SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT,
+        SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT,
+        SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT,
+        SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT,
+        SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
+        SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT,
+        SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT,
+        SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT
     )
 
     val STARROCKS_STATEMENT_TYPES: Set<IElementType> = setOf(
@@ -32,7 +43,20 @@ object StarRocksStatementElementSets {
         StarRocksElementTypes.TASK_STATEMENT,
         StarRocksElementTypes.EXPORT_STATEMENT,
         StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
-        StarRocksElementTypes.ADMIN_STATEMENT
+        StarRocksElementTypes.ADMIN_STATEMENT,
+        StarRocksElementTypes.USER_STATEMENT,
+        StarRocksElementTypes.CREATE_USER_STATEMENT,
+        StarRocksElementTypes.ALTER_USER_STATEMENT,
+        StarRocksElementTypes.DROP_USER_STATEMENT,
+        StarRocksElementTypes.ROLE_STATEMENT,
+        StarRocksElementTypes.CREATE_ROLE_STATEMENT,
+        StarRocksElementTypes.ALTER_ROLE_STATEMENT,
+        StarRocksElementTypes.DROP_ROLE_STATEMENT,
+        StarRocksElementTypes.SET_PASSWORD_STATEMENT,
+        StarRocksElementTypes.GRANT_STATEMENT,
+        StarRocksElementTypes.REVOKE_STATEMENT,
+        StarRocksElementTypes.SCHEMA_STATEMENT,
+        StarRocksElementTypes.INDEX_STATEMENT
     )
 
     val STATEMENT_TYPES: Set<IElementType> = PLATFORM_STATEMENT_TYPES + STARROCKS_STATEMENT_TYPES

@@ -11,9 +11,7 @@ import com.intellij.sql.editor.SqlColors
 class StarRocksSemanticAnnotator : Annotator {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         val attributesKey = when (element.node?.elementType) {
-            StarRocksElementTypes.TABLE_NAME,
-            StarRocksElementTypes.TABLE_REFERENCE_NAME,
-            StarRocksElementTypes.CTE_NAME -> SqlColors.SQL_TABLE
+            StarRocksElementTypes.TABLE_REFERENCE_NAME -> SqlColors.SQL_TABLE
             StarRocksElementTypes.COLUMN_NAME,
             StarRocksElementTypes.CTE_COLUMN_NAME,
             StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME -> SqlColors.SQL_COLUMN

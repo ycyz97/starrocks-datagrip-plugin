@@ -48,40 +48,10 @@ class StarRocksGeneratedParser : PsiParser, LightPsiParser {
         @JvmStatic
         fun statement(builder: PsiBuilder, level: Int): Boolean {
             val word = StarRocksParsingUtil.word(builder)
-            return when (word) {
-                "CREATE" -> StarRocksDdlParsing.create_materialized_view_statement(builder, level + 1) ||
-                    StarRocksDdlParsing.create_view_statement(builder, level + 1) ||
-                    StarRocksDdlParsing.create_table_statement(builder, level + 1) ||
-                    StarRocksAuxiliaryParsing.create_catalog_statement(builder, level + 1) ||
-                    StarRocksAuxiliaryParsing.create_resource_statement(builder, level + 1) ||
-                    StarRocksAuxiliaryParsing.create_routine_load_statement(builder, level + 1) ||
-                    StarRocksAuxiliaryParsing.create_repository_statement(builder, level + 1)
-                "INSERT" -> StarRocksDmlParsing.insert_statement(builder, level + 1)
-                "SELECT", "WITH", "VALUES" -> StarRocksDmlParsing.top_query_expression(builder, level + 1)
-                "QUALIFY" -> StarRocksDmlParsing.qualify_clause(builder, level + 1)
-                "UPDATE", "DELETE", "MERGE" -> StarRocksAuxiliaryParsing.dml_statement(builder, level + 1)
-                "ALTER" -> StarRocksAuxiliaryParsing.alter_starrocks_statement(builder, level + 1)
-                "DROP" -> StarRocksAuxiliaryParsing.drop_starrocks_statement(builder, level + 1)
-                "SHOW" -> StarRocksAuxiliaryParsing.show_statement(builder, level + 1)
-                "ADMIN" -> StarRocksAuxiliaryParsing.admin_statement(builder, level + 1)
-                "ANALYZE" -> StarRocksAuxiliaryParsing.analyze_statement(builder, level + 1)
-                "SET" -> StarRocksAuxiliaryParsing.set_statement(builder, level + 1)
-                "UNSET" -> StarRocksAuxiliaryParsing.unset_statement(builder, level + 1)
-                "KILL" -> StarRocksAuxiliaryParsing.kill_statement(builder, level + 1)
-                "SYNC" -> StarRocksAuxiliaryParsing.sync_statement(builder, level + 1)
-                "USE" -> StarRocksAuxiliaryParsing.use_statement(builder, level + 1)
-                "EXPLAIN" -> StarRocksAuxiliaryParsing.explain_statement(builder, level + 1)
-                "DESC", "DESCRIBE" -> StarRocksAuxiliaryParsing.describe_statement(builder, level + 1)
-                "LOAD" -> StarRocksAuxiliaryParsing.load_statement(builder, level + 1)
-                "SUBMIT" -> StarRocksAuxiliaryParsing.task_statement(builder, level + 1)
-                "EXPORT", "CANCEL" -> StarRocksAuxiliaryParsing.cancel_load_statement(builder, level + 1) ||
-                    StarRocksAuxiliaryParsing.export_statement(builder, level + 1) ||
-                    StarRocksAuxiliaryParsing.refresh_materialized_view_statement(builder, level + 1)
-                "BACKUP", "RESTORE", "RECOVER" -> StarRocksAuxiliaryParsing.backup_restore_statement(builder, level + 1)
-                "REFRESH" -> StarRocksAuxiliaryParsing.refresh_materialized_view_statement(builder, level + 1)
-                "TRUNCATE" -> StarRocksAuxiliaryParsing.truncate_table_statement(builder, level + 1)
-                else -> false
-            }
+            return StarRocksDdlParsing.ddl_statement(builder, level + 1) ||
+                StarRocksDmlParsing.dml_statement(builder, level + 1) ||
+                StarRocksOtherParsing.other_statement(builder, level + 1) ||
+                (word == "QUALIFY" && StarRocksDmlParsing.qualify_clause(builder, level + 1))
         }
 
         @JvmStatic

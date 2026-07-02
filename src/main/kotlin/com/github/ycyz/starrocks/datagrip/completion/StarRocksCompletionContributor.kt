@@ -18,6 +18,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlDefinition
 import com.intellij.util.ProcessingContext
 import java.util.Locale
 
@@ -59,7 +60,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         result: CompletionResultSet
     ) {
         val tableNames = linkedSetOf<String>()
-        collectElements(parameters.originalFile, StarRocksElementTypes.TABLE_NAME)
+        collectLocalTableTargets(parameters.originalFile)
             .forEach { tableName ->
                 val normalizedName = normalizedName(tableName)
                 if (normalizedName.isBlank()) {
@@ -179,7 +180,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private fun columnNamesForTable(tableTarget: PsiElement): Set<String> {
-        if (tableTarget.node?.elementType == StarRocksElementTypes.CTE_NAME) {
+        if (isCteTarget(tableTarget)) {
             return columnNamesForCte(tableTarget)
         }
         val tableStatement = containingStatement(tableTarget) ?: tableTarget.containingFile ?: return emptySet()
@@ -189,8 +190,12 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
             }
     }
 
-    private fun columnNamesForCte(cteName: PsiElement): Set<String> {
-        val cteDefinition = containingElement(cteName, StarRocksElementTypes.CTE_DEFINITION) ?: return emptySet()
+    private fun columnNamesForCte(cteTarget: PsiElement): Set<String> {
+        val cteDefinition = if (cteTarget.node?.elementType == StarRocksElementTypes.CTE_DEFINITION) {
+            cteTarget
+        } else {
+            containingElement(cteTarget, StarRocksElementTypes.CTE_DEFINITION)
+        } ?: return emptySet()
         val explicitColumns = collectCteColumnNames(cteDefinition)
             .mapNotNullTo(linkedSetOf()) { column ->
                 normalizedName(column).takeIf { it.isNotBlank() }
@@ -211,12 +216,21 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
             return null
         }
         val containingFile = tableReference.containingFile ?: return null
-        val candidates = collectElements(containingFile, StarRocksElementTypes.CTE_NAME) +
-            collectElements(containingFile, StarRocksElementTypes.TABLE_NAME)
+        tableReference.reference
+            ?.resolve()
+            ?.takeIf { it.containingFile == containingFile }
+            ?.let { return it }
+        val candidates = collectElements(containingFile, StarRocksElementTypes.CTE_DEFINITION) +
+            collectLocalTableTargets(containingFile)
         val referenceOffset = tableReference.textRange.startOffset
         return candidates
             .filter { it.textRange.startOffset < referenceOffset && matchesTableName(it, referenceName) }
             .maxByOrNull { it.textRange.startOffset }
+    }
+
+    private fun isCteTarget(element: PsiElement): Boolean {
+        val type = element.node?.elementType
+        return type == StarRocksElementTypes.CTE_DEFINITION
     }
 
     private fun isTableCompletionContext(parameters: CompletionParameters): Boolean {
@@ -527,11 +541,34 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         element.children.forEach { collectElements(it, elementType, result) }
     }
 
+    private fun collectLocalTableTargets(element: PsiElement): List<PsiElement> {
+        val result = mutableListOf<PsiElement>()
+        collectLocalTableTargets(element, result)
+        return result
+    }
+
+    private fun collectLocalTableTargets(
+        element: PsiElement,
+        result: MutableList<PsiElement>
+    ) {
+        if (element is SqlDefinition && element.node?.elementType in LOCAL_TABLE_DEFINITION_TYPES) {
+            result += element
+        }
+        element.children.forEach { collectLocalTableTargets(it, result) }
+    }
+
     private fun normalizedName(element: PsiElement): String {
         return when (element) {
             is StarRocksNamedStubElement -> element.name
+            is SqlDefinition -> sqlDefinitionName(element)
             else -> StarRocksNamedStubElement.normalizeName(element.text)
         }
+    }
+
+    private fun sqlDefinitionName(definition: SqlDefinition): String {
+        val nameElementText = definition.nameElement?.text
+        val normalizedNameElement = StarRocksNamedStubElement.normalizeName(nameElementText.orEmpty())
+        return normalizedNameElement.takeIf { it.isNotBlank() } ?: definition.name.orEmpty()
     }
 
     private fun matchesTableName(
@@ -555,6 +592,12 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private companion object {
+        private val LOCAL_TABLE_DEFINITION_TYPES = setOf(
+            SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
+        )
+
         private val TABLE_COMPLETION_PREVIOUS_WORDS = setOf(
             "FROM",
             "JOIN",

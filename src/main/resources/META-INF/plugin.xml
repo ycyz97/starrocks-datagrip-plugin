@@ -21,7 +21,6 @@
         <sql.formatterHelper language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper"/>
         <completion.contributor language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksCompletionContributor"/>
         <stubElementTypeHolder class="com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes" externalIdPrefix="sql."/>
-        <stubIndex implementation="com.github.ycyz.starrocks.datagrip.lang.StarRocksTableNameIndex"/>
         <stubIndex implementation="com.github.ycyz.starrocks.datagrip.lang.StarRocksColumnNameIndex"/>
     </extensions>
 

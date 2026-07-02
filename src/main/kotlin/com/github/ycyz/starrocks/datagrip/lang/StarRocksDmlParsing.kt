@@ -1,9 +1,28 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
 import com.intellij.lang.PsiBuilder
+import com.intellij.psi.tree.IElementType
+import com.intellij.sql.dialects.base.SqlGeneratedParserUtil
 import com.intellij.sql.psi.SqlCompositeElementTypes
 
 object StarRocksDmlParsing {
+    @JvmStatic
+    fun dml_statement(builder: PsiBuilder, level: Int): Boolean =
+        insert_statement(builder, level + 1) ||
+            update_statement(builder, level + 1) ||
+            delete_statement(builder, level + 1) ||
+            merge_statement(builder, level + 1) ||
+            select_statement(builder, level + 1)
+
+    @JvmStatic
+    fun select_statement(builder: PsiBuilder, level: Int): Boolean {
+        val word = StarRocksParsingUtil.word(builder)
+        if (word !in QUERY_START_WORDS) {
+            return false
+        }
+        return top_query_expression(builder, level + 1)
+    }
+
     @JvmStatic
     fun qualify_clause(builder: PsiBuilder, level: Int): Boolean {
         if (!StarRocksParsingUtil.tokenIs(builder, "QUALIFY")) {
@@ -83,6 +102,16 @@ object StarRocksDmlParsing {
         return query_expression_body(builder, level, stopAtRightParen = false)
     }
 
+    @JvmStatic
+    fun query_expression(builder: PsiBuilder, level: Int, priority: Int): Boolean {
+        return query_expression_body(builder, level, stopAtRightParen = false)
+    }
+
+    @JvmStatic
+    fun simple_query_expression(builder: PsiBuilder, level: Int): Boolean {
+        return query_expression_body(builder, level, stopAtRightParen = false)
+    }
+
     private fun query_expression_body(builder: PsiBuilder, level: Int, stopAtRightParen: Boolean): Boolean {
         val marker = builder.mark()
         val before = builder.currentOffset
@@ -92,15 +121,16 @@ object StarRocksDmlParsing {
                 parenDepth == 0 && with_clause(builder, level + 1) -> continue
                 parenDepth == 0 && select_clause(builder, level + 1) -> continue
                 parenDepth == 0 && values_clause(builder, level + 1) -> continue
+                parenDepth == 0 && from_clause(builder, level + 1) -> continue
                 parenDepth == 0 && where_clause(builder, level + 1) -> continue
                 parenDepth == 0 && group_by_clause(builder, level + 1) -> continue
                 parenDepth == 0 && having_clause(builder, level + 1) -> continue
                 parenDepth == 0 && order_by_clause(builder, level + 1) -> continue
                 parenDepth == 0 && limit_clause(builder, level + 1) -> continue
                 parenDepth == 0 && window_clause(builder, level + 1) -> continue
+                parenDepth == 0 && set_operation_clause(builder, level + 1) -> continue
                 qualify_clause(builder, level + 1) -> continue
                 table_function_call(builder, level + 1) -> continue
-                parenDepth == 0 && table_reference(builder, level + 1) -> continue
                 parenDepth == 0 && column_reference(builder, level + 1) -> continue
                 else -> {
                     parenDepth = nextParenDepth(builder.tokenText, parenDepth)
@@ -122,23 +152,53 @@ object StarRocksDmlParsing {
         if (!StarRocksParsingUtil.tokenIs(builder, "INSERT")) {
             return false
         }
+        return dmlStatementBody(builder, level, SqlCompositeElementTypes.SQL_INSERT_STATEMENT)
+    }
+
+    @JvmStatic
+    fun update_statement(builder: PsiBuilder, level: Int): Boolean {
+        if (!StarRocksParsingUtil.tokenIs(builder, "UPDATE")) {
+            return false
+        }
+        return dmlStatementBody(builder, level, SqlCompositeElementTypes.SQL_UPDATE_STATEMENT)
+    }
+
+    @JvmStatic
+    fun delete_statement(builder: PsiBuilder, level: Int): Boolean {
+        if (!StarRocksParsingUtil.tokenIs(builder, "DELETE")) {
+            return false
+        }
+        return dmlStatementBody(builder, level, SqlCompositeElementTypes.SQL_DELETE_STATEMENT)
+    }
+
+    @JvmStatic
+    fun merge_statement(builder: PsiBuilder, level: Int): Boolean {
+        if (!StarRocksParsingUtil.tokenIs(builder, "MERGE")) {
+            return false
+        }
+        return dmlStatementBody(builder, level, SqlCompositeElementTypes.SQL_MERGE_STATEMENT)
+    }
+
+    private fun dmlStatementBody(builder: PsiBuilder, level: Int, elementType: IElementType): Boolean {
         val marker = builder.mark()
         val before = builder.currentOffset
         var parenDepth = 0
         while (!builder.eof() && builder.tokenText != ";") {
             when {
+                elementType == SqlCompositeElementTypes.SQL_INSERT_STATEMENT && parenDepth == 0 && insert_target_clause(builder, level + 1) -> continue
                 parenDepth == 0 && with_clause(builder, level + 1) -> continue
                 parenDepth == 0 && select_clause(builder, level + 1) -> continue
                 parenDepth == 0 && values_clause(builder, level + 1) -> continue
+                parenDepth == 0 && from_clause(builder, level + 1) -> continue
                 parenDepth == 0 && where_clause(builder, level + 1) -> continue
                 parenDepth == 0 && group_by_clause(builder, level + 1) -> continue
                 parenDepth == 0 && having_clause(builder, level + 1) -> continue
                 parenDepth == 0 && order_by_clause(builder, level + 1) -> continue
                 parenDepth == 0 && limit_clause(builder, level + 1) -> continue
                 parenDepth == 0 && window_clause(builder, level + 1) -> continue
+                parenDepth == 0 && set_operation_clause(builder, level + 1) -> continue
                 qualify_clause(builder, level + 1) -> continue
                 table_function_call(builder, level + 1) -> continue
-                parenDepth == 0 && table_reference(builder, level + 1) -> continue
                 parenDepth == 0 && column_reference(builder, level + 1) -> continue
                 else -> {
                     parenDepth = nextParenDepth(builder.tokenText, parenDepth)
@@ -147,12 +207,43 @@ object StarRocksDmlParsing {
             }
         }
         return if (builder.currentOffset > before) {
-            marker.done(SqlCompositeElementTypes.SQL_INSERT_STATEMENT)
+            marker.done(elementType)
             true
         } else {
             marker.rollbackTo()
             false
         }
+    }
+
+    @JvmStatic
+    fun insert_target_clause(builder: PsiBuilder, level: Int): Boolean {
+        if (!StarRocksParsingUtil.tokenIs(builder, "INSERT")) {
+            return false
+        }
+        val marker = builder.mark()
+        builder.advanceLexer()
+        StarRocksParsingUtil.skipNoise(builder)
+        val hasTargetIntro = when {
+            StarRocksParsingUtil.consumeWord(builder, "INTO") -> true
+            StarRocksParsingUtil.consumeWord(builder, "OVERWRITE") -> true
+            else -> false
+        }
+        if (!hasTargetIntro) {
+            return marker.rollbackFalse()
+        }
+        StarRocksParsingUtil.skipNoise(builder)
+        StarRocksParsingUtil.consumeWord(builder, "TABLE")
+        StarRocksParsingUtil.skipNoise(builder)
+        val parsed = SqlGeneratedParserUtil.parseReference(
+            builder,
+            level + 1,
+            SqlCompositeElementTypes.SQL_TABLE_REFERENCE
+        )
+        if (!parsed) {
+            return marker.rollbackFalse()
+        }
+        marker.done(StarRocksElementTypes.INSERT_TARGET_CLAUSE)
+        return true
     }
 
     @JvmStatic
@@ -188,9 +279,10 @@ object StarRocksDmlParsing {
             return false
         }
         val marker = builder.mark()
-        val name = builder.mark()
-        builder.advanceLexer()
-        name.done(StarRocksElementTypes.CTE_NAME)
+        if (!SqlGeneratedParserUtil.parseIdentifier(builder, level + 1)) {
+            marker.rollbackTo()
+            return false
+        }
         StarRocksParsingUtil.skipNoise(builder)
         cte_column_list(builder, level + 1)
         StarRocksParsingUtil.skipNoise(builder)
@@ -311,6 +403,71 @@ object StarRocksDmlParsing {
     @JvmStatic
     fun select_item(builder: PsiBuilder, level: Int): Boolean {
         return select_target(builder, level)
+    }
+
+    @JvmStatic
+    fun from_clause(builder: PsiBuilder, level: Int): Boolean {
+        if (!StarRocksParsingUtil.tokenIs(builder, "FROM")) {
+            return false
+        }
+        val marker = builder.mark()
+        val before = builder.currentOffset
+        builder.advanceLexer()
+        StarRocksParsingUtil.skipNoise(builder)
+        val parsed = join_expression(builder, level + 1)
+        while (!builder.eof() && !fromClauseBoundary(builder)) {
+            val current = builder.currentOffset
+            if (!join_expression(builder, level + 1)) {
+                builder.advanceLexer()
+            }
+            if (builder.currentOffset == current && !builder.eof()) {
+                builder.advanceLexer()
+            }
+            StarRocksParsingUtil.skipNoise(builder)
+        }
+        return if (parsed || builder.currentOffset > before) {
+            marker.done(StarRocksElementTypes.FROM_CLAUSE)
+            true
+        } else {
+            marker.rollbackTo()
+            false
+        }
+    }
+
+    @JvmStatic
+    fun join_expression(builder: PsiBuilder, level: Int): Boolean {
+        var expression = tableExpressionMarker(builder, level + 1) ?: return false
+        joinLoop@ while (!builder.eof() && !fromClauseBoundary(builder)) {
+            StarRocksParsingUtil.skipNoise(builder)
+            val joinMarker = when {
+                builder.tokenText == "," -> {
+                    val marker = expression.precede()
+                    builder.advanceLexer()
+                    marker
+                }
+                isJoinOperatorStart(builder) -> {
+                    val marker = expression.precede()
+                    if (!consumeJoinOperator(builder)) {
+                        marker.drop()
+                        break@joinLoop
+                    }
+                    marker
+                }
+                else -> break@joinLoop
+            }
+            StarRocksParsingUtil.skipNoise(builder)
+            tableExpressionMarker(builder, level + 1)
+            StarRocksParsingUtil.skipNoise(builder)
+            join_condition_clause(builder, level + 1)
+            joinMarker.done(StarRocksElementTypes.JOIN_EXPRESSION)
+            expression = joinMarker
+        }
+        return true
+    }
+
+    @JvmStatic
+    fun atom_join_expression(builder: PsiBuilder, level: Int): Boolean {
+        return table_expression(builder, level)
     }
 
     @JvmStatic
@@ -511,6 +668,37 @@ object StarRocksDmlParsing {
         return true
     }
 
+    @JvmStatic
+    fun set_operation_clause(builder: PsiBuilder, level: Int): Boolean {
+        if (StarRocksParsingUtil.word(builder) !in SET_OPERATORS) {
+            return false
+        }
+        val marker = builder.mark()
+        if (!set_operator(builder, level + 1)) {
+            marker.rollbackTo()
+            return false
+        }
+        marker.done(StarRocksElementTypes.SET_OPERATION_CLAUSE)
+        return true
+    }
+
+    @JvmStatic
+    fun set_operator(builder: PsiBuilder, level: Int): Boolean {
+        val word = StarRocksParsingUtil.word(builder)
+        if (word !in SET_OPERATORS) {
+            return false
+        }
+        val marker = builder.mark()
+        builder.advanceLexer()
+        StarRocksParsingUtil.skipNoise(builder)
+        if (StarRocksParsingUtil.word(builder) in SET_OPERATOR_MODIFIERS) {
+            builder.advanceLexer()
+            StarRocksParsingUtil.skipNoise(builder)
+        }
+        marker.done(StarRocksElementTypes.SET_OPERATOR)
+        return true
+    }
+
     private val QUALIFY_BOUNDARIES = setOf(
         "WINDOW",
         "ORDER",
@@ -607,6 +795,10 @@ object StarRocksDmlParsing {
 
     private val QUERY_STARTERS = setOf("SELECT", "WITH", "VALUES")
 
+    private val SET_OPERATORS = setOf("UNION", "INTERSECT", "EXCEPT", "MINUS")
+
+    private val SET_OPERATOR_MODIFIERS = setOf("ALL", "DISTINCT")
+
     private fun expression_clause(
         builder: PsiBuilder,
         level: Int,
@@ -691,45 +883,170 @@ object StarRocksDmlParsing {
         parseTableFunctionAliasColumnList(builder)
     }
 
-    private fun table_reference(builder: PsiBuilder, level: Int): Boolean {
-        val word = StarRocksParsingUtil.word(builder)
-        if (word !in TABLE_REFERENCE_STARTERS) {
-            return false
-        }
-        val marker = builder.mark()
-        val clause = if (word == "FROM") builder.mark() else null
-        builder.advanceLexer()
+    private fun table_expression(builder: PsiBuilder, level: Int): Boolean {
+        return tableExpressionMarker(builder, level) != null
+    }
+
+    private fun tableExpressionMarker(builder: PsiBuilder, level: Int): PsiBuilder.Marker? {
         StarRocksParsingUtil.skipNoise(builder)
+        val marker = builder.mark()
+        if (!tableExpressionBody(builder, level + 1)) {
+            marker.rollbackTo()
+            return null
+        }
+        marker.done(StarRocksElementTypes.TABLE_EXPRESSION)
+        return marker
+    }
+
+    private fun tableExpressionBody(builder: PsiBuilder, level: Int): Boolean {
         val derivedTable = builder.mark()
         if (parenthesized_query_expression(builder, level + 1)) {
             parseTableAlias(builder)
             derivedTable.done(StarRocksElementTypes.TABLE_REFERENCE)
-            clause?.done(StarRocksElementTypes.FROM_CLAUSE)
-            marker.drop()
             return true
         }
         derivedTable.drop()
-        if (StarRocksParsingUtil.word(builder) == "UNNEST" || !StarRocksParsingUtil.isIdentifier(builder)) {
-            clause?.drop()
-            marker.rollbackTo()
+        val parenthesizedJoin = builder.mark()
+        if (parenthesized_join_expression(builder, level + 1)) {
+            parseTableAlias(builder)
+            parenthesizedJoin.done(StarRocksElementTypes.TABLE_REFERENCE)
+            return true
+        }
+        parenthesizedJoin.drop()
+        if (StarRocksParsingUtil.word(builder) == "UNNEST") {
+            val table = builder.mark()
+            if (!table_function_call(builder, level + 1)) {
+                table.rollbackTo()
+                return false
+            }
+            table.done(StarRocksElementTypes.TABLE_REFERENCE)
+            return true
+        }
+        if (!StarRocksParsingUtil.isIdentifier(builder)) {
             return false
         }
         val table = builder.mark()
-        val name = builder.mark()
-        val parsed = StarRocksParsingUtil.consumeQualifiedIdentifier(builder)
+        val parsed = SqlGeneratedParserUtil.parseReference(
+            builder,
+            level + 1,
+            SqlCompositeElementTypes.SQL_TABLE_REFERENCE
+        )
         if (!parsed) {
-            name.rollbackTo()
             table.rollbackTo()
-            clause?.drop()
+            return false
+        }
+        parseTableAlias(builder)
+        table.done(StarRocksElementTypes.TABLE_REFERENCE)
+        return true
+    }
+
+    private fun parenthesized_join_expression(builder: PsiBuilder, level: Int): Boolean {
+        if (builder.tokenText != "(" || nextMeaningfulWordIsQueryStarter(builder)) {
+            return false
+        }
+        val marker = builder.mark()
+        builder.advanceLexer()
+        StarRocksParsingUtil.skipNoise(builder)
+        if (!join_expression(builder, level + 1)) {
             marker.rollbackTo()
             return false
         }
-        name.done(StarRocksElementTypes.TABLE_REFERENCE_NAME)
-        parseTableAlias(builder)
-        table.done(StarRocksElementTypes.TABLE_REFERENCE)
-        clause?.done(StarRocksElementTypes.FROM_CLAUSE)
-        marker.drop()
+        StarRocksParsingUtil.skipNoise(builder)
+        if (builder.tokenText == ")") {
+            builder.advanceLexer()
+        }
+        marker.done(StarRocksElementTypes.PARENTHESIZED_JOIN_EXPRESSION)
         return true
+    }
+
+    private fun consumeJoinOperator(builder: PsiBuilder): Boolean {
+        val marker = builder.mark()
+        val before = builder.currentOffset
+        var sawJoin = false
+        var consumed = false
+        while (!builder.eof()) {
+            val word = StarRocksParsingUtil.word(builder) ?: break
+            when {
+                word == "JOIN" || word == "STRAIGHT_JOIN" -> {
+                    builder.advanceLexer()
+                    sawJoin = true
+                    consumed = true
+                    break
+                }
+                word in JOIN_MODIFIERS -> {
+                    builder.advanceLexer()
+                    consumed = true
+                    StarRocksParsingUtil.skipNoise(builder)
+                }
+                else -> break
+            }
+        }
+        return if (sawJoin && consumed && builder.currentOffset > before) {
+            marker.drop()
+            true
+        } else {
+            marker.rollbackTo()
+            false
+        }
+    }
+
+    private fun isJoinOperatorStart(builder: PsiBuilder): Boolean {
+        return StarRocksParsingUtil.word(builder) in JOIN_STARTERS
+    }
+
+    private fun join_condition_clause(builder: PsiBuilder, level: Int): Boolean {
+        return when (StarRocksParsingUtil.word(builder)) {
+            "ON" -> {
+                val marker = builder.mark()
+                builder.advanceLexer()
+                StarRocksParsingUtil.skipNoise(builder)
+                val expression = builder.mark()
+                val before = builder.currentOffset
+                consumeExpressionItems(builder, level + 1, JOIN_CONDITION_BOUNDARIES, stopAtComma = false)
+                if (builder.currentOffset > before) {
+                    expression.done(StarRocksElementTypes.PREDICATE_EXPRESSION)
+                } else {
+                    expression.drop()
+                }
+                marker.done(StarRocksElementTypes.JOIN_CONDITION_CLAUSE)
+                true
+            }
+            "USING" -> {
+                val marker = builder.mark()
+                builder.advanceLexer()
+                StarRocksParsingUtil.skipNoise(builder)
+                if (builder.tokenText == "(") {
+                    builder.advanceLexer()
+                    parseUsingReferenceList(builder)
+                    if (builder.tokenText == ")") {
+                        builder.advanceLexer()
+                    }
+                }
+                marker.done(StarRocksElementTypes.USING_CLAUSE)
+                true
+            }
+            else -> false
+        }
+    }
+
+    private fun parseUsingReferenceList(builder: PsiBuilder): Boolean {
+        val list = builder.mark()
+        var parsed = false
+        while (!builder.eof() && builder.tokenText != ")") {
+            when {
+                builder.tokenText == "," -> builder.advanceLexer()
+                StarRocksParsingUtil.isIdentifier(builder) -> {
+                    val reference = builder.mark()
+                    builder.advanceLexer()
+                    reference.done(SqlCompositeElementTypes.SQL_COLUMN_REFERENCE)
+                    parsed = true
+                }
+                else -> builder.advanceLexer()
+            }
+            StarRocksParsingUtil.skipNoise(builder)
+        }
+        list.done(SqlCompositeElementTypes.SQL_REFERENCE_LIST)
+        return parsed
     }
 
     private fun withClauseBoundary(builder: PsiBuilder): Boolean {
@@ -779,6 +1096,10 @@ object StarRocksDmlParsing {
 
     private fun limitBoundary(builder: PsiBuilder): Boolean {
         return builder.tokenText == ";" || topLevelBoundary(builder, LIMIT_BOUNDARIES)
+    }
+
+    private fun fromClauseBoundary(builder: PsiBuilder): Boolean {
+        return builder.tokenText == ";" || builder.tokenText == ")" || StarRocksParsingUtil.word(builder) in FROM_BOUNDARIES
     }
 
     private fun topLevelBoundary(builder: PsiBuilder, words: Set<String>): Boolean {
@@ -951,6 +1272,11 @@ object StarRocksDmlParsing {
         return result
     }
 
+    private fun PsiBuilder.Marker.rollbackFalse(): Boolean {
+        rollbackTo()
+        return false
+    }
+
     private fun parseTableAlias(builder: PsiBuilder) {
         StarRocksParsingUtil.skipNoise(builder)
         StarRocksParsingUtil.consumeWord(builder, "AS")
@@ -1008,9 +1334,36 @@ object StarRocksDmlParsing {
         "MINUS"
     )
 
-    private val TABLE_REFERENCE_STARTERS = setOf("FROM", "JOIN")
+    private val FROM_BOUNDARIES = setOf(
+        "WHERE",
+        "GROUP",
+        "HAVING",
+        "QUALIFY",
+        "WINDOW",
+        "ORDER",
+        "LIMIT",
+        "UNION",
+        "INTERSECT",
+        "EXCEPT",
+        "MINUS"
+    )
 
-    private val COLUMN_REFERENCE_BOUNDARIES = TABLE_REFERENCE_STARTERS + TABLE_ALIAS_BOUNDARIES + setOf(
+    private val JOIN_STARTERS = setOf(
+        "JOIN",
+        "INNER",
+        "LEFT",
+        "RIGHT",
+        "FULL",
+        "CROSS",
+        "NATURAL",
+        "STRAIGHT_JOIN"
+    )
+
+    private val JOIN_MODIFIERS = JOIN_STARTERS + setOf("OUTER", "SEMI", "ANTI")
+
+    private val JOIN_CONDITION_BOUNDARIES = FROM_BOUNDARIES + JOIN_STARTERS
+
+    private val COLUMN_REFERENCE_BOUNDARIES = setOf("FROM") + TABLE_ALIAS_BOUNDARIES + JOIN_STARTERS + setOf(
         "SELECT",
         "WITH",
         "AS",
@@ -1028,6 +1381,12 @@ object StarRocksDmlParsing {
         "FIRST",
         "LAST",
         "AS"
+    )
+
+    private val QUERY_START_WORDS = setOf(
+        "SELECT",
+        "WITH",
+        "VALUES"
     )
 
     private data class SelectItemPlan(

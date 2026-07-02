@@ -8,6 +8,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlDefinition
 import java.util.Locale
 
 class StarRocksColumnReference(element: PsiElement) :
@@ -81,7 +82,7 @@ class StarRocksColumnReference(element: PsiElement) :
         tableTarget: PsiElement,
         columnName: String
     ): PsiElement? {
-        if (tableTarget.node?.elementType == StarRocksElementTypes.CTE_NAME) {
+        if (isCteTarget(tableTarget)) {
             return resolveColumnOnCte(tableTarget, columnName)
         }
         val tableStatement = containingStatement(tableTarget) ?: tableTarget.containingFile ?: return null
@@ -96,9 +97,13 @@ class StarRocksColumnReference(element: PsiElement) :
             return null
         }
         val containingFile = tableReference.containingFile ?: return null
+        tableReference.reference
+            ?.resolve()
+            ?.takeIf { it.containingFile == containingFile }
+            ?.let { return it }
         val candidates = mutableListOf<PsiElement>()
-        collectElements(containingFile, StarRocksElementTypes.CTE_NAME, candidates)
-        collectElements(containingFile, StarRocksElementTypes.TABLE_NAME, candidates)
+        collectElements(containingFile, StarRocksElementTypes.CTE_DEFINITION, candidates)
+        collectLocalTableTargets(containingFile, candidates)
         val referenceOffset = tableReference.textRange.startOffset
         return candidates
             .filter { it.textRange.startOffset < referenceOffset && matchesTableName(it, referenceName) }
@@ -106,10 +111,14 @@ class StarRocksColumnReference(element: PsiElement) :
     }
 
     private fun resolveColumnOnCte(
-        cteName: PsiElement,
+        cteTarget: PsiElement,
         columnName: String
     ): PsiElement? {
-        val cteDefinition = containingElement(cteName, StarRocksElementTypes.CTE_DEFINITION) ?: return null
+        val cteDefinition = if (cteTarget.node?.elementType == StarRocksElementTypes.CTE_DEFINITION) {
+            cteTarget
+        } else {
+            containingElement(cteTarget, StarRocksElementTypes.CTE_DEFINITION)
+        } ?: return null
         val explicitColumns = mutableListOf<PsiElement>()
         collectCteColumnNames(cteDefinition, cteDefinition, explicitColumns)
         if (explicitColumns.isNotEmpty()) {
@@ -118,6 +127,11 @@ class StarRocksColumnReference(element: PsiElement) :
         val outputs = mutableListOf<PsiElement>()
         collectDerivedTableSelectOutputs(cteDefinition, cteDefinition, outputs)
         return outputs.firstOrNull { matchesName(it, columnName) }
+    }
+
+    private fun isCteTarget(element: PsiElement): Boolean {
+        val type = element.node?.elementType
+        return type == StarRocksElementTypes.CTE_DEFINITION
     }
 
     private fun resolveColumnOnDerivedTable(
@@ -390,11 +404,22 @@ class StarRocksColumnReference(element: PsiElement) :
         element.children.forEach { collectElements(it, elementType, result) }
     }
 
+    private fun collectLocalTableTargets(
+        element: PsiElement,
+        result: MutableList<PsiElement>
+    ) {
+        if (element is SqlDefinition && element.node?.elementType in LOCAL_TABLE_DEFINITION_TYPES) {
+            result += element
+        }
+        element.children.forEach { collectLocalTableTargets(it, result) }
+    }
+
     private fun matchesName(
         candidate: PsiElement,
         referenceName: String
     ): Boolean {
         val candidateName = when (candidate) {
+            is SqlDefinition -> sqlDefinitionName(candidate)
             is StarRocksNamedStubElement -> candidate.name
             else -> candidate.text
         }
@@ -406,6 +431,7 @@ class StarRocksColumnReference(element: PsiElement) :
         referenceName: String
     ): Boolean {
         val candidateName = when (candidate) {
+            is SqlDefinition -> sqlDefinitionName(candidate)
             is StarRocksNamedStubElement -> candidate.name
             else -> candidate.text
         }
@@ -418,7 +444,19 @@ class StarRocksColumnReference(element: PsiElement) :
         }
     }
 
+    private fun sqlDefinitionName(definition: SqlDefinition): String {
+        val nameElementText = definition.nameElement?.text
+        val normalizedNameElement = StarRocksNamedStubElement.normalizeName(nameElementText.orEmpty())
+        return normalizedNameElement.takeIf { it.isNotBlank() } ?: definition.name.orEmpty()
+    }
+
     private companion object {
+        private val LOCAL_TABLE_DEFINITION_TYPES = setOf(
+            SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
+        )
+
         private val STATEMENT_TYPES = StarRocksStatementElementSets.STATEMENT_TYPES
         private val QUERY_SCOPE_TYPES = StarRocksStatementElementSets.QUERY_SCOPE_TYPES
     }

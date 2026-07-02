@@ -39,10 +39,6 @@ class StarRocksNamedStubElementType(
 
     override fun indexStub(stub: StarRocksNamedStub, sink: IndexSink) {
         when (this) {
-            StarRocksStubElementTypes.STARROCKS_TABLE_NAME -> {
-                StarRocksStubIndexKeys.tableKeys(stub.name)
-                    .forEach { sink.occurrence(StarRocksTableNameIndex.KEY, it) }
-            }
             StarRocksStubElementTypes.STARROCKS_COLUMN_NAME -> {
                 StarRocksStubIndexKeys.nameKeys(stub.name)
                     .forEach { sink.occurrence(StarRocksColumnNameIndex.KEY, it) }
