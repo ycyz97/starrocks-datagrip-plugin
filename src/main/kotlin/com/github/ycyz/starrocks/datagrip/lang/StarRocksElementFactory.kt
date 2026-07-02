@@ -204,6 +204,16 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             )
             registerImplementation(
                 info,
+                StarRocksElementTypes.GRANT_STATEMENT,
+                SqlGrantStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
+                StarRocksElementTypes.REVOKE_STATEMENT,
+                SqlRevokeStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
                 SqlCompositeElementTypes.SQL_COMMIT_STATEMENT,
                 SqlCommitStatementImpl::class.java
             )
@@ -282,6 +292,8 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT,
             SqlCompositeElementTypes.SQL_GRANT_STATEMENT,
             SqlCompositeElementTypes.SQL_REVOKE_STATEMENT,
+            StarRocksElementTypes.GRANT_STATEMENT,
+            StarRocksElementTypes.REVOKE_STATEMENT,
             SqlCompositeElementTypes.SQL_COMMIT_STATEMENT,
             SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT,
             SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT
