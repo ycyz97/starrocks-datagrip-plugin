@@ -21,6 +21,7 @@ import com.intellij.sql.psi.impl.SqlCreateTableStatementImpl
 import com.intellij.sql.psi.impl.SqlCreateViewStatementImpl
 import com.intellij.sql.psi.impl.SqlDeleteStatementImpl
 import com.intellij.sql.psi.impl.SqlExpressionImpl
+import com.intellij.sql.psi.impl.SqlExplainStatementImpl
 import com.intellij.sql.psi.impl.SqlFromClauseImpl
 import com.intellij.sql.psi.impl.SqlGrantStatementImpl
 import com.intellij.sql.psi.impl.SqlInsertStatementImpl
@@ -29,6 +30,7 @@ import com.intellij.sql.psi.impl.SqlJoinExpressionImpl
 import com.intellij.sql.psi.impl.SqlMergeStatementImpl
 import com.intellij.sql.psi.impl.SqlRevokeStatementImpl
 import com.intellij.sql.psi.impl.SqlRollbackStatementImpl
+import com.intellij.sql.psi.impl.SqlSetStatementImpl
 import com.intellij.sql.psi.impl.SqlStatementImpl
 import com.intellij.sql.psi.impl.SqlTableExpressionImpl
 import com.intellij.sql.psi.impl.SqlTruncateTableStatementImpl
@@ -194,6 +196,16 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             )
             registerImplementation(
                 info,
+                SqlCompositeElementTypes.SQL_SET_STATEMENT,
+                SqlSetStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_EXPLAIN_STATEMENT,
+                SqlExplainStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
                 SqlCompositeElementTypes.SQL_GRANT_STATEMENT,
                 SqlGrantStatementImpl::class.java
             )
@@ -290,6 +302,8 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT,
             SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT,
             SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT,
+            SqlCompositeElementTypes.SQL_SET_STATEMENT,
+            SqlCompositeElementTypes.SQL_EXPLAIN_STATEMENT,
             SqlCompositeElementTypes.SQL_GRANT_STATEMENT,
             SqlCompositeElementTypes.SQL_REVOKE_STATEMENT,
             StarRocksElementTypes.GRANT_STATEMENT,

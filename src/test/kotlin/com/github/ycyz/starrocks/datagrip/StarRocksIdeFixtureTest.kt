@@ -217,6 +217,7 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         assertElementPsiClass(file, SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT, "SqlCreateCatalogStatementImpl")
         assertElementPsiClass(file, SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT, "SqlAlterTableStatementImpl")
         assertElementPsiClass(file, SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT, "SqlTruncateTableStatementImpl")
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_EXPLAIN_STATEMENT, "SqlExplainStatementImpl")
     }
 
     fun testSecurityCallAndTransactionEntrypointsUseConcretePsi() {
@@ -301,6 +302,8 @@ class StarRocksIdeFixtureTest : BasePlatformTestCase() {
         val highlights = myFixture.doHighlighting()
 
         assertSame(StarRocksDialect.INSTANCE, file.language)
+        assertElementCountAtLeast(file, SqlCompositeElementTypes.SQL_SET_STATEMENT, 2)
+        assertElementPsiClass(file, SqlCompositeElementTypes.SQL_SET_STATEMENT, "SqlSetStatementImpl")
         assertTrue("Highlighting should complete for DML WITH query files.", highlights.isNotEmpty())
     }
 
