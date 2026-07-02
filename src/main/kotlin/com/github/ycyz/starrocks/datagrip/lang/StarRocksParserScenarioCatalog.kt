@@ -71,6 +71,16 @@ object StarRocksParserScenarioCatalog {
             )
         ),
         StarRocksParserScenario(
+            name = "Schema and index DDL",
+            fileName = "ddl/schema-index.sql",
+            milestone = StarRocksGrammarMilestone.TABLE_DDL,
+            requiredFeatures = setOf(
+                StarRocksFeature.SCHEMA_STATEMENT,
+                StarRocksFeature.INDEX_STATEMENT,
+                StarRocksFeature.PLATFORM_STATEMENT_ENTRYPOINTS
+            )
+        ),
+        StarRocksParserScenario(
             name = "Type syntax",
             fileName = "types/complex-types.sql",
             milestone = StarRocksGrammarMilestone.TYPES,
@@ -95,7 +105,7 @@ object StarRocksParserScenarioCatalog {
                 StarRocksFeature.CATALOG_STATEMENT,
                 StarRocksFeature.RESOURCE_STATEMENT,
                 StarRocksFeature.STARROCKS_PROPERTIES,
-                StarRocksFeature.STARROCKS_STATEMENT_CLASSIFIER
+                StarRocksFeature.PLATFORM_STATEMENT_ENTRYPOINTS
             )
         ),
         StarRocksParserScenario(
@@ -105,7 +115,7 @@ object StarRocksParserScenarioCatalog {
             requiredFeatures = setOf(
                 StarRocksFeature.LOAD_STATEMENT,
                 StarRocksFeature.TASK_STATEMENT,
-                StarRocksFeature.STARROCKS_STATEMENT_CLASSIFIER
+                StarRocksFeature.PLATFORM_STATEMENT_ENTRYPOINTS
             )
         ),
         StarRocksParserScenario(
@@ -114,7 +124,18 @@ object StarRocksParserScenarioCatalog {
             milestone = StarRocksGrammarMilestone.ADMINISTRATION,
             requiredFeatures = setOf(
                 StarRocksFeature.ADMIN_STATEMENT,
-                StarRocksFeature.STARROCKS_STATEMENT_CLASSIFIER
+                StarRocksFeature.PLATFORM_STATEMENT_ENTRYPOINTS
+            )
+        ),
+        StarRocksParserScenario(
+            name = "Security, call, and transaction statements",
+            fileName = "admin/security-transaction.sql",
+            milestone = StarRocksGrammarMilestone.ADMINISTRATION,
+            requiredFeatures = setOf(
+                StarRocksFeature.SECURITY_STATEMENT,
+                StarRocksFeature.TRANSACTION_STATEMENT,
+                StarRocksFeature.CALL_STATEMENT,
+                StarRocksFeature.PLATFORM_STATEMENT_ENTRYPOINTS
             )
         ),
         StarRocksParserScenario(
@@ -143,7 +164,7 @@ object StarRocksParserScenarioCatalog {
             milestone = StarRocksGrammarMilestone.BACKUP_RESTORE,
             requiredFeatures = setOf(
                 StarRocksFeature.BACKUP_RESTORE_STATEMENT,
-                StarRocksFeature.STARROCKS_STATEMENT_CLASSIFIER
+                StarRocksFeature.PLATFORM_STATEMENT_ENTRYPOINTS
             )
         )
     )

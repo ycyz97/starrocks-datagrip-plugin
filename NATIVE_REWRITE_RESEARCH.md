@@ -1,5 +1,38 @@
 # Native StarRocks Rewrite Research
 
+## 2026-06-30 Platform Architecture Update
+
+Inspection of the bundled DataGrip 2025.1.4.1 (`DB-251.28774.27`)
+`database-plugin.jar` confirms that bundled SQL dialects share the JetBrains SQL
+parser framework instead of maintaining unrelated hand-written parser stacks.
+
+Observed signatures and call targets:
+
+- `GenericParser extends Sql92Parser`.
+- `Sql92Parser extends SqlParser` and delegates to `Sql92GeneratedParser`,
+  `Sql92DmlParsing`, `Sql92DdlParsing`, and `Sql92ExpressionParsing`.
+- `CHouseParser extends SqlParser` and delegates to `CHouseGeneratedParser`,
+  `CHouseDmlParsing`, `CHouseDdlParsing`, and `CHouseExpressionParsing`.
+- `MysqlParser extends SqlParser` and delegates to `MysqlGeneratedParser`,
+  `MysqlDmlParsing`, `MysqlDdlParsing`, and `MysqlExpressionParsing`.
+- BigQuery, Snowflake, Hive/HiveBase, and PostgreSQL also extend `SqlParser`
+  or a dialect-specific `SqlParser` base and delegate their entry points to
+  generated dialect grammar classes.
+- Parser definitions extend `SqlParserDefinitionBase` and provide dialect
+  lexers, parsers, file element types, and element factories.
+
+Updated direction:
+
+- The final StarRocks language layer should be a JetBrains SQL-framework
+  dialect, not a standalone lightweight parser.
+- `StarRocksParser extends SqlParser` and mirrors full bundled dialects by
+  delegating to generated
+  `StarRocksGeneratedParser`, `StarRocksDmlParsing`,
+  `StarRocksDdlParsing`, and `StarRocksExpressionParsing`.
+- StarRocks-specific syntax remains possible in this model. It should be added
+  through generated StarRocks grammar and custom StarRocks PSI nodes, not through
+  broad formatter hacks or a permanently separate lightweight parser.
+
 ## Legacy Baseline and Current Integration Map
 
 The rewrite branch started from a MySQL-compatible JetBrains SQL integration,
@@ -25,15 +58,14 @@ Legacy implementation constraints that the rewrite is replacing:
 - Formatter behavior depends on whole-document string rewrites.
 - Data source behavior still depends partly on MySQL dialect/type system.
 
-Current rewrite status:
+Current rewrite status before the 2026-06-30 architecture update:
 
 - `StarRocksDialect` now extends `SqlLanguageDialectBase`.
-- `StarRocksParser` is an independent statement-level parser skeleton.
+- `StarRocksParser` was an independent statement-level parser skeleton.
 - `StarRocksLexer` is an independent lexer skeleton.
 - `StarRocksParserDefinition` uses the StarRocks element factory.
-- The current parser is intentionally coarse and must evolve into structured
-  grammar-backed parsing before completion, formatting, and resolution are
-  rebuilt.
+- That coarse parser direction has been superseded by the platform-framework
+  decision above.
 - The JDBC driver configuration may still use MySQL wire-protocol classes and
   URLs where StarRocks compatibility requires it; that is separate from the SQL
   language/parser architecture.
@@ -134,6 +166,24 @@ rewired.
 The parser scenario catalog now mirrors those SQL fixtures in Kotlin. This keeps
 the acceptance matrix close to source code and gives future automated parser
 tests a stable list of files, milestones, and required features.
+
+The first generated-grammar-shaped StarRocks skeleton now exists under the
+final language package:
+
+- `StarRocksGeneratedParser`
+- `StarRocksDmlParsing`
+- `StarRocksDdlParsing`
+- `StarRocksExpressionParsing`
+- `StarRocksParsingUtil`
+
+This skeleton mirrors the public entry point shape used by bundled dialects
+such as ClickHouse, MySQL, BigQuery, Snowflake, Hive, and PostgreSQL
+(`statement`, DML query parsing, DDL type parsing, value-expression parsing,
+and an `EXTENDS_SETS_` hook). `StarRocksParser` now extends `SqlParser`
+directly and delegates those entry points to the StarRocks grammar helpers.
+The current StarRocks grammar covers ordinary SELECT/INSERT/WITH entrypoints,
+StarRocks `QUALIFY` and `UNNEST`, `CREATE TABLE`, `CREATE MATERIALIZED VIEW`,
+`PROPERTIES`, and complex types such as `ARRAY`, `MAP`, `STRUCT`, and `JSON`.
 
 `validateRewriteScenarios` checks that the SQL fixture files exist and are
 documented. It is intentionally lightweight and does not start the IDE.

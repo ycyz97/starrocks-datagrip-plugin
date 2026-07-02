@@ -3,16 +3,6 @@ package com.github.ycyz.starrocks.datagrip.lang
 import java.util.Locale
 
 object StarRocksStubIndexKeys {
-    fun tableKeys(name: String): Set<String> {
-        val keys = linkedSetOf<String>()
-        addNameKeys(keys, name)
-        val shortName = splitQualifiedIdentifier(name).lastOrNull().orEmpty()
-        if (shortName.isNotBlank()) {
-            addNameKeys(keys, shortName)
-        }
-        return keys
-    }
-
     fun nameKeys(name: String): Set<String> {
         val keys = linkedSetOf<String>()
         addNameKeys(keys, name)

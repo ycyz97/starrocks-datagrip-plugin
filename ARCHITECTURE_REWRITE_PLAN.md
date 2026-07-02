@@ -11,6 +11,105 @@ The goal is not to keep extending lenient parser fallbacks. The goal is to build
 first-class StarRocks support for SQL syntax, data sources, type metadata, DDL
 loading, completion, formatting, and local SQL context resolution.
 
+## Platform Dialect Evidence
+
+DataGrip 2025.1.4.1 (`DB-251.28774.27`) bundled SQL dialects use one common
+architecture:
+
+- `GenericParserDefinition` extends `SqlParserDefinitionBase`.
+- `GenericParser` extends `Sql92Parser`.
+- `Sql92Parser` extends `SqlParser` and delegates grammar entry points to
+  `Sql92GeneratedParser`, `Sql92DmlParsing`, `Sql92DdlParsing`, and
+  `Sql92ExpressionParsing`.
+- Full dialects such as ClickHouse, MySQL, BigQuery, Snowflake, Hive, and
+  PostgreSQL do not hand-roll a separate parser
+  stack. They extend `SqlParser` and delegate the same entry points to their own
+  generated grammar classes:
+  - `CHouseParser` -> `CHouseGeneratedParser`, `CHouseDmlParsing`,
+    `CHouseDdlParsing`, `CHouseExpressionParsing`
+  - `MysqlParser` -> `MysqlGeneratedParser`, `MysqlDmlParsing`,
+    `MysqlDdlParsing`, `MysqlExpressionParsing`
+  - `BigQueryParser`, `SFlakeParser`, `HiveParserBase`, and `PgParser` follow
+    the same `SqlParser` plus generated dialect grammar shape.
+- These dialects also provide dialect-specific `Lexer`, `ParserDefinition`,
+  `ElementTypes`, `ElementFactory`, and optional `SqlFormatterHelper`.
+
+Conclusion: the target architecture is not a standalone lightweight parser, and
+not a permanent direct reuse of Generic SQL. The target architecture is a
+StarRocks dialect built on the JetBrains SQL parser framework, with
+StarRocks-specific generated grammar where StarRocks diverges from SQL92 or
+Generic SQL.
+
+## Architecture Decision
+
+StarRocks should follow the same shape as mature bundled dialects:
+
+1. `StarRocksParserDefinition extends SqlParserDefinitionBase`.
+2. `StarRocksLexer` must emit platform SQL token types, especially registered
+   keyword token types, so the JetBrains SQL parser and formatter can recognize
+   statements.
+3. `StarRocksParser` should extend `SqlParser` directly and delegate to
+   `StarRocksGeneratedParser`, `StarRocksDmlParsing`,
+   `StarRocksDdlParsing`, and `StarRocksExpressionParsing`, mirroring
+   ClickHouse/MySQL/BigQuery/Snowflake/Hive/PostgreSQL.
+4. `StarRocksElementFactory` should delegate platform SQL element types to a
+   platform SQL element factory, and create custom PSI only for real StarRocks
+   element types.
+5. `StarRocksFormatterHelper` should only map real StarRocks PSI nodes to SQL
+   formatter blocks. It must not be used to compensate for missing grammar.
+6. Database integration may temporarily reuse generic database components where
+   StarRocks behavior is compatible, but the SQL language architecture must be
+   StarRocks-owned.
+
+This answers the two key architecture questions:
+
+- Other dialects do reuse the JetBrains SQL parser framework and generated SQL
+  grammar infrastructure. Mature dialects do not merely register Generic SQL;
+  they provide dialect-specific generated grammar classes where needed.
+- Reusing the platform framework does not prevent StarRocks-specific syntax.
+  It is exactly how bundled dialects customize syntax. StarRocks-specific
+  clauses such as `QUALIFY`, StarRocks DDL, table functions, complex types,
+  properties, and materialized view statements should be added through
+  StarRocks grammar extensions and custom PSI nodes.
+
+## Current Code Disposition
+
+Keep and align with the target architecture:
+
+- `StarRocksDialect`
+- `StarRocksParserDefinition`
+- `StarRocksLexer`
+- `StarRocksParser`
+- `StarRocksElementFactory`
+- `StarRocksKeywordCatalog`
+- function/type catalogs
+- DBMS, driver config, type system, and definition provider classes
+- fixture files under `src/testData/sql`
+
+Migrate instead of expanding in the current form:
+
+- `StarRocksExpressionParser`
+- `StarRocksSegmentParser`
+- `StarRocksStatementClassifier`
+- custom `StarRocksElementTypes` that only exist because of the lightweight
+  parser
+- local resolve code that depends on lightweight parser-only PSI shapes
+- tests that assert old custom statement nodes instead of platform SQL PSI
+
+Use only as temporary scaffolding:
+
+- Generic formatter delegation is acceptable for normal SQL until StarRocks
+  grammar nodes exist.
+- Stable/no-op formatter behavior is acceptable only for syntax that cannot yet
+  be safely formatted by platform SQL.
+
+Delete candidates after generated grammar migration:
+
+- parser helpers that duplicate platform grammar behavior;
+- formatter block mappings for custom nodes that no longer exist;
+- scenario assertions tied to the lightweight parser tree rather than user
+  visible behavior.
+
 ## Branch Strategy
 
 - `main` remains the stable release branch.

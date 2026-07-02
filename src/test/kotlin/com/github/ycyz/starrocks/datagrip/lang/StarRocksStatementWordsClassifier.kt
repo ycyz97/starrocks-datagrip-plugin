@@ -26,6 +26,8 @@ object StarRocksStatementWordsClassifier {
             "BACKUP", "RESTORE", "RECOVER" -> StarRocksStatementFamily.BACKUP_RESTORE
             "ANALYZE" -> StarRocksStatementFamily.ADMIN
             "ADMIN" -> StarRocksStatementFamily.ADMIN
+            "GRANT", "REVOKE", "CALL", "BEGIN", "COMMIT", "ROLLBACK" -> StarRocksStatementFamily.ADMIN
+            "START" -> if (wordAt(1) == "TRANSACTION") StarRocksStatementFamily.ADMIN else null
             "SET", "UNSET", "KILL", "SYNC" -> StarRocksStatementFamily.ADMIN
             else -> null
         }
@@ -45,6 +47,10 @@ object StarRocksStatementWordsClassifier {
             wordAt(1) == "RESOURCE" -> StarRocksStatementFamily.RESOURCE
             wordAt(1) == "ROUTINE" && wordAt(2) == "LOAD" -> StarRocksStatementFamily.ROUTINE_LOAD
             wordAt(1) == "REPOSITORY" -> StarRocksStatementFamily.BACKUP_RESTORE
+            wordAt(1) == "USER" || wordAt(1) == "ROLE" -> StarRocksStatementFamily.ADMIN
+            wordAt(1) == "DATABASE" || wordAt(1) == "SCHEMA" -> StarRocksStatementFamily.TABLE_DDL
+            wordAt(1) == "INDEX" -> StarRocksStatementFamily.TABLE_DDL
+            wordAt(1) == "BITMAP" && wordAt(2) == "INDEX" -> StarRocksStatementFamily.TABLE_DDL
             else -> null
         }
     }
@@ -61,6 +67,8 @@ object StarRocksStatementWordsClassifier {
             "CATALOG" -> StarRocksStatementFamily.CATALOG
             "RESOURCE" -> StarRocksStatementFamily.RESOURCE
             "ROUTINE" -> if (wordAt(2) == "LOAD") StarRocksStatementFamily.ROUTINE_LOAD else null
+            "USER", "ROLE" -> StarRocksStatementFamily.ADMIN
+            "DATABASE", "SCHEMA" -> StarRocksStatementFamily.TABLE_DDL
             else -> null
         }
     }
@@ -77,6 +85,8 @@ object StarRocksStatementWordsClassifier {
             "CATALOG" -> StarRocksStatementFamily.CATALOG
             "RESOURCE" -> StarRocksStatementFamily.RESOURCE
             "REPOSITORY" -> StarRocksStatementFamily.BACKUP_RESTORE
+            "USER", "ROLE" -> StarRocksStatementFamily.ADMIN
+            "DATABASE", "SCHEMA", "INDEX" -> StarRocksStatementFamily.TABLE_DDL
             else -> null
         }
     }
@@ -103,6 +113,7 @@ object StarRocksStatementWordsClassifier {
             }
             "CREATE" -> when (wordAt(2)) {
                 "TABLE" -> StarRocksStatementFamily.TABLE_DDL
+                "DATABASE", "SCHEMA" -> StarRocksStatementFamily.TABLE_DDL
                 "VIEW" -> StarRocksStatementFamily.VIEW
                 "MATERIALIZED" -> if (wordAt(3) == "VIEW") {
                     StarRocksStatementFamily.MATERIALIZED_VIEW

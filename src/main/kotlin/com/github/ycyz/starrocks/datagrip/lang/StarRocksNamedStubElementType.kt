@@ -10,9 +10,9 @@ import com.intellij.psi.stubs.StubInputStream
 import com.intellij.psi.stubs.StubOutputStream
 
 class StarRocksNamedStubElementType(
-    private val externalName: String
+    externalName: String
 ) : IStubElementType<StarRocksNamedStub, StarRocksNamedStubElement>(externalName, StarRocksDialect.INSTANCE) {
-    override fun getExternalId(): String = "sql.$externalName"
+    override fun getExternalId(): String = "sql.${super.toString()}"
 
     override fun createPsi(stub: StarRocksNamedStub): StarRocksNamedStubElement {
         return StarRocksNamedStubElement(stub, this)
@@ -39,10 +39,6 @@ class StarRocksNamedStubElementType(
 
     override fun indexStub(stub: StarRocksNamedStub, sink: IndexSink) {
         when (this) {
-            StarRocksStubElementTypes.STARROCKS_TABLE_NAME -> {
-                StarRocksStubIndexKeys.tableKeys(stub.name)
-                    .forEach { sink.occurrence(StarRocksTableNameIndex.KEY, it) }
-            }
             StarRocksStubElementTypes.STARROCKS_COLUMN_NAME -> {
                 StarRocksStubIndexKeys.nameKeys(stub.name)
                     .forEach { sink.occurrence(StarRocksColumnNameIndex.KEY, it) }

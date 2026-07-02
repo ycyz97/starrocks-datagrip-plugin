@@ -27,7 +27,7 @@ class StarRocksFormattingModelBuilder : FormattingModelBuilder {
         val document = PsiDocumentManager.getInstance(project).getDocument(file)
         val modelDocument = document ?: DocumentImpl(file.text, true)
         if (StarRocksFormattingProfile.requiresSafeFormatter(modelDocument.charsSequence)) {
-            return StarRocksSafeFormattingModel(file, modelDocument)
+            return StarRocksStableFormattingModel(file, modelDocument)
         }
         return SqlFormattingModelBuilder.createModel(
             project,
@@ -39,11 +39,11 @@ class StarRocksFormattingModelBuilder : FormattingModelBuilder {
     }
 }
 
-private class StarRocksSafeFormattingModel(
+private class StarRocksStableFormattingModel(
     file: PsiFile,
     document: Document
 ) : FormattingModel {
-    private val rootBlock: Block = StarRocksSafeBlock(file.textLength)
+    private val rootBlock: Block = StarRocksStableBlock(file.textLength)
     private val documentModel: FormattingDocumentModel = FormattingDocumentModelImpl(document, file)
 
     override fun getRootBlock(): Block = rootBlock
@@ -57,7 +57,7 @@ private class StarRocksSafeFormattingModel(
     override fun commitChanges() = Unit
 }
 
-private class StarRocksSafeBlock(
+private class StarRocksStableBlock(
     textLength: Int
 ) : Block {
     private val textRange = TextRange(0, textLength)

@@ -3,6 +3,7 @@ package com.github.ycyz.starrocks.datagrip.completion
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
 import com.intellij.codeInsight.completion.CompletionContributor
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionProvider
@@ -16,6 +17,8 @@ import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IElementType
+import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlDefinition
 import com.intellij.util.ProcessingContext
 import java.util.Locale
 
@@ -57,7 +60,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         result: CompletionResultSet
     ) {
         val tableNames = linkedSetOf<String>()
-        collectElements(parameters.originalFile, StarRocksElementTypes.TABLE_NAME)
+        collectLocalTableTargets(parameters.originalFile)
             .forEach { tableName ->
                 val normalizedName = normalizedName(tableName)
                 if (normalizedName.isBlank()) {
@@ -157,12 +160,13 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         val tableReferences = mutableListOf<PsiElement>()
         collectTopLevelFromTableReferences(queryScope, queryScope, tableReferences)
         val tableColumns = tableReferences
-            .mapNotNull { it.references.firstOrNull()?.resolve() }
+            .mapNotNull { resolveLocalTableReferenceTarget(it) }
             .flatMap { tableTarget -> columnNamesForTable(tableTarget) }
         val derivedTableScopes = mutableListOf<PsiElement>()
         collectTopLevelFromTableReferenceScopes(queryScope, queryScope, derivedTableScopes)
+        val aliasColumns = derivedTableScopes.flatMap { tableAliasColumnNames(it) }
         val derivedColumns = derivedTableScopes.flatMap { derivedTableColumnNames(it) }
-        return (tableColumns + derivedColumns).toCollection(linkedSetOf())
+        return (tableColumns + aliasColumns + derivedColumns).toCollection(linkedSetOf())
     }
 
     private fun visibleSelectAliasNames(parameters: CompletionParameters): Set<String> {
@@ -176,11 +180,57 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private fun columnNamesForTable(tableTarget: PsiElement): Set<String> {
+        if (isCteTarget(tableTarget)) {
+            return columnNamesForCte(tableTarget)
+        }
         val tableStatement = containingStatement(tableTarget) ?: tableTarget.containingFile ?: return emptySet()
         return collectElements(tableStatement, StarRocksElementTypes.COLUMN_NAME)
             .mapNotNullTo(linkedSetOf()) { column ->
                 normalizedName(column).takeIf { it.isNotBlank() }
             }
+    }
+
+    private fun columnNamesForCte(cteTarget: PsiElement): Set<String> {
+        val cteDefinition = if (cteTarget.node?.elementType == StarRocksElementTypes.CTE_DEFINITION) {
+            cteTarget
+        } else {
+            containingElement(cteTarget, StarRocksElementTypes.CTE_DEFINITION)
+        } ?: return emptySet()
+        val explicitColumns = collectCteColumnNames(cteDefinition)
+            .mapNotNullTo(linkedSetOf()) { column ->
+                normalizedName(column).takeIf { it.isNotBlank() }
+            }
+        if (explicitColumns.isNotEmpty()) {
+            return explicitColumns
+        }
+        val outputs = mutableListOf<PsiElement>()
+        collectDerivedTableSelectOutputs(cteDefinition, cteDefinition, outputs)
+        return outputs.mapNotNullTo(linkedSetOf()) { output ->
+            normalizedName(output).takeIf { it.isNotBlank() }
+        }
+    }
+
+    private fun resolveLocalTableReferenceTarget(tableReference: PsiElement): PsiElement? {
+        val referenceName = normalizedName(tableReference)
+        if (referenceName.isBlank()) {
+            return null
+        }
+        val containingFile = tableReference.containingFile ?: return null
+        tableReference.reference
+            ?.resolve()
+            ?.takeIf { it.containingFile == containingFile }
+            ?.let { return it }
+        val candidates = collectElements(containingFile, StarRocksElementTypes.CTE_DEFINITION) +
+            collectLocalTableTargets(containingFile)
+        val referenceOffset = tableReference.textRange.startOffset
+        return candidates
+            .filter { it.textRange.startOffset < referenceOffset && matchesTableName(it, referenceName) }
+            .maxByOrNull { it.textRange.startOffset }
+    }
+
+    private fun isCteTarget(element: PsiElement): Boolean {
+        val type = element.node?.elementType
+        return type == StarRocksElementTypes.CTE_DEFINITION
     }
 
     private fun isTableCompletionContext(parameters: CompletionParameters): Boolean {
@@ -207,20 +257,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private fun isPropertyCompletionContext(parameters: CompletionParameters): Boolean {
-        val text = textBeforeCompletion(parameters)
-        val match = Regex("\\bPROPERTIES\\b", RegexOption.IGNORE_CASE)
-            .findAll(text)
-            .lastOrNull()
-            ?: return false
-        val afterProperties = text.substring(match.range.last + 1)
-        var parenDepth = 0
-        afterProperties.forEach { char ->
-            when (char) {
-                '(' -> parenDepth++
-                ')' -> if (parenDepth > 0) parenDepth--
-            }
-        }
-        return parenDepth > 0
+        return containingElement(parameters.position, StarRocksElementTypes.PROPERTIES_CLAUSE) != null
     }
 
     private fun textBeforeCompletion(parameters: CompletionParameters): String {
@@ -262,6 +299,20 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         var current: PsiElement? = element
         while (current != null) {
             if (current.node?.elementType in STATEMENT_TYPES) {
+                return current
+            }
+            current = current.parent
+        }
+        return null
+    }
+
+    private fun containingElement(
+        element: PsiElement,
+        elementType: IElementType
+    ): PsiElement? {
+        var current: PsiElement? = element
+        while (current != null) {
+            if (current.node?.elementType == elementType) {
                 return current
             }
             current = current.parent
@@ -358,6 +409,10 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private fun derivedTableColumnNames(tableReferenceScope: PsiElement): Set<String> {
+        val aliasColumns = tableAliasColumnNames(tableReferenceScope)
+        if (aliasColumns.isNotEmpty()) {
+            return aliasColumns
+        }
         val outputs = mutableListOf<PsiElement>()
         collectDerivedTableSelectOutputs(tableReferenceScope, tableReferenceScope, outputs)
         return outputs.mapNotNullTo(linkedSetOf()) { output ->
@@ -365,12 +420,19 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         }
     }
 
+    private fun tableAliasColumnNames(tableReferenceScope: PsiElement): Set<String> {
+        return collectElements(tableReferenceScope, StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME)
+            .mapNotNullTo(linkedSetOf()) { column ->
+                normalizedName(column).takeIf { it.isNotBlank() }
+            }
+    }
+
     private fun collectDerivedTableSelectOutputs(
         root: PsiElement,
         current: PsiElement,
         result: MutableList<PsiElement>
     ) {
-        if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES && current.parent != root) {
+        if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES && !isPrimaryQueryScope(root, current)) {
             return
         }
         if (current.node?.elementType == StarRocksElementTypes.SELECT_CLAUSE) {
@@ -378,6 +440,38 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
             return
         }
         current.children.forEach { collectDerivedTableSelectOutputs(root, it, result) }
+    }
+
+    private fun isPrimaryQueryScope(root: PsiElement, current: PsiElement): Boolean {
+        val type = current.node?.elementType
+        if (type == StarRocksElementTypes.CTE_QUERY || type == StarRocksElementTypes.SUBQUERY_EXPRESSION) {
+            return current.parent == root
+        }
+        if (type == SqlCompositeElementTypes.SQL_SELECT_STATEMENT) {
+            val parentType = current.parent?.node?.elementType
+            return parentType == StarRocksElementTypes.CTE_QUERY || parentType == StarRocksElementTypes.SUBQUERY_EXPRESSION
+        }
+        return current.parent == root
+    }
+
+    private fun collectCteColumnNames(root: PsiElement): List<PsiElement> {
+        val result = mutableListOf<PsiElement>()
+        collectCteColumnNames(root, root, result)
+        return result
+    }
+
+    private fun collectCteColumnNames(
+        root: PsiElement,
+        current: PsiElement,
+        result: MutableList<PsiElement>
+    ) {
+        if (current != root && current.node?.elementType == StarRocksElementTypes.CTE_QUERY) {
+            return
+        }
+        if (current.node?.elementType == StarRocksElementTypes.CTE_COLUMN_NAME) {
+            result += current
+        }
+        current.children.forEach { collectCteColumnNames(root, it, result) }
     }
 
     private fun collectSelectOutputsWithoutNestedQueries(
@@ -447,10 +541,46 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         element.children.forEach { collectElements(it, elementType, result) }
     }
 
+    private fun collectLocalTableTargets(element: PsiElement): List<PsiElement> {
+        val result = mutableListOf<PsiElement>()
+        collectLocalTableTargets(element, result)
+        return result
+    }
+
+    private fun collectLocalTableTargets(
+        element: PsiElement,
+        result: MutableList<PsiElement>
+    ) {
+        if (element is SqlDefinition && element.node?.elementType in LOCAL_TABLE_DEFINITION_TYPES) {
+            result += element
+        }
+        element.children.forEach { collectLocalTableTargets(it, result) }
+    }
+
     private fun normalizedName(element: PsiElement): String {
         return when (element) {
             is StarRocksNamedStubElement -> element.name
+            is SqlDefinition -> sqlDefinitionName(element)
             else -> StarRocksNamedStubElement.normalizeName(element.text)
+        }
+    }
+
+    private fun sqlDefinitionName(definition: SqlDefinition): String {
+        val nameElementText = definition.nameElement?.text
+        val normalizedNameElement = StarRocksNamedStubElement.normalizeName(nameElementText.orEmpty())
+        return normalizedNameElement.takeIf { it.isNotBlank() } ?: definition.name.orEmpty()
+    }
+
+    private fun matchesTableName(
+        candidate: PsiElement,
+        referenceName: String
+    ): Boolean {
+        val normalizedCandidate = normalizedName(candidate).lowercase(Locale.ROOT)
+        val normalizedReference = StarRocksNamedStubElement.normalizeName(referenceName).lowercase(Locale.ROOT)
+        return if ("." in normalizedReference) {
+            normalizedCandidate == normalizedReference || normalizedCandidate.endsWith(".$normalizedReference")
+        } else {
+            normalizedCandidate == normalizedReference || normalizedCandidate.substringAfterLast(".") == normalizedReference
         }
     }
 
@@ -462,6 +592,12 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private companion object {
+        private val LOCAL_TABLE_DEFINITION_TYPES = setOf(
+            SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
+            SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
+        )
+
         private val TABLE_COMPLETION_PREVIOUS_WORDS = setOf(
             "FROM",
             "JOIN",
@@ -480,29 +616,8 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
             "SET"
         )
 
-        private val STATEMENT_TYPES = setOf(
-            StarRocksElementTypes.QUERY_STATEMENT,
-            StarRocksElementTypes.DML_STATEMENT,
-            StarRocksElementTypes.TABLE_DDL_STATEMENT,
-            StarRocksElementTypes.VIEW_STATEMENT,
-            StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT,
-            StarRocksElementTypes.CATALOG_STATEMENT,
-            StarRocksElementTypes.RESOURCE_STATEMENT,
-            StarRocksElementTypes.LOAD_STATEMENT,
-            StarRocksElementTypes.ROUTINE_LOAD_STATEMENT,
-            StarRocksElementTypes.TASK_STATEMENT,
-            StarRocksElementTypes.EXPORT_STATEMENT,
-            StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
-            StarRocksElementTypes.ADMIN_STATEMENT,
-            StarRocksElementTypes.UNKNOWN_STATEMENT
-        )
+        private val STATEMENT_TYPES = StarRocksStatementElementSets.STATEMENT_TYPES
 
-        private val QUERY_SCOPE_TYPES = setOf(
-            StarRocksElementTypes.QUERY_STATEMENT,
-            StarRocksElementTypes.DML_STATEMENT,
-            StarRocksElementTypes.AS_SELECT_QUERY,
-            StarRocksElementTypes.CTE_QUERY,
-            StarRocksElementTypes.SUBQUERY_EXPRESSION
-        )
+        private val QUERY_SCOPE_TYPES = StarRocksStatementElementSets.QUERY_SCOPE_TYPES
     }
 }
