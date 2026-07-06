@@ -12,7 +12,7 @@ import com.intellij.sql.psi.stubs.SqlFileElementType
 class StarRocksParserDefinition : SqlParserDefinitionBase() {
     override fun createElementFactory(): SqlElementFactoryBase = StarRocksElementFactory()
 
-    override fun createLexer(project: Project?): Lexer = StarRocksLexer()
+    override fun createLexer(project: Project?): Lexer = StarRocksParserLexer()
 
     override fun createParser(project: Project?): PsiParser = StarRocksParser()
 

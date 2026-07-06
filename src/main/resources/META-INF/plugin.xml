@@ -8,7 +8,7 @@
     <depends>com.intellij.database</depends>
 
     <description><![CDATA[
-        StarRocks Support provides a StarRocks plugin foundation for JetBrains IDEs. This rewrite branch is rebuilding SQL parsing, data source integration, completion, and formatting on a native StarRocks architecture.<br>
+        StarRocks Support provides StarRocks SQL parsing, syntax highlighting, completion, formatting, and database integration for JetBrains IDEs.<br>
     ]]></description>
 
     <extensions defaultExtensionNs="com.intellij">

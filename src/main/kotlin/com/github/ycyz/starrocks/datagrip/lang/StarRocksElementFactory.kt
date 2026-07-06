@@ -10,6 +10,7 @@ import com.intellij.sql.dialects.base.SqlElementFactoryBase
 import com.intellij.sql.dialects.sql92.Sql92ParserDefinition
 import com.intellij.sql.psi.SqlCommonKeywords
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlTokens
 import com.intellij.sql.psi.SqlTokenType
 import com.intellij.sql.psi.impl.SqlAlterStatementImpl
 import com.intellij.sql.psi.impl.SqlAlterTableStatementImpl
@@ -21,7 +22,6 @@ import com.intellij.sql.psi.impl.SqlCreateSchemaStatementImpl
 import com.intellij.sql.psi.impl.SqlCreateTableStatementImpl
 import com.intellij.sql.psi.impl.SqlCreateViewStatementImpl
 import com.intellij.sql.psi.impl.SqlDeleteStatementImpl
-import com.intellij.sql.psi.impl.SqlExpressionImpl
 import com.intellij.sql.psi.impl.SqlExplainStatementImpl
 import com.intellij.sql.psi.impl.SqlFromClauseImpl
 import com.intellij.sql.psi.impl.SqlGrantStatementImpl
@@ -115,12 +115,50 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
 
         @JvmStatic
         fun token(text: String): SqlTokenType {
-            val commonKeyword = runCatching {
-                SqlCommonKeywords::class.java
-                    .getField("SQL_${text.uppercase(Locale.ROOT)}")
-                    .get(null) as? SqlTokenType
+            val normalized = text.uppercase(Locale.ROOT)
+            if (normalized == "STARROCKS_PARAMETER") {
+                return StarRocksHighlightTokenTypes.PARAMETER
+            }
+            sqlToken(normalized)?.let { return it }
+            commonKeyword("SQL_$normalized")?.let { return it }
+            return SqlTokenRegistry.getType(normalized)
+        }
+
+        @JvmStatic
+        fun elementType(name: String): IElementType {
+            stubElementType(name)?.let { return it }
+            platformCompositeElementType(name)?.let { return it }
+            return StarRocksElementType("STARROCKS_$name")
+        }
+
+        private fun sqlToken(name: String): SqlTokenType? {
+            return runCatching {
+                SqlTokens::class.java.getField(name).get(null) as? SqlTokenType
             }.getOrNull()
-            return commonKeyword ?: SqlTokenRegistry.getType(text)
+        }
+
+        private fun commonKeyword(name: String): SqlTokenType? {
+            return runCatching {
+                SqlCommonKeywords::class.java.getField(name).get(null) as? SqlTokenType
+            }.getOrNull()
+        }
+
+        private fun platformCompositeElementType(name: String): IElementType? {
+            return runCatching {
+                SqlCompositeElementTypes::class.java.getField(name).get(null) as? IElementType
+            }.getOrNull()
+        }
+
+        private fun stubElementType(name: String): IElementType? {
+            return when (name) {
+                "COLUMN_NAME" -> StarRocksStubElementTypes.STARROCKS_COLUMN_NAME
+                "CTE_COLUMN_NAME" -> StarRocksStubElementTypes.STARROCKS_CTE_COLUMN_NAME
+                "TABLE_ALIAS" -> StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS
+                "TABLE_ALIAS_COLUMN_NAME" -> StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS_COLUMN_NAME
+                "WINDOW_NAME" -> StarRocksStubElementTypes.STARROCKS_WINDOW_NAME
+                "SELECT_ALIAS" -> StarRocksStubElementTypes.STARROCKS_SELECT_ALIAS
+                else -> null
+            }
         }
 
         private val INFO = Info().also { info ->
@@ -257,38 +295,33 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             )
             registerImplementation(
                 info,
-                StarRocksElementTypes.FROM_CLAUSE,
+                StarRocksElementTypes.SQL_FROM_CLAUSE,
                 SqlFromClauseImpl::class.java
             )
             registerImplementation(
                 info,
-                StarRocksElementTypes.TABLE_EXPRESSION,
+                StarRocksElementTypes.SQL_TABLE_EXPRESSION,
                 SqlTableExpressionImpl::class.java
             )
             registerImplementation(
                 info,
-                StarRocksElementTypes.PARENTHESIZED_JOIN_EXPRESSION,
+                StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION,
                 SqlTableExpressionImpl::class.java
             )
             registerImplementation(
                 info,
-                StarRocksElementTypes.JOIN_EXPRESSION,
+                StarRocksElementTypes.SQL_JOIN_EXPRESSION,
                 SqlJoinExpressionImpl::class.java
             )
             registerImplementation(
                 info,
-                StarRocksElementTypes.JOIN_CONDITION_CLAUSE,
+                StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE,
                 SqlJoinConditionClauseImpl::class.java
             )
             registerImplementation(
                 info,
-                StarRocksElementTypes.USING_CLAUSE,
+                StarRocksElementTypes.SQL_USING_CLAUSE,
                 SqlUsingClauseImpl::class.java
-            )
-            registerImplementation(
-                info,
-                StarRocksElementTypes.PREDICATE_EXPRESSION,
-                SqlExpressionImpl::class.java
             )
         }
 
@@ -299,44 +332,43 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
         )
 
         private val REGISTERED_STARROCKS_PLATFORM_TYPES = setOf(
-            StarRocksElementTypes.FROM_CLAUSE,
-            StarRocksElementTypes.TABLE_EXPRESSION,
-            StarRocksElementTypes.PARENTHESIZED_JOIN_EXPRESSION,
-            StarRocksElementTypes.JOIN_EXPRESSION,
-            StarRocksElementTypes.JOIN_CONDITION_CLAUSE,
-            StarRocksElementTypes.USING_CLAUSE,
-            StarRocksElementTypes.PREDICATE_EXPRESSION,
-            SqlCompositeElementTypes.SQL_TABLE_REFERENCE,
-            SqlCompositeElementTypes.SQL_INSERT_STATEMENT,
-            SqlCompositeElementTypes.SQL_UPDATE_STATEMENT,
-            SqlCompositeElementTypes.SQL_DELETE_STATEMENT,
-            SqlCompositeElementTypes.SQL_MERGE_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT,
-            SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT,
-            SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
-            SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT,
-            SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT,
-            SqlCompositeElementTypes.SQL_SET_STATEMENT,
-            SqlCompositeElementTypes.SQL_EXPLAIN_STATEMENT,
+            StarRocksElementTypes.SQL_FROM_CLAUSE,
+            StarRocksElementTypes.SQL_TABLE_EXPRESSION,
+            StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION,
+            StarRocksElementTypes.SQL_JOIN_EXPRESSION,
+            StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE,
+            StarRocksElementTypes.SQL_USING_CLAUSE,
+            StarRocksElementTypes.SQL_TABLE_REFERENCE,
+            StarRocksElementTypes.SQL_INSERT_STATEMENT,
+            StarRocksElementTypes.SQL_UPDATE_STATEMENT,
+            StarRocksElementTypes.SQL_DELETE_STATEMENT,
+            StarRocksElementTypes.SQL_MERGE_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_CATALOG_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_SCHEMA_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_INDEX_STATEMENT,
+            StarRocksElementTypes.SQL_ALTER_TABLE_STATEMENT,
+            StarRocksElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
+            StarRocksElementTypes.SQL_ALTER_VIEW_STATEMENT,
+            StarRocksElementTypes.SQL_ALTER_CATALOG_STATEMENT,
+            StarRocksElementTypes.SQL_SET_STATEMENT,
+            StarRocksElementTypes.SQL_EXPLAIN_STATEMENT,
             SqlCompositeElementTypes.SQL_GRANT_STATEMENT,
             SqlCompositeElementTypes.SQL_REVOKE_STATEMENT,
             StarRocksElementTypes.GRANT_STATEMENT,
             StarRocksElementTypes.REVOKE_STATEMENT,
-            SqlCompositeElementTypes.SQL_COMMIT_STATEMENT,
-            SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT,
-            SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT
+            StarRocksElementTypes.SQL_COMMIT_STATEMENT,
+            StarRocksElementTypes.SQL_ROLLBACK_STATEMENT,
+            StarRocksElementTypes.SQL_TRUNCATE_TABLE_STATEMENT
         )
 
         private val REGISTERED_PLATFORM_TYPES = setOf(
-            SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT,
-            SqlCompositeElementTypes.SQL_USE_SCHEMA_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_TABLE_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_VIEW_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT,
+            StarRocksElementTypes.SQL_USE_SCHEMA_STATEMENT,
             SqlCompositeElementTypes.SQL_USE_CATALOG_STATEMENT,
             SqlCompositeElementTypes.SQL_USE_NAMESPACE_STATEMENT,
-            SqlCompositeElementTypes.SQL_CALL_STATEMENT
+            StarRocksElementTypes.SQL_CALL_STATEMENT
         )
     }
 }

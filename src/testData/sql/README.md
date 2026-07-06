@@ -1,8 +1,9 @@
 # StarRocks Parser Regression SQL
 
-These files define the first parser acceptance scenarios for the rewrite branch.
-They are not executable database tests. They are syntax and resolution fixtures
-that should become automated parser tests when the native grammar is introduced.
+These files define parser acceptance scenarios for the StarRocks Grammar-Kit
+grammar. They are not executable database tests. They are syntax and resolution
+fixtures that protect generated parser, PSI, formatter, and local resolution
+behavior.
 
 | File | Milestone | Required coverage |
 | --- | --- | --- |
@@ -28,6 +29,6 @@ that should become automated parser tests when the native grammar is introduced.
 
 - Parser support must preserve structured PSI instead of consuming whole
   statements as lenient text.
+- Parser lexer support must come from `grammar/starrocks.flex`.
+- Parser grammar support must come from `grammar/starrocks.bnf`.
 - MySQL token substitution must not be used for StarRocks-only syntax.
-- Repeated formatter work should wait until these parser scenarios are stable.
-- Normal MySQL dialect files must not use these StarRocks scenarios.

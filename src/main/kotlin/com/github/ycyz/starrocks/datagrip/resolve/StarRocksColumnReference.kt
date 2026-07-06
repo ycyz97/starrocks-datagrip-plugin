@@ -7,7 +7,6 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.tree.IElementType
-import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlDefinition
 import java.util.Locale
 
@@ -27,7 +26,7 @@ class StarRocksColumnReference(element: PsiElement) :
 
     private fun resolveQualifiedColumn(columnName: String): PsiElement? {
         val alias = resolveQualifierAlias() ?: return null
-        val tableReferenceScope = containingElement(alias, StarRocksElementTypes.TABLE_REFERENCE) ?: return null
+        val tableReferenceScope = containingElement(alias, StarRocksElementTypes.SQL_TABLE_REFERENCE) ?: return null
         val tableReference = nearestTableReferenceBeforeAlias(alias)
         val tableTarget = tableReference?.let { resolveLocalTableReferenceTarget(it) }
         return resolveColumnOnTableAlias(alias, columnName)
@@ -55,7 +54,7 @@ class StarRocksColumnReference(element: PsiElement) :
     }
 
     private fun resolveSelectAlias(referenceName: String): PsiElement? {
-        if (containingElement(element, StarRocksElementTypes.ORDER_BY_CLAUSE) == null) {
+        if (containingElement(element, StarRocksElementTypes.SQL_ORDER_BY_CLAUSE) == null) {
             return null
         }
         val queryScope = containingQueryScope(element) ?: element.containingFile ?: return null
@@ -70,7 +69,7 @@ class StarRocksColumnReference(element: PsiElement) :
     }
 
     private fun nearestTableReferenceBeforeAlias(alias: PsiElement): PsiElement? {
-        val tableReferenceScope = containingElement(alias, StarRocksElementTypes.TABLE_REFERENCE) ?: return null
+        val tableReferenceScope = containingElement(alias, StarRocksElementTypes.SQL_TABLE_REFERENCE) ?: return null
         val candidates = mutableListOf<PsiElement>()
         collectTableReferencesWithoutNestedQueries(tableReferenceScope, tableReferenceScope, candidates)
         return candidates
@@ -102,7 +101,7 @@ class StarRocksColumnReference(element: PsiElement) :
             ?.takeIf { it.containingFile == containingFile }
             ?.let { return it }
         val candidates = mutableListOf<PsiElement>()
-        collectElements(containingFile, StarRocksElementTypes.CTE_DEFINITION, candidates)
+        collectElements(containingFile, StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION, candidates)
         collectLocalTableTargets(containingFile, candidates)
         val referenceOffset = tableReference.textRange.startOffset
         return candidates
@@ -114,10 +113,10 @@ class StarRocksColumnReference(element: PsiElement) :
         cteTarget: PsiElement,
         columnName: String
     ): PsiElement? {
-        val cteDefinition = if (cteTarget.node?.elementType == StarRocksElementTypes.CTE_DEFINITION) {
+        val cteDefinition = if (cteTarget.node?.elementType == StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION) {
             cteTarget
         } else {
-            containingElement(cteTarget, StarRocksElementTypes.CTE_DEFINITION)
+            containingElement(cteTarget, StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION)
         } ?: return null
         val explicitColumns = mutableListOf<PsiElement>()
         collectCteColumnNames(cteDefinition, cteDefinition, explicitColumns)
@@ -131,7 +130,7 @@ class StarRocksColumnReference(element: PsiElement) :
 
     private fun isCteTarget(element: PsiElement): Boolean {
         val type = element.node?.elementType
-        return type == StarRocksElementTypes.CTE_DEFINITION
+        return type == StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION
     }
 
     private fun resolveColumnOnDerivedTable(
@@ -213,7 +212,7 @@ class StarRocksColumnReference(element: PsiElement) :
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.FROM_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_FROM_CLAUSE) {
             collectTableReferencesWithoutNestedQueries(current, current, result)
             return
         }
@@ -228,7 +227,7 @@ class StarRocksColumnReference(element: PsiElement) :
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.FROM_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_FROM_CLAUSE) {
             collectTableReferenceScopesWithoutNestedQueries(current, current, result)
             return
         }
@@ -243,7 +242,7 @@ class StarRocksColumnReference(element: PsiElement) :
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.SELECT_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_SELECT_CLAUSE) {
             collectSelectAliasesWithoutNestedQueries(current, current, result)
             return
         }
@@ -286,7 +285,7 @@ class StarRocksColumnReference(element: PsiElement) :
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.TABLE_REFERENCE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_TABLE_REFERENCE) {
             result += current
             return
         }
@@ -301,7 +300,7 @@ class StarRocksColumnReference(element: PsiElement) :
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES && !isPrimaryQueryScope(root, current)) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.SELECT_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_SELECT_CLAUSE) {
             collectSelectOutputsWithoutNestedQueries(current, current, result)
             return
         }
@@ -310,12 +309,12 @@ class StarRocksColumnReference(element: PsiElement) :
 
     private fun isPrimaryQueryScope(root: PsiElement, current: PsiElement): Boolean {
         val type = current.node?.elementType
-        if (type == StarRocksElementTypes.CTE_QUERY || type == StarRocksElementTypes.SUBQUERY_EXPRESSION) {
+        if (type == StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION) {
             return current.parent == root
         }
-        if (type == SqlCompositeElementTypes.SQL_SELECT_STATEMENT) {
+        if (type == StarRocksElementTypes.SQL_SELECT_STATEMENT) {
             val parentType = current.parent?.node?.elementType
-            return parentType == StarRocksElementTypes.CTE_QUERY || parentType == StarRocksElementTypes.SUBQUERY_EXPRESSION
+            return parentType == StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION
         }
         return current.parent == root
     }
@@ -344,7 +343,7 @@ class StarRocksColumnReference(element: PsiElement) :
         current: PsiElement,
         result: MutableList<PsiElement>
     ) {
-        if (current != root && current.node?.elementType == StarRocksElementTypes.CTE_QUERY) {
+        if (current != root && current.node?.elementType == StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION) {
             return
         }
         if (current.node?.elementType == StarRocksElementTypes.CTE_COLUMN_NAME) {
@@ -452,9 +451,9 @@ class StarRocksColumnReference(element: PsiElement) :
 
     private companion object {
         private val LOCAL_TABLE_DEFINITION_TYPES = setOf(
-            SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
+            StarRocksElementTypes.SQL_CREATE_TABLE_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_VIEW_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
         )
 
         private val STATEMENT_TYPES = StarRocksStatementElementSets.STATEMENT_TYPES

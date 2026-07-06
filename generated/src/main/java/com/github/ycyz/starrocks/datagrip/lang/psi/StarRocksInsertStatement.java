@@ -1,0 +1,22 @@
+// This is a generated file. Not intended for manual editing.
+package com.github.ycyz.starrocks.datagrip.lang.psi;
+
+import java.util.List;
+import org.jetbrains.annotations.*;
+import com.intellij.psi.PsiElement;
+
+public interface StarRocksInsertStatement extends PsiElement {
+
+  @Nullable
+  StarRocksDmlTargetTable getDmlTargetTable();
+
+  @Nullable
+  StarRocksQueryExpression getQueryExpression();
+
+  @Nullable
+  StarRocksTableColumnList getTableColumnList();
+
+  @Nullable
+  StarRocksValuesClause getValuesClause();
+
+}

@@ -2,6 +2,7 @@ plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.1.0"
     id("org.jetbrains.intellij.platform") version "2.5.0"
+    id("org.jetbrains.grammarkit") version "2022.3.2.2"
 }
 
 group = "com.github.ycyz.starrocks.datagrip"
@@ -11,6 +12,12 @@ repositories {
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
+    }
+}
+
+sourceSets {
+    named("main") {
+        java.srcDir(layout.projectDirectory.dir("generated/src/main/java"))
     }
 }
 
@@ -51,9 +58,97 @@ tasks {
         kotlinOptions.jvmTarget = "17"
     }
 
-    register("validateRewriteScenarios") {
+    register("validateGrammarSources") {
         group = "verification"
-        description = "Validates StarRocks rewrite SQL scenario fixtures."
+        description = "Validates StarRocks JFlex and Grammar-Kit grammar source assets."
+
+        val flexFile = layout.projectDirectory.file("grammar/starrocks.flex")
+        val bnfFile = layout.projectDirectory.file("grammar/starrocks.bnf")
+
+        inputs.file(flexFile)
+        inputs.file(bnfFile)
+
+        doLast {
+            check(flexFile.asFile.isFile) { "Missing parser lexer grammar: ${flexFile.asFile}" }
+            check(bnfFile.asFile.isFile) { "Missing parser grammar: ${bnfFile.asFile}" }
+
+            val flex = flexFile.asFile.readText()
+            check("%class _StarRocksParserLexer" in flex) {
+                "starrocks.flex must declare the generated parser lexer class."
+            }
+            check("StarRocksLexer" !in flex) {
+                "Parser lexer grammar must not depend on the highlighting lexer."
+            }
+            listOf("SQL_IDENT", "SQL_STRING_TOKEN", "SQL_INTEGER_TOKEN", "SQL_SEMICOLON").forEach { token ->
+                check(token in flex) { "starrocks.flex must map base SQL token $token." }
+            }
+
+            val bnf = bnfFile.asFile.readText()
+            listOf(
+                "script",
+                "statement",
+                "query_expression",
+                "value_expression",
+                "type_element",
+                "cast_type",
+                "table_column_list",
+                "analytic_clause"
+            ).forEach { rule ->
+                check(Regex("""(?m)^$rule\s*::=""").containsMatchIn(bnf)) {
+                    "starrocks.bnf must define required entry rule $rule."
+                }
+            }
+            check("pin=" in bnf) { "starrocks.bnf must model pin points explicitly." }
+            check("recoverWhile=" in bnf) { "starrocks.bnf must model recovery explicitly." }
+            check("STATEMENT_SEGMENT" !in bnf && "statement_tail" !in bnf) {
+                "starrocks.bnf must not define broad statement fallback segments."
+            }
+        }
+    }
+
+    named<org.jetbrains.grammarkit.tasks.GenerateLexerTask>("generateLexer") {
+        group = "generation"
+        description = "Generates the StarRocks parser lexer from grammar/starrocks.flex."
+
+        dependsOn("validateGrammarSources")
+
+        val flexFile = layout.projectDirectory.file("grammar/starrocks.flex")
+        val generatedLexerDir = layout.projectDirectory.dir(
+            "generated/src/main/java/com/github/ycyz/starrocks/datagrip/lang"
+        )
+
+        sourceFile.set(flexFile)
+        targetOutputDir.set(generatedLexerDir)
+        purgeOldFiles.set(true)
+    }
+
+    named<org.jetbrains.grammarkit.tasks.GenerateParserTask>("generateParser") {
+        group = "generation"
+        description = "Generates the StarRocks parser from grammar/starrocks.bnf."
+
+        dependsOn("generateLexer")
+
+        val bnfFile = layout.projectDirectory.file("grammar/starrocks.bnf")
+        val generatedRoot = layout.projectDirectory.dir("generated/src/main/java")
+
+        sourceFile.set(bnfFile)
+        targetRootOutputDir.set(generatedRoot)
+        pathToParser.set("/com/github/ycyz/starrocks/datagrip/lang/StarRocksGeneratedParser.java")
+        pathToPsiRoot.set("/com/github/ycyz/starrocks/datagrip/lang/psi")
+        purgeOldFiles.set(true)
+    }
+
+    named("compileKotlin") {
+        dependsOn("generateParser")
+    }
+
+    named("compileJava") {
+        dependsOn("generateLexer")
+    }
+
+    register("validateStarRocksFixtureManifest") {
+        group = "verification"
+        description = "Validates StarRocks SQL scenario fixture manifest and documentation."
 
         val testDataDir = layout.projectDirectory.dir("src/testData/sql")
         val manifestFile = testDataDir.file("scenarios.properties")
@@ -75,18 +170,18 @@ tasks {
                     val features = metadata[1].split(",").map { it.trim() }.filter { it.isNotEmpty() }
                     Triple(fileName, milestone, features)
                 }
-            check(scenarios.isNotEmpty()) { "No StarRocks rewrite scenarios declared." }
+            check(scenarios.isNotEmpty()) { "No StarRocks SQL scenarios declared." }
 
             val expectedFiles = scenarios.map { it.first }
             val missingFiles = expectedFiles.filterNot { testDataDir.file(it).asFile.isFile }
             check(missingFiles.isEmpty()) {
-                "Missing StarRocks rewrite SQL fixtures: ${missingFiles.joinToString()}"
+                "Missing StarRocks SQL fixtures: ${missingFiles.joinToString()}"
             }
 
             val readme = testDataDir.file("README.md").asFile.readText()
             val undocumentedFiles = expectedFiles.filterNot { readme.contains("`$it`") }
             check(undocumentedFiles.isEmpty()) {
-                "Missing StarRocks rewrite fixture documentation: ${undocumentedFiles.joinToString()}"
+                "Missing StarRocks fixture documentation: ${undocumentedFiles.joinToString()}"
             }
 
             val undocumentedMilestones = scenarios.map { it.second }.distinct().filterNot { readme.contains("`$it`") }
@@ -112,6 +207,6 @@ tasks {
     }
 
     named("check") {
-        dependsOn("validateRewriteScenarios", "validateStarRocksScenarios")
+        dependsOn("validateGrammarSources", "validateStarRocksFixtureManifest", "validateStarRocksScenarios")
     }
 }

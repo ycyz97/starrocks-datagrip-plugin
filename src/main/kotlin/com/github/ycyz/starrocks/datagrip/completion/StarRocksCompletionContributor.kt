@@ -17,7 +17,6 @@ import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IElementType
-import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlDefinition
 import com.intellij.util.ProcessingContext
 import java.util.Locale
@@ -191,10 +190,10 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private fun columnNamesForCte(cteTarget: PsiElement): Set<String> {
-        val cteDefinition = if (cteTarget.node?.elementType == StarRocksElementTypes.CTE_DEFINITION) {
+        val cteDefinition = if (cteTarget.node?.elementType == StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION) {
             cteTarget
         } else {
-            containingElement(cteTarget, StarRocksElementTypes.CTE_DEFINITION)
+            containingElement(cteTarget, StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION)
         } ?: return emptySet()
         val explicitColumns = collectCteColumnNames(cteDefinition)
             .mapNotNullTo(linkedSetOf()) { column ->
@@ -220,7 +219,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
             ?.resolve()
             ?.takeIf { it.containingFile == containingFile }
             ?.let { return it }
-        val candidates = collectElements(containingFile, StarRocksElementTypes.CTE_DEFINITION) +
+        val candidates = collectElements(containingFile, StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION) +
             collectLocalTableTargets(containingFile)
         val referenceOffset = tableReference.textRange.startOffset
         return candidates
@@ -230,7 +229,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
 
     private fun isCteTarget(element: PsiElement): Boolean {
         val type = element.node?.elementType
-        return type == StarRocksElementTypes.CTE_DEFINITION
+        return type == StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION
     }
 
     private fun isTableCompletionContext(parameters: CompletionParameters): Boolean {
@@ -328,7 +327,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.FROM_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_FROM_CLAUSE) {
             collectTableReferencesWithoutNestedQueries(current, current, result)
             return
         }
@@ -357,7 +356,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.FROM_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_FROM_CLAUSE) {
             collectTableReferenceScopesWithoutNestedQueries(current, current, result)
             return
         }
@@ -372,7 +371,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.TABLE_REFERENCE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_TABLE_REFERENCE) {
             result += current
             return
         }
@@ -387,7 +386,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.SELECT_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_SELECT_CLAUSE) {
             collectSelectAliasesWithoutNestedQueries(current, current, result)
             return
         }
@@ -435,7 +434,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES && !isPrimaryQueryScope(root, current)) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.SELECT_CLAUSE) {
+        if (current.node?.elementType == StarRocksElementTypes.SQL_SELECT_CLAUSE) {
             collectSelectOutputsWithoutNestedQueries(current, current, result)
             return
         }
@@ -444,12 +443,12 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
 
     private fun isPrimaryQueryScope(root: PsiElement, current: PsiElement): Boolean {
         val type = current.node?.elementType
-        if (type == StarRocksElementTypes.CTE_QUERY || type == StarRocksElementTypes.SUBQUERY_EXPRESSION) {
+        if (type == StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION) {
             return current.parent == root
         }
-        if (type == SqlCompositeElementTypes.SQL_SELECT_STATEMENT) {
+        if (type == StarRocksElementTypes.SQL_SELECT_STATEMENT) {
             val parentType = current.parent?.node?.elementType
-            return parentType == StarRocksElementTypes.CTE_QUERY || parentType == StarRocksElementTypes.SUBQUERY_EXPRESSION
+            return parentType == StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION
         }
         return current.parent == root
     }
@@ -465,7 +464,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         current: PsiElement,
         result: MutableList<PsiElement>
     ) {
-        if (current != root && current.node?.elementType == StarRocksElementTypes.CTE_QUERY) {
+        if (current != root && current.node?.elementType == StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION) {
             return
         }
         if (current.node?.elementType == StarRocksElementTypes.CTE_COLUMN_NAME) {
@@ -593,9 +592,9 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
 
     private companion object {
         private val LOCAL_TABLE_DEFINITION_TYPES = setOf(
-            SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT,
-            SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
+            StarRocksElementTypes.SQL_CREATE_TABLE_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_VIEW_STATEMENT,
+            StarRocksElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
         )
 
         private val TABLE_COMPLETION_PREVIOUS_WORDS = setOf(

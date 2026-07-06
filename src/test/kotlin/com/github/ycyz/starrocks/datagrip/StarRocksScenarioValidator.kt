@@ -11,11 +11,8 @@ import com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingProfile
 import com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighter
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksColumnNameIndex
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksFeature
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksDdlParsing
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksDmlParsing
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksExpressionParsing
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksGeneratedParser
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksGrammarMilestone
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightingLexer
@@ -25,7 +22,6 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElementType
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParser
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserScenarioCatalog
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksOtherParsing
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokens
@@ -456,138 +452,81 @@ object StarRocksScenarioValidator {
         val builderClass = com.intellij.lang.PsiBuilder::class.java
         val levelClass = Int::class.javaPrimitiveType!!
         listOf(
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("script", builderClass, levelClass),
             StarRocksGeneratedParser::class.java.getMethod("statement", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("expression", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getMethod("query_expression", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getMethod("value_expression", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getMethod("type_element", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getMethod("cast_type", builderClass, levelClass),
             StarRocksGeneratedParser::class.java.getMethod("table_column_list", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("query_expression", builderClass, levelClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("simple_query_expression", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("select_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("select_target_list", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("select_target", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("from_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("join_expression", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("atom_join_expression", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("with_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("named_query_definition", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("cte_column_list", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("cte_query", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("where_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("group_by_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("grouping_item", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("having_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("order_by_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("order_by_expression_list", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("order_expression", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("window_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("window_definition", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("limit_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("parenthesized_query_expression", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("set_operation_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("set_operator", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("qualify_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("table_function_call", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("insert_statement", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("update_statement", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("delete_statement", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("merge_statement", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("insert_target_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("update_target_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("delete_target_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("merge_target_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("merge_using_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("merge_on_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("merge_when_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("set_clause", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("set_assignment", builderClass, levelClass),
-            StarRocksDmlParsing::class.java.getMethod("dml_target_table", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("type_element", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("table_column_list", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("column_definition", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("properties_clause", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_table_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_materialized_view_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_catalog_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_resource_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_routine_load_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_repository_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("show_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("admin_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("use_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("explain_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("describe_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("load_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("export_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("backup_restore_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_user_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_role_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_database_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_schema_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("create_index_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_user_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_role_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_database_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_schema_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_table_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_view_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_materialized_view_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_catalog_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_resource_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("alter_routine_load_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_user_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_role_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_database_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_schema_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_index_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_table_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_view_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_materialized_view_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_catalog_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_resource_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("drop_repository_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("truncate_table_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("refresh_materialized_view_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("grant_statement", builderClass, levelClass),
-            StarRocksDdlParsing::class.java.getMethod("revoke_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("call_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("start_transaction_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("commit_statement", builderClass, levelClass),
-            StarRocksOtherParsing::class.java.getMethod("rollback_statement", builderClass, levelClass),
-            StarRocksExpressionParsing::class.java.getMethod("value_expression", builderClass, levelClass),
-            StarRocksExpressionParsing::class.java.getMethod("cast_expression", builderClass, levelClass),
-            StarRocksExpressionParsing::class.java.getMethod("cast_type", builderClass, levelClass)
+            StarRocksGeneratedParser::class.java.getMethod("analytic_clause", builderClass, levelClass)
         ).forEach { method ->
             check(method.returnType == Boolean::class.javaPrimitiveType) {
-                "Generated grammar skeleton method ${method.name} must return boolean like JetBrains generated parsers."
+                "Generated grammar entry method ${method.name} must return boolean like JetBrains generated parsers."
             }
-        }
-        check(StarRocksGeneratedParser.EXTENDS_SETS_.isEmpty()) {
-            "StarRocks generated parser skeleton should expose EXTENDS_SETS_ like JetBrains generated dialect parsers."
         }
         val extendsSetsMethod = StarRocksParser::class.java.getDeclaredMethod("getExtendsTokenSets")
         extendsSetsMethod.isAccessible = true
-        check(extendsSetsMethod.invoke(StarRocksParser()) === StarRocksGeneratedParser.EXTENDS_SETS_) {
-            "StarRocksParser must expose StarRocksGeneratedParser.EXTENDS_SETS_ like generated JetBrains dialect parsers."
+        val extendsSets = extendsSetsMethod.invoke(StarRocksParser()) as Array<*>
+        check(extendsSets.isEmpty()) {
+            "StarRocksParser should expose no custom extends token sets for the Grammar-Kit generated parser."
         }
-        val generatedParserSource = projectDir
-            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksGeneratedParser.kt")
+        val generatedRoot = projectDir
+            .resolve("generated/src/main/java/com/github/ycyz/starrocks/datagrip/lang")
+        val generatedParserSource = generatedRoot
+            .resolve("StarRocksGeneratedParser.java")
             .readText()
-        val ddlParsingSource = projectDir
-            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksDdlParsing.kt")
+        val generatedElementTypesSource = generatedRoot
+            .resolve("StarRocksElementTypes.java")
             .readText()
-        val otherParsingSource = projectDir
-            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksOtherParsing.kt")
+        val generatedLexerSource = generatedRoot
+            .resolve("_StarRocksParserLexer.java")
             .readText()
-        val expressionParsingSource = projectDir
-            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksExpressionParsing.kt")
+        val parserSource = projectDir
+            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksParser.kt")
             .readText()
-        check("SqlGeneratedParserUtil.parseScript" in generatedParserSource) {
-            "StarRocksGeneratedParser root must delegate to SqlGeneratedParserUtil.parseScript like mature generated dialect parsers."
+        val parserDefinitionSource = projectDir
+            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksParserDefinition.kt")
+            .readText()
+        val parserLexerWrapperSource = projectDir
+            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksParserLexer.kt")
+            .readText()
+        check("return script(builder_, level_ + 1)" in generatedParserSource) {
+            "StarRocksGeneratedParser root must be generated from the Grammar-Kit script rule."
+        }
+        check("StarRocksDmlParsing" !in generatedParserSource &&
+            "StarRocksDdlParsing" !in generatedParserSource &&
+            "StarRocksExpressionParsing" !in generatedParserSource &&
+            "StarRocksOtherParsing" !in generatedParserSource) {
+            "StarRocksGeneratedParser must not delegate to old hand-written parser objects."
+        }
+        check("StarRocksDmlParsing" !in parserSource &&
+            "StarRocksDdlParsing" !in parserSource &&
+            "StarRocksExpressionParsing" !in parserSource &&
+            "StarRocksOtherParsing" !in parserSource) {
+            "StarRocksParser must expose only DataGrip SQL adapter hooks and delegate grammar work to StarRocksGeneratedParser."
+        }
+        check("StarRocksParserLexer()" in parserDefinitionSource && "StarRocksLexer()" !in parserDefinitionSource) {
+            "StarRocksParserDefinition must create the parser lexer facade, not the general lexer implementation."
+        }
+        check("_StarRocksParserLexer(null)" in parserLexerWrapperSource && "StarRocksLexer()" !in parserLexerWrapperSource) {
+            "StarRocks parser lexer facade must wrap the generated JFlex lexer."
+        }
+        check("StarRocksLexer" !in generatedLexerSource) {
+            "StarRocks parser lexer must be generated separately from the highlighting lexer."
+        }
+        check("StarRocksElementFactory.elementType" in generatedElementTypesSource &&
+            "StarRocksElementFactory.token" in generatedElementTypesSource) {
+            "Generated StarRocksElementTypes.java must route element and token creation through StarRocksElementFactory."
+        }
+        check(!Regex("""new\s+(IElementType|SqlTokens)""").containsMatchIn(generatedElementTypesSource)) {
+            "Generated StarRocksElementTypes.java must not create a separate type universe."
         }
         check("recoverUntilStatementBoundary" !in generatedParserSource && "STATEMENT_SEGMENT" !in generatedParserSource) {
             "StarRocksGeneratedParser must not keep the old fallback statement-boundary scanner."
         }
-        check("SqlGeneratedParserUtil.statementRecover" !in generatedParserSource) {
-            "StarRocksGeneratedParser must not use custom statement recovery that can hide grammar gaps."
+        check("consumeBalancedTail" !in generatedParserSource && "while (!builder.eof())" !in generatedParserSource) {
+            "StarRocksGeneratedParser must not use old broad PsiBuilder scanners."
         }
         val mainSourceMentionsFallbackSegment = projectDir
             .resolve("src/main")
@@ -597,29 +536,67 @@ object StarRocksScenarioValidator {
         check(!mainSourceMentionsFallbackSegment) {
             "StarRocks main sources must not define or reference fallback STATEMENT_SEGMENT nodes."
         }
-        check("consumeStatementTail" !in ddlParsingSource && "consumeStatementTail" !in otherParsingSource) {
-            "DDL/Other parsers must not use a generic statement-tail scanner that hides grammar gaps."
+        listOf(
+            "StarRocksDdlParsing.kt",
+            "StarRocksDmlParsing.kt",
+            "StarRocksExpressionParsing.kt",
+            "StarRocksOtherParsing.kt",
+            "StarRocksGeneratedParser.kt",
+            "StarRocksElementTypes.kt",
+            "StarRocksParsingUtil.kt"
+        ).forEach { fileName ->
+            check(!projectDir.resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/$fileName").exists()) {
+                "Old parser implementation or conflicting type holder must not live under src/main: $fileName"
+            }
         }
-        check("prefixedStatement" !in ddlParsingSource && "prefixedStatement" !in otherParsingSource) {
-            "DDL/Other parsers must use concrete clause/reference/property/type rules instead of prefix-only statement scanners."
+        val oldGeneratedKotlinRoot = projectDir.resolve("generated/src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang")
+        listOf(
+            "StarRocksGeneratedParser.kt",
+            "StarRocksGeneratedDdlRules.kt",
+            "StarRocksGeneratedDmlRules.kt",
+            "StarRocksGeneratedExpressionRules.kt",
+            "StarRocksGeneratedOtherRules.kt",
+            "StarRocksElementTypes.kt"
+        ).forEach { fileName ->
+            check(!oldGeneratedKotlinRoot.resolve(fileName).exists()) {
+                "Old generated Kotlin parser artifacts must not remain: $fileName"
+            }
         }
-        check("value_expression(builder, level + 1, setOf(\";\"))" !in ddlParsingSource &&
-            "value_expression(builder, level + 1, setOf(\";\"))" !in otherParsingSource) {
-            "DDL/Other parsers must not parse arbitrary tail text as semicolon-bounded expressions."
+        val flexSource = projectDir.resolve("grammar/starrocks.flex").readText()
+        val bnfSource = projectDir.resolve("grammar/starrocks.bnf").readText()
+        check("%class _StarRocksParserLexer" in flexSource && "StarRocksLexer" !in flexSource) {
+            "JFlex parser lexer grammar must be the parser lexer source and must not wrap the highlighting lexer."
         }
-        check("if (!isLiteralToken(builder.tokenText))" in expressionParsingSource) {
-            "StarRocks literal_expression must be token-class guarded, not an arbitrary token consumer."
+        listOf(
+            "script",
+            "statement",
+            "query_expression",
+            "value_expression",
+            "type_element",
+            "cast_type",
+            "table_column_list",
+            "analytic_clause"
+        ).forEach { rule ->
+            check(Regex("""(?m)^$rule\s*::=""").containsMatchIn(bnfSource)) {
+                "Grammar-Kit grammar must define required entry rule $rule."
+            }
         }
-        val parseDataTypeExtMethod = StarRocksParser::class.java.getDeclaredMethod("parseDataTypeExt", builderClass)
-        check(parseDataTypeExtMethod.returnType == Boolean::class.javaPrimitiveType) {
-            "StarRocksParser must expose parseDataTypeExt like complex-type JetBrains dialect parsers."
+        check("pin=" in bnfSource && "recoverWhile=" in bnfSource) {
+            "Grammar-Kit grammar must model pin and recoverWhile explicitly."
         }
-        val parseCastDataTypeMethod = StarRocksParser::class.java.getDeclaredMethod("parseCastDataType", builderClass, levelClass)
-        check(parseCastDataTypeMethod.returnType == Boolean::class.javaPrimitiveType) {
-            "StarRocksParser must expose parseCastDataType like dialect parsers with CAST type syntax."
+        check("STATEMENT_SEGMENT" !in bnfSource && "statement_tail" !in bnfSource) {
+            "Grammar-Kit grammar must not define fallback statement segments."
+        }
+        val buildSource = projectDir.resolve("build.gradle.kts").readText()
+        check("generated/src/main/java" in buildSource && "generated/src/main/kotlin" !in buildSource) {
+            "Build must include Grammar-Kit/JFlex generated Java sources without the old generated Kotlin source root."
+        }
+        check("GenerateLexerTask" in buildSource &&
+            "GenerateParserTask" in buildSource &&
+            "register(\"validateGrammarSources\")" in buildSource) {
+            "Build must expose the StarRocks grammar generation and validation chain."
         }
     }
-
     private fun validateFormattingProfile() {
         check(StarRocksFormattingProfile.USE_PLATFORM_SQL_FORMATTER) {
             "StarRocks formatter must stay wired to the platform SQL formatter."
@@ -677,19 +654,17 @@ object StarRocksScenarioValidator {
             SqlCompositeElementTypes.SQL_COMMIT_STATEMENT,
             SqlCompositeElementTypes.SQL_ROLLBACK_STATEMENT,
             SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT,
-            StarRocksElementTypes.USER_STATEMENT,
             StarRocksElementTypes.CREATE_USER_STATEMENT,
             StarRocksElementTypes.ALTER_USER_STATEMENT,
             StarRocksElementTypes.DROP_USER_STATEMENT,
-            StarRocksElementTypes.ROLE_STATEMENT,
             StarRocksElementTypes.CREATE_ROLE_STATEMENT,
             StarRocksElementTypes.ALTER_ROLE_STATEMENT,
             StarRocksElementTypes.DROP_ROLE_STATEMENT,
             StarRocksElementTypes.SET_PASSWORD_STATEMENT,
             StarRocksElementTypes.GRANT_STATEMENT,
             StarRocksElementTypes.REVOKE_STATEMENT,
-            StarRocksElementTypes.SCHEMA_STATEMENT,
-            StarRocksElementTypes.INDEX_STATEMENT,
+            StarRocksElementTypes.DROP_SCHEMA_STATEMENT,
+            StarRocksElementTypes.DROP_INDEX_STATEMENT,
             StarRocksElementTypes.ANALYZE_STATEMENT,
             StarRocksElementTypes.DESCRIBE_STATEMENT
         ).forEach { type ->
@@ -697,19 +672,18 @@ object StarRocksScenarioValidator {
                 "StarRocks common statement $type must have a formatter block."
             }
         }
-        check(StarRocksElementTypes.TABLE_EXPRESSION in StarRocksFormatterHelper().basicBlockCreation.keys) {
+        check(StarRocksElementTypes.SQL_TABLE_EXPRESSION in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks table expressions must use a platform formatter block."
         }
-        check(StarRocksElementTypes.JOIN_EXPRESSION in StarRocksFormatterHelper().basicBlockCreation.keys) {
+        check(StarRocksElementTypes.SQL_JOIN_EXPRESSION in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks JOIN expressions must use a platform formatter block."
         }
-        check(StarRocksElementTypes.JOIN_CONDITION_CLAUSE in StarRocksFormatterHelper().basicBlockCreation.keys) {
+        check(StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks JOIN conditions must use a platform formatter block."
         }
         listOf(
-            StarRocksElementTypes.INSERT_TARGET_CLAUSE,
             StarRocksElementTypes.DML_TARGET_TABLE,
-            StarRocksElementTypes.SET_CLAUSE,
+            StarRocksElementTypes.SQL_SET_CLAUSE,
             StarRocksElementTypes.SET_ASSIGNMENT,
             StarRocksElementTypes.MERGE_USING_CLAUSE,
             StarRocksElementTypes.MERGE_ON_CLAUSE,
@@ -755,27 +729,25 @@ object StarRocksScenarioValidator {
     private fun validateElementFactory() {
         val factory = StarRocksElementFactory()
         listOf(
-            StarRocksElementTypes.SELECT_CLAUSE,
+            StarRocksElementTypes.SQL_SELECT_CLAUSE,
             StarRocksElementTypes.SELECT_ITEM,
-            StarRocksElementTypes.WITH_CLAUSE,
-            StarRocksElementTypes.CTE_DEFINITION,
+            StarRocksElementTypes.SQL_WITH_CLAUSE,
+            StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION,
             StarRocksElementTypes.CTE_COLUMN_LIST,
-            StarRocksElementTypes.CTE_QUERY,
-            StarRocksElementTypes.WHERE_CLAUSE,
-            StarRocksElementTypes.GROUP_BY_CLAUSE,
+            StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION,
+            StarRocksElementTypes.SQL_WHERE_CLAUSE,
+            StarRocksElementTypes.SQL_GROUP_BY_CLAUSE,
             StarRocksElementTypes.GROUPING_ITEM,
-            StarRocksElementTypes.HAVING_CLAUSE,
-            StarRocksElementTypes.PREDICATE_EXPRESSION,
-            StarRocksElementTypes.ORDER_BY_CLAUSE,
+            StarRocksElementTypes.SQL_HAVING_CLAUSE,
+            StarRocksElementTypes.COMPARISON_EXPRESSION,
+            StarRocksElementTypes.SQL_ORDER_BY_CLAUSE,
             StarRocksElementTypes.ORDERING_ITEM,
-            StarRocksElementTypes.LIMIT_CLAUSE,
+            StarRocksElementTypes.SQL_LIMIT_CLAUSE,
             StarRocksElementTypes.LIMIT_EXPRESSION,
-            StarRocksElementTypes.SUBQUERY_EXPRESSION,
-            StarRocksElementTypes.VALUES_CLAUSE,
+            StarRocksElementTypes.SQL_VALUES_EXPRESSION,
             StarRocksElementTypes.VALUES_ROW,
-            StarRocksElementTypes.INSERT_TARGET_CLAUSE,
             StarRocksElementTypes.DML_TARGET_TABLE,
-            StarRocksElementTypes.SET_CLAUSE,
+            StarRocksElementTypes.SQL_SET_CLAUSE,
             StarRocksElementTypes.SET_ASSIGNMENT,
             StarRocksElementTypes.MERGE_USING_CLAUSE,
             StarRocksElementTypes.MERGE_ON_CLAUSE,
@@ -785,15 +757,15 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.ANALYZE_HISTOGRAM_CLAUSE,
             StarRocksElementTypes.DESCRIBE_TARGET,
             StarRocksElementTypes.USE_TARGET,
-            StarRocksElementTypes.TABLE_EXPRESSION,
-            StarRocksElementTypes.TABLE_REFERENCE,
+            StarRocksElementTypes.SQL_TABLE_EXPRESSION,
+            StarRocksElementTypes.SQL_TABLE_REFERENCE,
             StarRocksElementTypes.SET_OPERATION_CLAUSE,
             StarRocksElementTypes.SET_OPERATOR,
-            StarRocksElementTypes.JOIN_EXPRESSION,
-            StarRocksElementTypes.PARENTHESIZED_JOIN_EXPRESSION,
-            StarRocksElementTypes.JOIN_CONDITION_CLAUSE,
-            StarRocksElementTypes.USING_CLAUSE,
-            StarRocksElementTypes.WINDOW_CLAUSE,
+            StarRocksElementTypes.SQL_JOIN_EXPRESSION,
+            StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION,
+            StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE,
+            StarRocksElementTypes.SQL_USING_CLAUSE,
+            StarRocksElementTypes.SQL_WINDOW_CLAUSE,
             StarRocksElementTypes.WINDOW_DEFINITION,
             StarRocksElementTypes.WINDOW_NAME,
             StarRocksElementTypes.TABLE_ALIAS,
@@ -819,32 +791,42 @@ object StarRocksScenarioValidator {
             check(node.elementType == type) { "Element factory created the wrong node type for $type." }
         }
         listOf(
-            StarRocksElementTypes.TABLE_DDL_STATEMENT,
-            StarRocksElementTypes.VIEW_STATEMENT,
-            StarRocksElementTypes.MATERIALIZED_VIEW_STATEMENT,
-            StarRocksElementTypes.CATALOG_STATEMENT,
-            StarRocksElementTypes.RESOURCE_STATEMENT,
+            StarRocksElementTypes.ALTER_MATERIALIZED_VIEW_STATEMENT,
+            StarRocksElementTypes.ALTER_RESOURCE_STATEMENT,
+            StarRocksElementTypes.ALTER_ROUTINE_LOAD_STATEMENT,
+            StarRocksElementTypes.CREATE_RESOURCE_STATEMENT,
+            StarRocksElementTypes.CREATE_REPOSITORY_STATEMENT,
+            StarRocksElementTypes.CREATE_ROUTINE_LOAD_STATEMENT,
+            StarRocksElementTypes.DROP_CATALOG_STATEMENT,
+            StarRocksElementTypes.DROP_INDEX_STATEMENT,
+            StarRocksElementTypes.DROP_MATERIALIZED_VIEW_STATEMENT,
+            StarRocksElementTypes.DROP_REPOSITORY_STATEMENT,
+            StarRocksElementTypes.DROP_RESOURCE_STATEMENT,
+            StarRocksElementTypes.DROP_SCHEMA_STATEMENT,
+            StarRocksElementTypes.DROP_TABLE_STATEMENT,
+            StarRocksElementTypes.DROP_VIEW_STATEMENT,
+            StarRocksElementTypes.REFRESH_MATERIALIZED_VIEW_STATEMENT,
             StarRocksElementTypes.LOAD_STATEMENT,
-            StarRocksElementTypes.ROUTINE_LOAD_STATEMENT,
+            StarRocksElementTypes.CANCEL_LOAD_STATEMENT,
             StarRocksElementTypes.TASK_STATEMENT,
             StarRocksElementTypes.EXPORT_STATEMENT,
             StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
             StarRocksElementTypes.ANALYZE_STATEMENT,
             StarRocksElementTypes.DESCRIBE_STATEMENT,
             StarRocksElementTypes.ADMIN_STATEMENT,
-            StarRocksElementTypes.USER_STATEMENT,
+            StarRocksElementTypes.SHOW_STATEMENT,
+            StarRocksElementTypes.KILL_STATEMENT,
+            StarRocksElementTypes.SYNC_STATEMENT,
+            StarRocksElementTypes.UNSET_STATEMENT,
             StarRocksElementTypes.CREATE_USER_STATEMENT,
             StarRocksElementTypes.ALTER_USER_STATEMENT,
             StarRocksElementTypes.DROP_USER_STATEMENT,
-            StarRocksElementTypes.ROLE_STATEMENT,
             StarRocksElementTypes.CREATE_ROLE_STATEMENT,
             StarRocksElementTypes.ALTER_ROLE_STATEMENT,
             StarRocksElementTypes.DROP_ROLE_STATEMENT,
             StarRocksElementTypes.SET_PASSWORD_STATEMENT,
             StarRocksElementTypes.GRANT_STATEMENT,
-            StarRocksElementTypes.REVOKE_STATEMENT,
-            StarRocksElementTypes.SCHEMA_STATEMENT,
-            StarRocksElementTypes.INDEX_STATEMENT
+            StarRocksElementTypes.REVOKE_STATEMENT
         ).forEach { type ->
             val node = factory.createElementNode(type)
             check(node is SqlStatement) {
@@ -882,13 +864,12 @@ object StarRocksScenarioValidator {
             }
         }
         listOf(
-            StarRocksElementTypes.FROM_CLAUSE to SqlFromClause::class.java,
-            StarRocksElementTypes.TABLE_EXPRESSION to SqlTableExpression::class.java,
-            StarRocksElementTypes.PARENTHESIZED_JOIN_EXPRESSION to SqlTableExpression::class.java,
-            StarRocksElementTypes.JOIN_EXPRESSION to SqlJoinExpression::class.java,
-            StarRocksElementTypes.JOIN_CONDITION_CLAUSE to SqlJoinConditionClause::class.java,
-            StarRocksElementTypes.USING_CLAUSE to SqlUsingClause::class.java,
-            StarRocksElementTypes.PREDICATE_EXPRESSION to SqlExpression::class.java
+            StarRocksElementTypes.SQL_FROM_CLAUSE to SqlFromClause::class.java,
+            StarRocksElementTypes.SQL_TABLE_EXPRESSION to SqlTableExpression::class.java,
+            StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION to SqlTableExpression::class.java,
+            StarRocksElementTypes.SQL_JOIN_EXPRESSION to SqlJoinExpression::class.java,
+            StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE to SqlJoinConditionClause::class.java,
+            StarRocksElementTypes.SQL_USING_CLAUSE to SqlUsingClause::class.java
         ).forEach { (type, psiClass) ->
             val node = factory.createElementNode(type)
             check(psiClass.isInstance(node)) {
