@@ -114,10 +114,8 @@ object StarRocksKeywordCatalog {
         "PIPE",
         "PRIMARY",
         "PROC",
-        "PROFILE",
         "PROPERTIES",
         "QUALIFY",
-        "QUERYID",
         "REFRESH",
         "REPOSITORY",
         "RESOURCE",
@@ -135,7 +133,6 @@ object StarRocksKeywordCatalog {
         "SHOW",
         "SMALLINT",
         "SNAPSHOT",
-        "STATUS",
         "STATS",
         "STRING",
         "STRUCT",
@@ -371,12 +368,14 @@ object StarRocksKeywordCatalog {
         "PROBABILITY",
         "PROCEDURE",
         "PROCESSLIST",
+        "PROFILE",
         "PROFILELIST",
         "PROPERTY",
         "PROVIDER",
         "PROVIDERS",
         "QUARTER",
         "QUERY",
+        "QUERYID",
         "QUERIES",
         "QUEUE",
         "QUOTA",
@@ -432,6 +431,7 @@ object StarRocksKeywordCatalog {
         "SQL",
         "STARROCKS",
         "START",
+        "STATUS",
         "STOP",
         "STORAGE",
         "STRAIGHT_JOIN",
@@ -488,7 +488,11 @@ object StarRocksKeywordCatalog {
         "YEAR"
     )
 
-    val KEYWORDS: Set<String> = CORE_KEYWORDS + OFFICIAL_ADDITIONAL_KEYWORDS
+    val OPTIONAL_KEYWORDS: Set<String> = OFFICIAL_ADDITIONAL_KEYWORDS
+
+    val KEYWORDS: Set<String> = CORE_KEYWORDS + OPTIONAL_KEYWORDS
 
     fun isKeyword(text: String): Boolean = KEYWORDS.contains(text.uppercase())
+
+    fun isOptionalKeyword(text: String): Boolean = OPTIONAL_KEYWORDS.contains(text.uppercase())
 }

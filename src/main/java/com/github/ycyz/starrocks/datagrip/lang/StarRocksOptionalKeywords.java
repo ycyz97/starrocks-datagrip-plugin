@@ -31,6 +31,7 @@ public interface StarRocksOptionalKeywords {
     SqlTokenType STARROCKS_CALL = StarRocksElementFactory.token("CALL");
     SqlTokenType STARROCKS_CAST = StarRocksElementFactory.token("CAST");
     SqlTokenType STARROCKS_CEIL = StarRocksElementFactory.token("CEIL");
+    SqlTokenType STARROCKS_CHANGE = StarRocksElementFactory.token("CHANGE");
     SqlTokenType STARROCKS_CHAIN = StarRocksElementFactory.token("CHAIN");
     SqlTokenType STARROCKS_CHARACTER = StarRocksElementFactory.token("CHARACTER");
     SqlTokenType STARROCKS_CHARSET = StarRocksElementFactory.token("CHARSET");
@@ -76,6 +77,7 @@ public interface StarRocksOptionalKeywords {
     SqlTokenType STARROCKS_DISABLE = StarRocksElementFactory.token("DISABLE");
     SqlTokenType STARROCKS_DISK = StarRocksElementFactory.token("DISK");
     SqlTokenType STARROCKS_DISTRIBUTION = StarRocksElementFactory.token("DISTRIBUTION");
+    SqlTokenType STARROCKS_DIV = StarRocksElementFactory.token("DIV");
     SqlTokenType STARROCKS_DUAL = StarRocksElementFactory.token("DUAL");
     SqlTokenType STARROCKS_DYNAMIC = StarRocksElementFactory.token("DYNAMIC");
     SqlTokenType STARROCKS_ENABLE = StarRocksElementFactory.token("ENABLE");
@@ -161,6 +163,7 @@ public interface StarRocksOptionalKeywords {
     SqlTokenType STARROCKS_MONTH = StarRocksElementFactory.token("MONTH");
     SqlTokenType STARROCKS_MULTIPLE = StarRocksElementFactory.token("MULTIPLE");
     SqlTokenType STARROCKS_NAMES = StarRocksElementFactory.token("NAMES");
+    SqlTokenType STARROCKS_NATURAL = StarRocksElementFactory.token("NATURAL");
     SqlTokenType STARROCKS_NODE = StarRocksElementFactory.token("NODE");
     SqlTokenType STARROCKS_NODES = StarRocksElementFactory.token("NODES");
     SqlTokenType STARROCKS_NONE = StarRocksElementFactory.token("NONE");
@@ -196,12 +199,14 @@ public interface StarRocksOptionalKeywords {
     SqlTokenType STARROCKS_PROBABILITY = StarRocksElementFactory.token("PROBABILITY");
     SqlTokenType STARROCKS_PROCEDURE = StarRocksElementFactory.token("PROCEDURE");
     SqlTokenType STARROCKS_PROCESSLIST = StarRocksElementFactory.token("PROCESSLIST");
+    SqlTokenType STARROCKS_PROFILE = StarRocksElementFactory.token("PROFILE");
     SqlTokenType STARROCKS_PROFILELIST = StarRocksElementFactory.token("PROFILELIST");
     SqlTokenType STARROCKS_PROPERTY = StarRocksElementFactory.token("PROPERTY");
     SqlTokenType STARROCKS_PROVIDER = StarRocksElementFactory.token("PROVIDER");
     SqlTokenType STARROCKS_PROVIDERS = StarRocksElementFactory.token("PROVIDERS");
     SqlTokenType STARROCKS_QUARTER = StarRocksElementFactory.token("QUARTER");
     SqlTokenType STARROCKS_QUERY = StarRocksElementFactory.token("QUERY");
+    SqlTokenType STARROCKS_QUERYID = StarRocksElementFactory.token("QUERYID");
     SqlTokenType STARROCKS_QUERIES = StarRocksElementFactory.token("QUERIES");
     SqlTokenType STARROCKS_QUEUE = StarRocksElementFactory.token("QUEUE");
     SqlTokenType STARROCKS_QUOTA = StarRocksElementFactory.token("QUOTA");
@@ -244,6 +249,7 @@ public interface StarRocksOptionalKeywords {
     SqlTokenType STARROCKS_SCHEMA = StarRocksElementFactory.token("SCHEMA");
     SqlTokenType STARROCKS_SCHEMAS = StarRocksElementFactory.token("SCHEMAS");
     SqlTokenType STARROCKS_SECOND = StarRocksElementFactory.token("SECOND");
+    SqlTokenType STARROCKS_SECONDS = StarRocksElementFactory.token("SECONDS");
     SqlTokenType STARROCKS_SECURITY = StarRocksElementFactory.token("SECURITY");
     SqlTokenType STARROCKS_SEPARATOR = StarRocksElementFactory.token("SEPARATOR");
     SqlTokenType STARROCKS_SERIALIZABLE = StarRocksElementFactory.token("SERIALIZABLE");
@@ -256,9 +262,11 @@ public interface StarRocksOptionalKeywords {
     SqlTokenType STARROCKS_SQL = StarRocksElementFactory.token("SQL");
     SqlTokenType STARROCKS_STARROCKS = StarRocksElementFactory.token("STARROCKS");
     SqlTokenType STARROCKS_START = StarRocksElementFactory.token("START");
+    SqlTokenType STARROCKS_STATUS = StarRocksElementFactory.token("STATUS");
     SqlTokenType STARROCKS_STOP = StarRocksElementFactory.token("STOP");
     SqlTokenType STARROCKS_STORAGE = StarRocksElementFactory.token("STORAGE");
     SqlTokenType STARROCKS_STREAM = StarRocksElementFactory.token("STREAM");
+    SqlTokenType STARROCKS_STRAIGHT_JOIN = StarRocksElementFactory.token("STRAIGHT_JOIN");
     SqlTokenType STARROCKS_STRING_AGG = StarRocksElementFactory.token("STRING_AGG");
     SqlTokenType STARROCKS_SUSPEND = StarRocksElementFactory.token("SUSPEND");
     SqlTokenType STARROCKS_SYSTEM = StarRocksElementFactory.token("SYSTEM");

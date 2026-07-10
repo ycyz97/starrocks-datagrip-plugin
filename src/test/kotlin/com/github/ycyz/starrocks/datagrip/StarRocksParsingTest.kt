@@ -2,7 +2,9 @@ package com.github.ycyz.starrocks.datagrip
 
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserLexer
+import com.intellij.lang.LanguageParserDefinitions
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.TokenType
@@ -39,6 +41,17 @@ class StarRocksParsingTest : BasePlatformTestCase() {
 
     fun testNaturalJoinParsesWithoutPsiErrors() {
         assertParsesWithoutPsiErrors("SELECT * FROM orders NATURAL JOIN customers;")
+    }
+
+    fun testDerivedTablesParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors("SELECT * FROM (SELECT order_id FROM orders) nested_orders;")
+        assertParsesWithoutPsiErrors(
+            "SELECT * FROM orders a FULL JOIN (SELECT order_id FROM archived_orders) b ON a.order_id = b.order_id;"
+        )
+    }
+
+    fun testCommonTableExpressionsParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors("WITH base AS (SELECT 1) SELECT * FROM base;")
     }
 
     fun testEveryDeclaredScenarioBuildsAnErrorFreePsiTree() {
@@ -110,6 +123,20 @@ class StarRocksParsingTest : BasePlatformTestCase() {
     }
 
     private fun assertParsesWithoutPsiErrors(sql: String, fileName: String = "query.sql") {
+        val parserDefinition = LanguageParserDefinitions.INSTANCE.forLanguage(StarRocksDialect.INSTANCE)
+        assertTrue(
+            "StarRocks files must use the plugin parser definition.",
+            parserDefinition is StarRocksParserDefinition
+        )
+        val parserLexer = parserDefinition.createLexer(project)
+        parserLexer.start(sql)
+        if (sql.startsWith("SELECT")) {
+            assertSame(
+                "The parser definition must expose the generated parser's SELECT token.",
+                StarRocksElementTypes.SELECT,
+                parserLexer.tokenType
+            )
+        }
         val file = PsiFileFactory.getInstance(project)
             .createFileFromText(fileName, StarRocksDialect.INSTANCE, sql)
         val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)

@@ -73,10 +73,19 @@ tasks {
         val keywordCatalogFile = layout.projectDirectory.file(
             "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
         )
+        val keywordRegistryFiles = listOf(
+            layout.projectDirectory.file(
+                "src/main/java/com/github/ycyz/starrocks/datagrip/lang/StarRocksReservedKeywords.java"
+            ),
+            layout.projectDirectory.file(
+                "src/main/java/com/github/ycyz/starrocks/datagrip/lang/StarRocksOptionalKeywords.java"
+            )
+        )
 
         inputs.file(flexFile)
         inputs.file(bnfFile)
         inputs.file(keywordCatalogFile)
+        inputs.files(keywordRegistryFiles)
 
         doLast {
             check(flexFile.asFile.isFile) { "Missing parser lexer grammar: ${flexFile.asFile}" }
@@ -130,6 +139,22 @@ tasks {
             val missingKeywords = grammarKeywords - catalogKeywords
             check(missingKeywords.isEmpty()) {
                 "Grammar keywords missing from StarRocksKeywordCatalog: ${missingKeywords.sorted().joinToString()}"
+            }
+
+            val registryKeywords = keywordRegistryFiles
+                .flatMap { file ->
+                    Regex("""StarRocksElementFactory\.token\("([A-Z][A-Z0-9_]*)"\)""")
+                        .findAll(file.asFile.readText())
+                        .map { it.groupValues[1] }
+                        .toList()
+                }
+                .toSet()
+            val missingRegistryKeywords = catalogKeywords - registryKeywords
+            val extraRegistryKeywords = registryKeywords - catalogKeywords
+            check(missingRegistryKeywords.isEmpty() && extraRegistryKeywords.isEmpty()) {
+                "StarRocks keyword registry must match StarRocksKeywordCatalog. " +
+                    "Missing: ${missingRegistryKeywords.sorted().joinToString()}; " +
+                    "extra: ${extraRegistryKeywords.sorted().joinToString()}"
             }
         }
     }
@@ -221,6 +246,15 @@ tasks {
         pathToParser.set("/com/github/ycyz/starrocks/datagrip/lang/StarRocksGeneratedParser.java")
         pathToPsiRoot.set("/com/github/ycyz/starrocks/datagrip/lang/psi")
         purgeOldFiles.set(true)
+
+        doFirst {
+            val generatedLanguageDir = generatedRoot.get().asFile.resolve(
+                "com/github/ycyz/starrocks/datagrip/lang"
+            )
+            generatedLanguageDir.resolve("psi").deleteRecursively()
+            generatedLanguageDir.resolve("StarRocksGeneratedParser.java").delete()
+            generatedLanguageDir.resolve("StarRocksElementTypes.java").delete()
+        }
     }
 
     named("compileKotlin") {
