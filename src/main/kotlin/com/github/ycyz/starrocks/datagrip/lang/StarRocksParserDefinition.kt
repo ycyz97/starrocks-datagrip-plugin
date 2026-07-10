@@ -18,7 +18,7 @@ class StarRocksParserDefinition : SqlParserDefinitionBase() {
 
     override fun getFileNodeType(): IFileElementType = STARROCKS_SQL_FILE
 
-    private companion object {
+    companion object {
         val STARROCKS_SQL_FILE: IFileElementType = SqlFileElementType("STARROCKS_SQL_FILE", StarRocksDialect.INSTANCE)
     }
 }

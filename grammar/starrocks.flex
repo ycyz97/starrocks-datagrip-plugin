@@ -48,6 +48,7 @@ STRING='([^'\\]|\\.|'')*'|\"([^\"\\]|\\.|\"\")*\"
 {FLOAT}              { return SqlTokens.SQL_FLOAT_TOKEN; }
 {INTEGER}            { return SqlTokens.SQL_INTEGER_TOKEN; }
 
+"<=>"                { return StarRocksElementTypes.STARROCKS_OP_NULL_SAFE_EQ; }
 "<="                 { return SqlTokens.SQL_OP_LE; }
 ">="                 { return SqlTokens.SQL_OP_GE; }
 "<>"                 { return SqlTokens.SQL_OP_NEQ; }
@@ -75,6 +76,7 @@ STRING='([^'\\]|\\.|'')*'|\"([^\"\\]|\\.|\"\")*\"
 "!"                  { return SqlTokens.SQL_OP_NOT2; }
 "|"                  { return SqlTokens.SQL_OP_BITWISE_OR; }
 "&"                  { return SqlTokens.SQL_OP_BITWISE_AND; }
+"~"                  { return StarRocksElementTypes.STARROCKS_OP_BITWISE_NOT; }
 ":"                  { return SqlTokens.SQL_COLON; }
 
 {IDENT}              {

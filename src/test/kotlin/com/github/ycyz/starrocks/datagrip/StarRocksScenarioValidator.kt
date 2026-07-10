@@ -363,8 +363,8 @@ object StarRocksScenarioValidator {
 
     private fun validateSyntaxHighlighterColors() {
         val highlighter = StarRocksSyntaxHighlighter(project = null, file = null)
-        check(SqlColors.SQL_PROCEDURE in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.FUNCTION)) {
-            "StarRocks function token should use SQL procedure/function highlighting."
+        check(SqlColors.SQL_IDENT in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.FUNCTION)) {
+            "StarRocks function token should use the platform SQL identifier color."
         }
         check(SqlColors.SQL_TYPE in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.DATA_TYPE)) {
             "StarRocks data type token should use SQL type highlighting."
@@ -472,7 +472,7 @@ object StarRocksScenarioValidator {
             "StarRocksParser should expose no custom extends token sets for the Grammar-Kit generated parser."
         }
         val generatedRoot = projectDir
-            .resolve("generated/src/main/java/com/github/ycyz/starrocks/datagrip/lang")
+            .resolve("build/generated/src/main/java/com/github/ycyz/starrocks/datagrip/lang")
         val generatedParserSource = generatedRoot
             .resolve("StarRocksGeneratedParser.java")
             .readText()
@@ -758,7 +758,7 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.DESCRIBE_TARGET,
             StarRocksElementTypes.USE_TARGET,
             StarRocksElementTypes.SQL_TABLE_EXPRESSION,
-            StarRocksElementTypes.SQL_TABLE_REFERENCE,
+            SqlCompositeElementTypes.SQL_TABLE_REFERENCE,
             StarRocksElementTypes.SET_OPERATION_CLAUSE,
             StarRocksElementTypes.SET_OPERATOR,
             StarRocksElementTypes.SQL_JOIN_EXPRESSION,
@@ -771,7 +771,6 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.TABLE_ALIAS,
             StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME,
             StarRocksElementTypes.SELECT_ALIAS,
-            StarRocksElementTypes.TABLE_REFERENCE_NAME,
             StarRocksElementTypes.COLUMN_NAME,
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
             StarRocksElementTypes.KEY_COLUMN,

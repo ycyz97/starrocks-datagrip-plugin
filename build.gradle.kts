@@ -1,12 +1,15 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
-    id("org.jetbrains.intellij.platform") version "2.5.0"
-    id("org.jetbrains.grammarkit") version "2022.3.2.2"
+    id("org.jetbrains.kotlin.jvm") version "2.1.21"
+    id("org.jetbrains.intellij.platform") version "2.17.0"
+    id("org.jetbrains.grammarkit") version "2023.3.0.3"
 }
 
 group = "com.github.ycyz.starrocks.datagrip"
 version = "2.0.0"
+
+val grammarKitGeneratedRoot = layout.buildDirectory.dir("generated/src/main/java")
+val generatedParserGrammar = layout.buildDirectory.file("generated/grammar/starrocks.bnf")
 
 repositories {
     mavenCentral()
@@ -17,15 +20,16 @@ repositories {
 
 sourceSets {
     named("main") {
-        java.srcDir(layout.projectDirectory.dir("generated/src/main/java"))
+        java.srcDir(grammarKitGeneratedRoot)
     }
 }
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testRuntimeOnly(kotlin("stdlib"))
 
     intellijPlatform {
-        create("DB", "251.28774.27")
+        datagrip("2025.1.4.1")
 
         bundledPlugin("com.intellij.modules.json")
         bundledPlugin("com.intellij.platform.images")
@@ -44,7 +48,7 @@ intellijPlatform {
     }
     pluginVerification {
         ides {
-            ide("DB-251.28774.27")
+            create("DB", "251.28774.27")
         }
     }
 }
@@ -55,7 +59,9 @@ tasks {
         targetCompatibility = "17"
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     register("validateGrammarSources") {
@@ -64,9 +70,13 @@ tasks {
 
         val flexFile = layout.projectDirectory.file("grammar/starrocks.flex")
         val bnfFile = layout.projectDirectory.file("grammar/starrocks.bnf")
+        val keywordCatalogFile = layout.projectDirectory.file(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
+        )
 
         inputs.file(flexFile)
         inputs.file(bnfFile)
+        inputs.file(keywordCatalogFile)
 
         doLast {
             check(flexFile.asFile.isFile) { "Missing parser lexer grammar: ${flexFile.asFile}" }
@@ -103,6 +113,82 @@ tasks {
             check("STATEMENT_SEGMENT" !in bnf && "statement_tail" !in bnf) {
                 "starrocks.bnf must not define broad statement fallback segments."
             }
+
+            val grammarRules = bnf.replace(
+                Regex("""(?m)^\s*(elementType|elementTypeFactory|pin|recoverWhile)=.*$"""),
+                ""
+            )
+            val grammarKeywords = Regex("""\"([A-Z][A-Z0-9_]*)\"""")
+                .findAll(grammarRules)
+                .map { it.groupValues[1] }
+                .filterNot { it.startsWith("SQL_") || it.startsWith("STARROCKS_") }
+                .toSet()
+            val catalogKeywords = Regex("""(?m)^\s*\"([A-Z][A-Z0-9_]*)\",?\s*$""")
+                .findAll(keywordCatalogFile.asFile.readText())
+                .map { it.groupValues[1] }
+                .toSet()
+            val missingKeywords = grammarKeywords - catalogKeywords
+            check(missingKeywords.isEmpty()) {
+                "Grammar keywords missing from StarRocksKeywordCatalog: ${missingKeywords.sorted().joinToString()}"
+            }
+        }
+    }
+
+    register("prepareStarRocksParserGrammar") {
+        group = "generation"
+        description = "Generates the Grammar-Kit input with tokens derived from the keyword catalog."
+        notCompatibleWithConfigurationCache("Generates a Grammar-Kit source file from project inputs.")
+
+        val sourceGrammar = layout.projectDirectory.file("grammar/starrocks.bnf")
+        val keywordCatalog = layout.projectDirectory.file(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
+        )
+
+        inputs.file(sourceGrammar)
+        inputs.file(keywordCatalog)
+        outputs.file(generatedParserGrammar)
+
+        doLast {
+            val grammar = sourceGrammar.asFile.readText()
+            val keywords = Regex("""(?m)^\s*\"([A-Z][A-Z0-9_]*)\",?\s*$""")
+                .findAll(keywordCatalog.asFile.readText())
+                .map { it.groupValues[1] }
+                .toSortedSet()
+            val tokenDeclarations = buildString {
+                append("\n  tokens=[\n")
+                append("    SQL_LEFT_PAREN=\"(\"\n")
+                append("    SQL_RIGHT_PAREN=\")\"\n")
+                append("    SQL_LEFT_BRACKET=\"[\"\n")
+                append("    SQL_RIGHT_BRACKET=\"]\"\n")
+                append("    SQL_COMMA=\",\"\n")
+                append("    SQL_SEMICOLON=\";\"\n")
+                append("    SQL_PERIOD=\".\"\n")
+                append("    SQL_COLON=\":\"\n")
+                append("    SQL_OP_PLUS=\"+\"\n")
+                append("    SQL_OP_MINUS=\"-\"\n")
+                append("    SQL_ASTERISK=\"*\"\n")
+                append("    SQL_OP_DIV=\"/\"\n")
+                append("    SQL_OP_MODULO=\"%\"\n")
+                append("    SQL_OP_EQ=\"=\"\n")
+                append("    SQL_OP_LT=\"<\"\n")
+                append("    SQL_OP_GT=\">\"\n")
+                append("    SQL_OP_LE=\"<=\"\n")
+                append("    SQL_OP_GE=\">=\"\n")
+                append("    SQL_OP_NEQ=\"<>\"\n")
+                append("    SQL_OP_NEQ2=\"!=\"\n")
+                append("    SQL_OP_CONCAT=\"||\"\n")
+                append("    SQL_OP_NOT2=\"!\"\n")
+                append("    STARROCKS_OP_NULL_SAFE_EQ=\"<=>\"\n")
+                append("    STARROCKS_OP_BITWISE_NOT=\"~\"\n")
+                keywords.forEach { keyword -> append("    $keyword=\"$keyword\"\n") }
+                append("  ]")
+            }
+            val marker = "  tokenTypeFactory=\"com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.token\""
+            check(marker in grammar) { "Cannot locate token factory in starrocks.bnf." }
+            val preparedGrammar = grammar.replaceFirst(marker, marker + tokenDeclarations)
+            val target = generatedParserGrammar.get().asFile
+            target.parentFile.mkdirs()
+            target.writeText(preparedGrammar)
         }
     }
 
@@ -113,7 +199,7 @@ tasks {
         dependsOn("validateGrammarSources")
 
         val flexFile = layout.projectDirectory.file("grammar/starrocks.flex")
-        val generatedLexerDir = layout.projectDirectory.dir(
+        val generatedLexerDir = layout.buildDirectory.dir(
             "generated/src/main/java/com/github/ycyz/starrocks/datagrip/lang"
         )
 
@@ -126,12 +212,11 @@ tasks {
         group = "generation"
         description = "Generates the StarRocks parser from grammar/starrocks.bnf."
 
-        dependsOn("generateLexer")
+        dependsOn("generateLexer", "prepareStarRocksParserGrammar")
 
-        val bnfFile = layout.projectDirectory.file("grammar/starrocks.bnf")
-        val generatedRoot = layout.projectDirectory.dir("generated/src/main/java")
+        val generatedRoot = grammarKitGeneratedRoot
 
-        sourceFile.set(bnfFile)
+        sourceFile.set(generatedParserGrammar)
         targetRootOutputDir.set(generatedRoot)
         pathToParser.set("/com/github/ycyz/starrocks/datagrip/lang/StarRocksGeneratedParser.java")
         pathToPsiRoot.set("/com/github/ycyz/starrocks/datagrip/lang/psi")
@@ -201,7 +286,7 @@ tasks {
         description = "Runs native StarRocks parser and local context scenario checks."
 
         dependsOn("testClasses")
-        classpath = sourceSets["test"].runtimeClasspath
+        classpath = sourceSets["test"].runtimeClasspath + sourceSets["test"].compileClasspath
         mainClass.set("com.github.ycyz.starrocks.datagrip.StarRocksScenarioValidator")
         args(layout.projectDirectory.asFile.absolutePath)
     }

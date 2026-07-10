@@ -16,7 +16,6 @@
         <sql.dialectCodeStyleProvider implementation="com.github.ycyz.starrocks.datagrip.format.StarRocksCodeStyleProvider"/>
         <lang.parserDefinition language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition"/>
         <lang.syntaxHighlighterFactory language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighterFactory"/>
-        <annotator language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.highlight.StarRocksSemanticAnnotator"/>
         <lang.formatter language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingModelBuilder"/>
         <sql.formatterHelper language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper"/>
         <completion.contributor language="StarRocks" implementationClass="com.github.ycyz.starrocks.datagrip.completion.StarRocksCompletionContributor"/>

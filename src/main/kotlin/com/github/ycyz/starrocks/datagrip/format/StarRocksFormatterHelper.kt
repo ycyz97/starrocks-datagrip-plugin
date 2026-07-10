@@ -79,7 +79,7 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.MERGE_ON_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.MERGE_WHEN_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_TABLE_EXPRESSION to ::SqlUnsortedBlock,
-            StarRocksElementTypes.SQL_TABLE_REFERENCE to ::SqlUnsortedBlock,
+            SqlCompositeElementTypes.SQL_TABLE_REFERENCE to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_JOIN_EXPRESSION to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE to ::SqlUnsortedBlock,

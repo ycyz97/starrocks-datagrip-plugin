@@ -40,6 +40,7 @@ import com.intellij.sql.psi.impl.SqlUseDatabaseStatementImpl
 import com.intellij.sql.psi.impl.SqlUsingClauseImpl
 import com.intellij.sql.util.SqlTokenRegistry
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
     private val platformElementFactory: SqlElementFactoryBase = Sql92ParserDefinition().elementFactory
@@ -109,6 +110,8 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
     }
 
     companion object {
+        private val TOKENS = ConcurrentHashMap<String, SqlTokenType>()
+
         init {
             SqlTokenRegistry.ensureInterfacesAreInitializedInOrder(StarRocksElementFactory::class.java)
         }
@@ -116,12 +119,52 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
         @JvmStatic
         fun token(text: String): SqlTokenType {
             val normalized = text.uppercase(Locale.ROOT)
+            return TOKENS.computeIfAbsent(normalized, ::createToken)
+        }
+
+        private fun createToken(normalized: String): SqlTokenType {
             if (normalized == "STARROCKS_PARAMETER") {
                 return StarRocksHighlightTokenTypes.PARAMETER
             }
+            punctuationToken(normalized)?.let { return it }
             sqlToken(normalized)?.let { return it }
             commonKeyword("SQL_$normalized")?.let { return it }
             return SqlTokenRegistry.getType(normalized)
+        }
+
+        private fun punctuationToken(text: String): SqlTokenType? {
+            return when (text) {
+                "(" -> SqlTokens.SQL_LEFT_PAREN
+                ")" -> SqlTokens.SQL_RIGHT_PAREN
+                "[" -> SqlTokens.SQL_LEFT_BRACKET
+                "]" -> SqlTokens.SQL_RIGHT_BRACKET
+                "{" -> SqlTokens.SQL_LEFT_BRACE
+                "}" -> SqlTokens.SQL_RIGHT_BRACE
+                "," -> SqlTokens.SQL_COMMA
+                ";" -> SqlTokens.SQL_SEMICOLON
+                "." -> SqlTokens.SQL_PERIOD
+                ":" -> SqlTokens.SQL_COLON
+                "+" -> SqlTokens.SQL_OP_PLUS
+                "-" -> SqlTokens.SQL_OP_MINUS
+                "*" -> SqlTokens.SQL_ASTERISK
+                "/" -> SqlTokens.SQL_OP_DIV
+                "%" -> SqlTokens.SQL_OP_MODULO
+                "=" -> SqlTokens.SQL_OP_EQ
+                "<" -> SqlTokens.SQL_OP_LT
+                ">" -> SqlTokens.SQL_OP_GT
+                "<=" -> SqlTokens.SQL_OP_LE
+                ">=" -> SqlTokens.SQL_OP_GE
+                "<>" -> SqlTokens.SQL_OP_NEQ
+                "!=" -> SqlTokens.SQL_OP_NEQ2
+                "<<" -> SqlTokens.SQL_OP_LEFT_SHIFT
+                ">>" -> SqlTokens.SQL_OP_RIGHT_SHIFT
+                "||" -> SqlTokens.SQL_OP_CONCAT
+                "!" -> SqlTokens.SQL_OP_NOT2
+                "|" -> SqlTokens.SQL_OP_BITWISE_OR
+                "&" -> SqlTokens.SQL_OP_BITWISE_AND
+                "?" -> StarRocksHighlightTokenTypes.PARAMETER
+                else -> null
+            }
         }
 
         @JvmStatic
@@ -161,7 +204,8 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             }
         }
 
-        private val INFO = Info().also { info ->
+        private val INFO: Info by lazy {
+            Info().also { info ->
             getDefaultRegistrations(info)
             registerImplementation(
                 info,
@@ -323,22 +367,28 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
                 StarRocksElementTypes.SQL_USING_CLAUSE,
                 SqlUsingClauseImpl::class.java
             )
+            }
         }
 
-        private val STATEMENT_TYPES = StarRocksStatementElementSets.STARROCKS_STATEMENT_TYPES
+        private val STATEMENT_TYPES by lazy {
+            StarRocksStatementElementSets.STARROCKS_STATEMENT_TYPES
+        }
 
-        private val GENERIC_PLATFORM_STATEMENT_TYPES = setOf(
+        private val GENERIC_PLATFORM_STATEMENT_TYPES by lazy {
+            setOf(
             SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT
-        )
+            )
+        }
 
-        private val REGISTERED_STARROCKS_PLATFORM_TYPES = setOf(
+        private val REGISTERED_STARROCKS_PLATFORM_TYPES by lazy {
+            setOf(
             StarRocksElementTypes.SQL_FROM_CLAUSE,
             StarRocksElementTypes.SQL_TABLE_EXPRESSION,
             StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION,
             StarRocksElementTypes.SQL_JOIN_EXPRESSION,
             StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE,
             StarRocksElementTypes.SQL_USING_CLAUSE,
-            StarRocksElementTypes.SQL_TABLE_REFERENCE,
+            SqlCompositeElementTypes.SQL_TABLE_REFERENCE,
             StarRocksElementTypes.SQL_INSERT_STATEMENT,
             StarRocksElementTypes.SQL_UPDATE_STATEMENT,
             StarRocksElementTypes.SQL_DELETE_STATEMENT,
@@ -359,9 +409,11 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             StarRocksElementTypes.SQL_COMMIT_STATEMENT,
             StarRocksElementTypes.SQL_ROLLBACK_STATEMENT,
             StarRocksElementTypes.SQL_TRUNCATE_TABLE_STATEMENT
-        )
+            )
+        }
 
-        private val REGISTERED_PLATFORM_TYPES = setOf(
+        private val REGISTERED_PLATFORM_TYPES by lazy {
+            setOf(
             StarRocksElementTypes.SQL_CREATE_TABLE_STATEMENT,
             StarRocksElementTypes.SQL_CREATE_VIEW_STATEMENT,
             StarRocksElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT,
@@ -369,6 +421,7 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             SqlCompositeElementTypes.SQL_USE_CATALOG_STATEMENT,
             SqlCompositeElementTypes.SQL_USE_NAMESPACE_STATEMENT,
             StarRocksElementTypes.SQL_CALL_STATEMENT
-        )
+            )
+        }
     }
 }

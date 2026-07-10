@@ -1,6 +1,6 @@
 {
   parserClass="com.github.ycyz.starrocks.datagrip.lang.StarRocksGeneratedParser"
-  parserUtilClass="com.intellij.sql.dialects.base.SqlGeneratedParserUtil"
+  parserUtilClass="com.github.ycyz.starrocks.datagrip.lang.StarRocksParserUtil"
   elementTypeHolderClass="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes"
   tokenTypeClass="com.intellij.sql.psi.SqlTokens"
   tokenTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.token"
@@ -11,10 +11,10 @@
   psiImplPackage="com.github.ycyz.starrocks.datagrip.lang.psi.impl"
 }
 
-script ::= statement (statement_separator statement)* statement_separator? <<eof>>
+script ::= <<parseScript statement>>
 private statement_separator ::= ";"
 
-statement ::= ddl_statement | dml_statement | other_statement {
+statement ::= dml_statement | ddl_statement | other_statement {
   pin=1
   recoverWhile=statement_recover
 }
@@ -343,7 +343,7 @@ select_statement ::= query_expression {
   recoverWhile=statement_recover
 }
 
-query_expression ::= with_query_expression | set_query_expression | simple_query_expression | values_expression {
+query_expression ::= with_query_expression | set_query_expression | values_expression {
   elementType="SQL_QUERY_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
@@ -351,7 +351,7 @@ query_expression ::= with_query_expression | set_query_expression | simple_query
 }
 private query_recover ::= !(";" | ")" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
 
-with_query_expression ::= with_clause (set_query_expression | simple_query_expression | values_expression) {
+with_query_expression ::= with_clause (set_query_expression | values_expression) {
   pin=1
   recoverWhile=query_recover
 }
@@ -376,7 +376,7 @@ parenthesized_query_expression ::= "(" query_expression ")" {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 
-set_query_expression ::= simple_query_expression set_operation_clause+ {
+set_query_expression ::= simple_query_expression set_operation_clause* {
   pin=2
   recoverWhile=query_recover
 }
@@ -386,10 +386,18 @@ set_operation_clause ::= set_operator simple_query_expression {
 }
 set_operator ::= ("UNION" "ALL"?) | "INTERSECT" | "EXCEPT" | "MINUS"
 
-simple_query_expression ::= select_clause from_clause? where_clause? group_by_clause? having_clause? qualify_clause? window_clause? order_by_clause? limit_clause? {
+simple_query_expression ::= select_clause from_clause_guarded? where_clause_guarded? group_by_clause_guarded? having_clause_guarded? qualify_clause_guarded? window_clause_guarded? order_by_clause_guarded? limit_clause_guarded? {
   pin=1
   recoverWhile=query_recover
 }
+private from_clause_guarded ::= &"FROM" from_clause
+private where_clause_guarded ::= &"WHERE" where_clause
+private group_by_clause_guarded ::= &"GROUP" group_by_clause
+private having_clause_guarded ::= &"HAVING" having_clause
+private qualify_clause_guarded ::= &"QUALIFY" qualify_clause
+private window_clause_guarded ::= &"WINDOW" window_clause
+private order_by_clause_guarded ::= &"ORDER" order_by_clause
+private limit_clause_guarded ::= &"LIMIT" limit_clause
 select_clause ::= "SELECT" select_modifier* select_item ("," select_item)* {
   elementType="SQL_SELECT_CLAUSE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -398,8 +406,10 @@ select_clause ::= "SELECT" select_modifier* select_item ("," select_item)* {
 }
 private select_modifier ::= "ALL" | "DISTINCT"
 private select_recover ::= !(";" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT")
-select_item ::= value_expression select_alias_clause?
-private select_alias_clause ::= "AS"? select_alias
+select_item ::= select_all | value_expression select_alias_clause?
+select_all ::= qualified_identifier "." "*" | "*"
+private select_alias_clause ::= "AS" select_alias | !select_alias_boundary select_alias
+private select_alias_boundary ::= "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS"
 select_alias ::= identifier_reference {
   elementType="SELECT_ALIAS"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -707,18 +717,9 @@ private comparison_operator ::= "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<
 additive_expression ::= multiplicative_expression (("+" | "-" | "||") multiplicative_expression)*
 multiplicative_expression ::= unary_expression (("*" | "/" | "%" | "DIV" | "MOD") unary_expression)*
 unary_expression ::= ("+" | "-" | "!" | "~" | "BINARY")* postfix_expression
-postfix_expression ::= primary_expression analytic_clause? array_access_tail* field_access_tail*
+postfix_expression ::= (literal | function_call | parenthesized_value_expression | column_reference | cast_expression | case_expression | exists_expression | interval_expression | typed_literal_expression) analytic_clause? array_access_tail* field_access_tail*
 array_access_tail ::= "[" value_expression "]"
 field_access_tail ::= "." identifier_reference
-primary_expression ::= cast_expression
-  | case_expression
-  | exists_expression
-  | interval_expression
-  | typed_literal_expression
-  | function_call
-  | parenthesized_value_expression
-  | column_reference
-  | literal
 cast_expression ::= "CAST" "(" value_expression "AS" cast_type ")" {
   pin=3
   recoverWhile=expression_recover

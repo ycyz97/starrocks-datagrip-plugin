@@ -18,6 +18,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.psi.SqlDefinition
+import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.util.ProcessingContext
 import java.util.Locale
 
@@ -342,7 +343,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.TABLE_REFERENCE_NAME) {
+        if (current.node?.elementType == SqlCompositeElementTypes.SQL_TABLE_REFERENCE) {
             result += current
         }
         current.children.forEach { collectTableReferencesWithoutNestedQueries(root, it, result) }
@@ -371,7 +372,7 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.SQL_TABLE_REFERENCE) {
+        if (current.node?.elementType == SqlCompositeElementTypes.SQL_TABLE_REFERENCE) {
             result += current
             return
         }

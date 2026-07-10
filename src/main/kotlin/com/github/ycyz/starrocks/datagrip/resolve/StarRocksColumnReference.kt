@@ -8,6 +8,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.psi.SqlDefinition
+import com.intellij.sql.psi.SqlCompositeElementTypes
 import java.util.Locale
 
 class StarRocksColumnReference(element: PsiElement) :
@@ -26,7 +27,7 @@ class StarRocksColumnReference(element: PsiElement) :
 
     private fun resolveQualifiedColumn(columnName: String): PsiElement? {
         val alias = resolveQualifierAlias() ?: return null
-        val tableReferenceScope = containingElement(alias, StarRocksElementTypes.SQL_TABLE_REFERENCE) ?: return null
+        val tableReferenceScope = containingElement(alias, SqlCompositeElementTypes.SQL_TABLE_REFERENCE) ?: return null
         val tableReference = nearestTableReferenceBeforeAlias(alias)
         val tableTarget = tableReference?.let { resolveLocalTableReferenceTarget(it) }
         return resolveColumnOnTableAlias(alias, columnName)
@@ -69,7 +70,7 @@ class StarRocksColumnReference(element: PsiElement) :
     }
 
     private fun nearestTableReferenceBeforeAlias(alias: PsiElement): PsiElement? {
-        val tableReferenceScope = containingElement(alias, StarRocksElementTypes.SQL_TABLE_REFERENCE) ?: return null
+        val tableReferenceScope = containingElement(alias, SqlCompositeElementTypes.SQL_TABLE_REFERENCE) ?: return null
         val candidates = mutableListOf<PsiElement>()
         collectTableReferencesWithoutNestedQueries(tableReferenceScope, tableReferenceScope, candidates)
         return candidates
@@ -271,7 +272,7 @@ class StarRocksColumnReference(element: PsiElement) :
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.TABLE_REFERENCE_NAME) {
+        if (current.node?.elementType == SqlCompositeElementTypes.SQL_TABLE_REFERENCE) {
             result += current
         }
         current.children.forEach { collectTableReferencesWithoutNestedQueries(root, it, result) }
@@ -285,7 +286,7 @@ class StarRocksColumnReference(element: PsiElement) :
         if (current != root && current.node?.elementType in QUERY_SCOPE_TYPES) {
             return
         }
-        if (current.node?.elementType == StarRocksElementTypes.SQL_TABLE_REFERENCE) {
+        if (current.node?.elementType == SqlCompositeElementTypes.SQL_TABLE_REFERENCE) {
             result += current
             return
         }
