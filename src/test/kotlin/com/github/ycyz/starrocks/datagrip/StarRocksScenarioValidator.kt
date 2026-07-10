@@ -79,7 +79,7 @@ object StarRocksScenarioValidator {
         validateLexerKeywordTokens()
         validateSyntaxHighlighterColors()
         validateDialectTokens()
-        validateGeneratedGrammarSkeleton()
+        validateGeneratedGrammarSkeleton(projectDir)
         validateFormattingProfile()
         validateElementFactory()
         validateDatabaseIntegration(projectDir)
@@ -452,7 +452,7 @@ object StarRocksScenarioValidator {
         }
     }
 
-    private fun validateGeneratedGrammarSkeleton() {
+    private fun validateGeneratedGrammarSkeleton(projectDir: File) {
         val builderClass = com.intellij.lang.PsiBuilder::class.java
         val levelClass = Int::class.javaPrimitiveType!!
         listOf(
@@ -490,6 +490,16 @@ object StarRocksScenarioValidator {
             StarRocksDmlParsing::class.java.getMethod("update_statement", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("delete_statement", builderClass, levelClass),
             StarRocksDmlParsing::class.java.getMethod("merge_statement", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("insert_target_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("update_target_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("delete_target_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("merge_target_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("merge_using_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("merge_on_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("merge_when_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("set_clause", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("set_assignment", builderClass, levelClass),
+            StarRocksDmlParsing::class.java.getMethod("dml_target_table", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("type_element", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("table_column_list", builderClass, levelClass),
             StarRocksDdlParsing::class.java.getMethod("column_definition", builderClass, levelClass),
@@ -542,7 +552,9 @@ object StarRocksScenarioValidator {
             StarRocksOtherParsing::class.java.getMethod("start_transaction_statement", builderClass, levelClass),
             StarRocksOtherParsing::class.java.getMethod("commit_statement", builderClass, levelClass),
             StarRocksOtherParsing::class.java.getMethod("rollback_statement", builderClass, levelClass),
-            StarRocksExpressionParsing::class.java.getMethod("value_expression", builderClass, levelClass)
+            StarRocksExpressionParsing::class.java.getMethod("value_expression", builderClass, levelClass),
+            StarRocksExpressionParsing::class.java.getMethod("cast_expression", builderClass, levelClass),
+            StarRocksExpressionParsing::class.java.getMethod("cast_type", builderClass, levelClass)
         ).forEach { method ->
             check(method.returnType == Boolean::class.javaPrimitiveType) {
                 "Generated grammar skeleton method ${method.name} must return boolean like JetBrains generated parsers."
@@ -556,29 +568,70 @@ object StarRocksScenarioValidator {
         check(extendsSetsMethod.invoke(StarRocksParser()) === StarRocksGeneratedParser.EXTENDS_SETS_) {
             "StarRocksParser must expose StarRocksGeneratedParser.EXTENDS_SETS_ like generated JetBrains dialect parsers."
         }
+        val generatedParserSource = projectDir
+            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksGeneratedParser.kt")
+            .readText()
+        val ddlParsingSource = projectDir
+            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksDdlParsing.kt")
+            .readText()
+        val otherParsingSource = projectDir
+            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksOtherParsing.kt")
+            .readText()
+        val expressionParsingSource = projectDir
+            .resolve("src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksExpressionParsing.kt")
+            .readText()
+        check("SqlGeneratedParserUtil.parseScript" in generatedParserSource) {
+            "StarRocksGeneratedParser root must delegate to SqlGeneratedParserUtil.parseScript like mature generated dialect parsers."
+        }
+        check("recoverUntilStatementBoundary" !in generatedParserSource && "STATEMENT_SEGMENT" !in generatedParserSource) {
+            "StarRocksGeneratedParser must not keep the old fallback statement-boundary scanner."
+        }
+        check("SqlGeneratedParserUtil.statementRecover" !in generatedParserSource) {
+            "StarRocksGeneratedParser must not use custom statement recovery that can hide grammar gaps."
+        }
+        val mainSourceMentionsFallbackSegment = projectDir
+            .resolve("src/main")
+            .walkTopDown()
+            .filter { it.isFile }
+            .any { "STATEMENT_SEGMENT" in it.readText() || "STARROCKS_STATEMENT_SEGMENT" in it.readText() }
+        check(!mainSourceMentionsFallbackSegment) {
+            "StarRocks main sources must not define or reference fallback STATEMENT_SEGMENT nodes."
+        }
+        check("consumeStatementTail" !in ddlParsingSource && "consumeStatementTail" !in otherParsingSource) {
+            "DDL/Other parsers must not use a generic statement-tail scanner that hides grammar gaps."
+        }
+        check("prefixedStatement" !in ddlParsingSource && "prefixedStatement" !in otherParsingSource) {
+            "DDL/Other parsers must use concrete clause/reference/property/type rules instead of prefix-only statement scanners."
+        }
+        check("value_expression(builder, level + 1, setOf(\";\"))" !in ddlParsingSource &&
+            "value_expression(builder, level + 1, setOf(\";\"))" !in otherParsingSource) {
+            "DDL/Other parsers must not parse arbitrary tail text as semicolon-bounded expressions."
+        }
+        check("if (!isLiteralToken(builder.tokenText))" in expressionParsingSource) {
+            "StarRocks literal_expression must be token-class guarded, not an arbitrary token consumer."
+        }
+        val parseDataTypeExtMethod = StarRocksParser::class.java.getDeclaredMethod("parseDataTypeExt", builderClass)
+        check(parseDataTypeExtMethod.returnType == Boolean::class.javaPrimitiveType) {
+            "StarRocksParser must expose parseDataTypeExt like complex-type JetBrains dialect parsers."
+        }
+        val parseCastDataTypeMethod = StarRocksParser::class.java.getDeclaredMethod("parseCastDataType", builderClass, levelClass)
+        check(parseCastDataTypeMethod.returnType == Boolean::class.javaPrimitiveType) {
+            "StarRocksParser must expose parseCastDataType like dialect parsers with CAST type syntax."
+        }
     }
 
     private fun validateFormattingProfile() {
         check(StarRocksFormattingProfile.USE_PLATFORM_SQL_FORMATTER) {
             "StarRocks formatter must stay wired to the platform SQL formatter."
         }
-        check(StarRocksFormattingProfile.USE_GENERIC_SQL_FORMATTER_BRIDGE) {
-            "StarRocks formatter should keep the platform GenericSQL bridge for ordinary queries."
+        check(!StarRocksFormattingProfile.USE_GENERIC_SQL_FORMATTER_BRIDGE) {
+            "StarRocks formatter must use StarRocks PSI directly instead of reparsing through GenericSQL."
+        }
+        check(!StarRocksFormattingProfile.USE_SAFE_DDL_FORMATTER) {
+            "StarRocks formatter must not use DDL no-op safe formatting once DDL PSI has generated formatter blocks."
         }
         check(!StarRocksFormattingProfile.USE_WHOLE_FILE_STRING_REWRITE) {
             "StarRocks formatter must not rely on whole-file string rewrites."
-        }
-        check(!StarRocksFormattingProfile.requiresSafeFormatter("SELECT id FROM t WHERE id > 0")) {
-            "Ordinary StarRocks queries should still use the platform SQL formatter bridge."
-        }
-        check(StarRocksFormattingProfile.requiresSafeFormatter("CREATE TABLE t (id BIGINT) DISTRIBUTED BY HASH(id) BUCKETS 1")) {
-            "StarRocks table DDL should use safe formatting while DDL PSI formatting is incomplete."
-        }
-        check(!StarRocksFormattingProfile.requiresSafeFormatter("CREATE VIEW v AS SELECT id FROM t")) {
-            "Ordinary CREATE VIEW should use the platform SQL formatter once it has generated PSI."
-        }
-        check(StarRocksFormattingProfile.requiresSafeFormatter("CREATE MATERIALIZED VIEW mv AS SELECT id FROM t")) {
-            "StarRocks materialized view DDL should use safe formatting while MV PSI formatting is incomplete."
         }
         check(StarRocksFormattingProfile.QUERY_CLAUSE_ORDER.indexOf("HAVING") <
             StarRocksFormattingProfile.QUERY_CLAUSE_ORDER.indexOf("QUALIFY")) {
@@ -592,6 +645,9 @@ object StarRocksScenarioValidator {
         }
         check(SqlCompositeElementTypes.SQL_TYPE_ELEMENT in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks complex types must use the platform SQL_TYPE_ELEMENT formatter block."
+        }
+        check(StarRocksElementTypes.CAST_TYPE in StarRocksFormatterHelper().basicBlockCreation.keys) {
+            "Generated StarRocks CAST types must have a formatter block."
         }
         check(SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks CREATE TABLE must use the platform SQL_CREATE_TABLE_STATEMENT formatter block."
@@ -633,7 +689,9 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.GRANT_STATEMENT,
             StarRocksElementTypes.REVOKE_STATEMENT,
             StarRocksElementTypes.SCHEMA_STATEMENT,
-            StarRocksElementTypes.INDEX_STATEMENT
+            StarRocksElementTypes.INDEX_STATEMENT,
+            StarRocksElementTypes.ANALYZE_STATEMENT,
+            StarRocksElementTypes.DESCRIBE_STATEMENT
         ).forEach { type ->
             check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
                 "StarRocks common statement $type must have a formatter block."
@@ -649,6 +707,19 @@ object StarRocksScenarioValidator {
             "Generated StarRocks JOIN conditions must use a platform formatter block."
         }
         listOf(
+            StarRocksElementTypes.INSERT_TARGET_CLAUSE,
+            StarRocksElementTypes.DML_TARGET_TABLE,
+            StarRocksElementTypes.SET_CLAUSE,
+            StarRocksElementTypes.SET_ASSIGNMENT,
+            StarRocksElementTypes.MERGE_USING_CLAUSE,
+            StarRocksElementTypes.MERGE_ON_CLAUSE,
+            StarRocksElementTypes.MERGE_WHEN_CLAUSE
+        ).forEach { type ->
+            check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
+                "Generated StarRocks DML clause $type must have a platform formatter block."
+            }
+        }
+        listOf(
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
             StarRocksElementTypes.COMMENT_CLAUSE,
             StarRocksElementTypes.PARTITION_CLAUSE,
@@ -660,6 +731,21 @@ object StarRocksScenarioValidator {
             check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
                 "Generated StarRocks DDL clause $type must have a platform formatter block."
             }
+        }
+        listOf(
+            StarRocksElementTypes.ANALYZE_TARGET,
+            StarRocksElementTypes.ANALYZE_COLUMN_LIST,
+            StarRocksElementTypes.ANALYZE_HISTOGRAM_CLAUSE
+        ).forEach { type ->
+            check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
+                "Generated StarRocks ANALYZE clause $type must have a platform formatter block."
+            }
+        }
+        check(StarRocksElementTypes.DESCRIBE_TARGET in StarRocksFormatterHelper().basicBlockCreation.keys) {
+            "Generated StarRocks DESCRIBE target must have a platform formatter block."
+        }
+        check(StarRocksElementTypes.USE_TARGET in StarRocksFormatterHelper().basicBlockCreation.keys) {
+            "Generated StarRocks USE target must have a platform formatter block."
         }
         check("DISTRIBUTED BY" in StarRocksFormattingProfile.TABLE_DDL_CLAUSE_ORDER) {
             "DDL formatting profile must include StarRocks distribution clauses."
@@ -687,6 +773,18 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.SUBQUERY_EXPRESSION,
             StarRocksElementTypes.VALUES_CLAUSE,
             StarRocksElementTypes.VALUES_ROW,
+            StarRocksElementTypes.INSERT_TARGET_CLAUSE,
+            StarRocksElementTypes.DML_TARGET_TABLE,
+            StarRocksElementTypes.SET_CLAUSE,
+            StarRocksElementTypes.SET_ASSIGNMENT,
+            StarRocksElementTypes.MERGE_USING_CLAUSE,
+            StarRocksElementTypes.MERGE_ON_CLAUSE,
+            StarRocksElementTypes.MERGE_WHEN_CLAUSE,
+            StarRocksElementTypes.ANALYZE_TARGET,
+            StarRocksElementTypes.ANALYZE_COLUMN_LIST,
+            StarRocksElementTypes.ANALYZE_HISTOGRAM_CLAUSE,
+            StarRocksElementTypes.DESCRIBE_TARGET,
+            StarRocksElementTypes.USE_TARGET,
             StarRocksElementTypes.TABLE_EXPRESSION,
             StarRocksElementTypes.TABLE_REFERENCE,
             StarRocksElementTypes.SET_OPERATION_CLAUSE,
@@ -711,7 +809,11 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.DISTRIBUTION_CLAUSE,
             StarRocksElementTypes.DISTRIBUTION_EXPRESSION,
             StarRocksElementTypes.BUCKETS_CLAUSE,
-            StarRocksElementTypes.REFRESH_CLAUSE
+            StarRocksElementTypes.REFRESH_CLAUSE,
+            StarRocksElementTypes.RESOURCE_REFERENCE,
+            StarRocksElementTypes.SECURITY_PRINCIPAL,
+            StarRocksElementTypes.PRIVILEGE_LIST,
+            StarRocksElementTypes.PRIVILEGE_TARGET
         ).forEach { type ->
             val node = factory.createElementNode(type)
             check(node.elementType == type) { "Element factory created the wrong node type for $type." }
@@ -727,6 +829,8 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.TASK_STATEMENT,
             StarRocksElementTypes.EXPORT_STATEMENT,
             StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
+            StarRocksElementTypes.ANALYZE_STATEMENT,
+            StarRocksElementTypes.DESCRIBE_STATEMENT,
             StarRocksElementTypes.ADMIN_STATEMENT,
             StarRocksElementTypes.USER_STATEMENT,
             StarRocksElementTypes.CREATE_USER_STATEMENT,

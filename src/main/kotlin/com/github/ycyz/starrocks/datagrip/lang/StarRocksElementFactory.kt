@@ -11,6 +11,7 @@ import com.intellij.sql.dialects.sql92.Sql92ParserDefinition
 import com.intellij.sql.psi.SqlCommonKeywords
 import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlTokenType
+import com.intellij.sql.psi.impl.SqlAlterStatementImpl
 import com.intellij.sql.psi.impl.SqlAlterTableStatementImpl
 import com.intellij.sql.psi.impl.SqlCommitStatementImpl
 import com.intellij.sql.psi.impl.SqlCompositeElementImpl
@@ -181,6 +182,21 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             )
             registerImplementation(
                 info,
+                SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
+                SqlAlterStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT,
+                SqlAlterStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT,
+                SqlAlterStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
                 SqlCompositeElementTypes.SQL_USE_SCHEMA_STATEMENT,
                 SqlUseDatabaseStatementImpl::class.java
             )
@@ -279,10 +295,7 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
         private val STATEMENT_TYPES = StarRocksStatementElementSets.STARROCKS_STATEMENT_TYPES
 
         private val GENERIC_PLATFORM_STATEMENT_TYPES = setOf(
-            SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT,
-            SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
-            SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT,
-            SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT
+            SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT
         )
 
         private val REGISTERED_STARROCKS_PLATFORM_TYPES = setOf(
@@ -302,6 +315,9 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             SqlCompositeElementTypes.SQL_CREATE_SCHEMA_STATEMENT,
             SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT,
             SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT,
+            SqlCompositeElementTypes.SQL_ALTER_CATALOG_STATEMENT,
             SqlCompositeElementTypes.SQL_SET_STATEMENT,
             SqlCompositeElementTypes.SQL_EXPLAIN_STATEMENT,
             SqlCompositeElementTypes.SQL_GRANT_STATEMENT,

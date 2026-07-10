@@ -43,6 +43,8 @@ object StarRocksStatementElementSets {
         StarRocksElementTypes.TASK_STATEMENT,
         StarRocksElementTypes.EXPORT_STATEMENT,
         StarRocksElementTypes.BACKUP_RESTORE_STATEMENT,
+        StarRocksElementTypes.ANALYZE_STATEMENT,
+        StarRocksElementTypes.DESCRIBE_STATEMENT,
         StarRocksElementTypes.ADMIN_STATEMENT,
         StarRocksElementTypes.USER_STATEMENT,
         StarRocksElementTypes.CREATE_USER_STATEMENT,

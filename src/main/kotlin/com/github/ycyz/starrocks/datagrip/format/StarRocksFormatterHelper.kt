@@ -5,6 +5,9 @@ import com.intellij.psi.tree.IElementType
 import com.intellij.sql.formatter.SqlFormatterHelper
 import com.intellij.sql.formatter.model.SqlBlock
 import com.intellij.sql.formatter.model.SqlCreateTableBlock
+import com.intellij.sql.formatter.model.SqlFunctionCallBlock
+import com.intellij.sql.formatter.model.SqlPostfixClauseBlock
+import com.intellij.sql.formatter.model.SqlQueryBlock
 import com.intellij.sql.formatter.model.SqlStatementBlock
 import com.intellij.sql.formatter.model.SqlUnsortedBlock
 import com.intellij.sql.formatter.model.SqlViewBlock
@@ -14,7 +17,7 @@ import kotlin.reflect.KFunction0
 class StarRocksFormatterHelper : SqlFormatterHelper {
     override val basicBlockCreation: Map<IElementType, KFunction0<out SqlBlock>> =
         mapOf(
-            SqlCompositeElementTypes.SQL_SELECT_STATEMENT to ::SqlStatementBlock,
+            SqlCompositeElementTypes.SQL_SELECT_STATEMENT to ::SqlQueryBlock,
             SqlCompositeElementTypes.SQL_INSERT_STATEMENT to ::SqlStatementBlock,
             SqlCompositeElementTypes.SQL_UPDATE_STATEMENT to ::SqlStatementBlock,
             SqlCompositeElementTypes.SQL_DELETE_STATEMENT to ::SqlStatementBlock,
@@ -48,8 +51,13 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.SET_PASSWORD_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.GRANT_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.REVOKE_STATEMENT to ::SqlStatementBlock,
+            StarRocksElementTypes.SECURITY_PRINCIPAL to ::SqlUnsortedBlock,
+            StarRocksElementTypes.PRIVILEGE_LIST to ::SqlUnsortedBlock,
+            StarRocksElementTypes.PRIVILEGE_TARGET to ::SqlUnsortedBlock,
             StarRocksElementTypes.SCHEMA_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.INDEX_STATEMENT to ::SqlStatementBlock,
+            StarRocksElementTypes.ANALYZE_STATEMENT to ::SqlStatementBlock,
+            StarRocksElementTypes.DESCRIBE_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.SELECT_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.FROM_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.WHERE_CLAUSE to ::SqlUnsortedBlock,
@@ -62,6 +70,14 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.LIMIT_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.SET_OPERATION_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.SELECT_ITEM to ::SqlUnsortedBlock,
+            StarRocksElementTypes.ANALYTIC_CLAUSE to ::SqlPostfixClauseBlock,
+            StarRocksElementTypes.INSERT_TARGET_CLAUSE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.DML_TARGET_TABLE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.SET_CLAUSE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.SET_ASSIGNMENT to ::SqlUnsortedBlock,
+            StarRocksElementTypes.MERGE_USING_CLAUSE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.MERGE_ON_CLAUSE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.MERGE_WHEN_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.TABLE_EXPRESSION to ::SqlUnsortedBlock,
             StarRocksElementTypes.TABLE_REFERENCE to ::SqlUnsortedBlock,
             StarRocksElementTypes.JOIN_EXPRESSION to ::SqlUnsortedBlock,
@@ -71,9 +87,11 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.PREDICATE_EXPRESSION to ::SqlUnsortedBlock,
             StarRocksElementTypes.ORDERING_ITEM to ::SqlUnsortedBlock,
             StarRocksElementTypes.GROUPING_ITEM to ::SqlUnsortedBlock,
-            SqlCompositeElementTypes.SQL_FUNCTION_CALL to ::SqlUnsortedBlock,
-            StarRocksElementTypes.FUNCTION_CALL to ::SqlUnsortedBlock,
+            SqlCompositeElementTypes.SQL_FUNCTION_CALL to ::SqlFunctionCallBlock,
+            StarRocksElementTypes.FUNCTION_CALL to ::SqlFunctionCallBlock,
             SqlCompositeElementTypes.SQL_TYPE_ELEMENT to ::SqlUnsortedBlock,
+            StarRocksElementTypes.CAST_TYPE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.DATA_TYPE to ::SqlUnsortedBlock,
             StarRocksElementTypes.TABLE_COLUMN_LIST to ::SqlUnsortedBlock,
             StarRocksElementTypes.COLUMN_DEFINITION to ::SqlUnsortedBlock,
             StarRocksElementTypes.KEY_MODEL_CLAUSE to ::SqlUnsortedBlock,
@@ -86,6 +104,12 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.BUCKETS_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.REFRESH_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.PROPERTIES_CLAUSE to ::SqlUnsortedBlock,
-            StarRocksElementTypes.PROPERTY_PAIR to ::SqlUnsortedBlock
+            StarRocksElementTypes.PROPERTY_PAIR to ::SqlUnsortedBlock,
+            StarRocksElementTypes.RESOURCE_REFERENCE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.ANALYZE_TARGET to ::SqlUnsortedBlock,
+            StarRocksElementTypes.ANALYZE_COLUMN_LIST to ::SqlUnsortedBlock,
+            StarRocksElementTypes.ANALYZE_HISTOGRAM_CLAUSE to ::SqlUnsortedBlock,
+            StarRocksElementTypes.DESCRIBE_TARGET to ::SqlUnsortedBlock,
+            StarRocksElementTypes.USE_TARGET to ::SqlUnsortedBlock
         )
 }

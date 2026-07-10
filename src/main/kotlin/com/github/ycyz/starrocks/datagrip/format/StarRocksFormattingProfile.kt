@@ -1,7 +1,5 @@
 package com.github.ycyz.starrocks.datagrip.format
 
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksLexer
-
 object StarRocksFormattingProfile {
     val QUERY_CLAUSE_ORDER: List<String> = listOf(
         "WITH",
@@ -62,55 +60,7 @@ object StarRocksFormattingProfile {
         ).toSet()
 
     const val USE_PLATFORM_SQL_FORMATTER: Boolean = true
-    const val USE_GENERIC_SQL_FORMATTER_BRIDGE: Boolean = true
-    const val USE_SAFE_DDL_FORMATTER: Boolean = true
+    const val USE_GENERIC_SQL_FORMATTER_BRIDGE: Boolean = false
+    const val USE_SAFE_DDL_FORMATTER: Boolean = false
     const val USE_WHOLE_FILE_STRING_REWRITE: Boolean = false
-
-    private val STARROCKS_DDL_PHRASES: List<List<String>> = listOf(
-        listOf("DISTRIBUTED", "BY"),
-        listOf("PARTITION", "BY"),
-        listOf("PRIMARY", "KEY"),
-        listOf("DUPLICATE", "KEY"),
-        listOf("UNIQUE", "KEY"),
-        listOf("AGGREGATE", "KEY"),
-        listOf("PROPERTIES"),
-        listOf("CREATE", "MATERIALIZED", "VIEW"),
-        listOf("REFRESH", "MATERIALIZED", "VIEW"),
-        listOf("CANCEL", "REFRESH", "MATERIALIZED", "VIEW")
-    )
-
-    fun requiresSafeFormatter(sql: CharSequence): Boolean {
-        val lexer = StarRocksLexer()
-        val statementWords = mutableListOf<String>()
-        lexer.start(sql)
-
-        while (lexer.tokenType != null) {
-            val tokenText = sql.substring(lexer.tokenStart, lexer.tokenEnd)
-            if (tokenText == ";") {
-                if (statementRequiresSafeFormatter(statementWords)) {
-                    return true
-                }
-                statementWords.clear()
-            } else if (tokenText.firstOrNull()?.isLetter() == true) {
-                statementWords += tokenText.uppercase()
-            }
-            lexer.advance()
-        }
-
-        return statementRequiresSafeFormatter(statementWords)
-    }
-
-    private fun statementRequiresSafeFormatter(words: List<String>): Boolean {
-        if (words.isEmpty()) {
-            return false
-        }
-        return STARROCKS_DDL_PHRASES.any { phrase -> words.containsPhrase(phrase) }
-    }
-
-    private fun List<String>.containsPhrase(phrase: List<String>): Boolean {
-        if (phrase.size > size) {
-            return false
-        }
-        return windowed(phrase.size).any { it == phrase }
-    }
 }

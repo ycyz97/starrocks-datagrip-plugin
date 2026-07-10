@@ -150,7 +150,13 @@ open class StarRocksLexer protected constructor(
         while (currentEnd < endOffset) {
             val char = buffer[currentEnd]
             currentEnd++
-            if (char == '`') break
+            if (char == '`') {
+                if (currentEnd < endOffset && buffer[currentEnd] == '`') {
+                    currentEnd++
+                    continue
+                }
+                break
+            }
         }
     }
 
