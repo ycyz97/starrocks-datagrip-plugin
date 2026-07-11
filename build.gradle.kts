@@ -18,6 +18,39 @@ val generatedOptionalKeywords = keywordRegistryGeneratedRoot.map {
     it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksOptionalKeywords.java")
 }
 
+fun readKeywordSet(source: String, propertyName: String): java.util.SortedSet<String> {
+    val lines = source.lineSequence().toList()
+    val declaration = Regex(
+        """\s*private val ${Regex.escape(propertyName)}: Set<String> = setOf\(\s*"""
+    )
+    val startIndex = lines.indexOfFirst(declaration::matches)
+    check(startIndex >= 0) { "Cannot locate $propertyName in StarRocksKeywordCatalog." }
+
+    val result = sortedSetOf<String>()
+    for (line in lines.drop(startIndex + 1)) {
+        if (line.trim() == ")") {
+            break
+        }
+        val keyword = Regex("""\s*"([A-Z][A-Z0-9_]*)",?\s*""")
+            .matchEntire(line)
+            ?.groupValues
+            ?.get(1)
+            ?: error("Invalid $propertyName entry: $line")
+        check(result.add(keyword)) { "Duplicate $propertyName entry: $keyword" }
+    }
+    check(result.isNotEmpty()) { "$propertyName must not be empty." }
+    return result
+}
+
+fun readStarRocksKeywordSets(source: String): Pair<Set<String>, Set<String>> {
+    val reserved = readKeywordSet(source, "CORE_KEYWORDS")
+    val optional = readKeywordSet(source, "OFFICIAL_ADDITIONAL_KEYWORDS")
+    check((reserved intersect optional).isEmpty()) {
+        "Reserved and optional StarRocks keyword sets must be disjoint."
+    }
+    return reserved to optional
+}
+
 repositories {
     mavenCentral()
     intellijPlatform {
@@ -132,10 +165,10 @@ tasks {
                 .map { it.groupValues[1] }
                 .filterNot { it.startsWith("SQL_") || it.startsWith("STARROCKS_") }
                 .toSet()
-            val catalogKeywords = Regex("""(?m)^\s*\"([A-Z][A-Z0-9_]*)\",?\s*$""")
-                .findAll(keywordCatalogFile.asFile.readText())
-                .map { it.groupValues[1] }
-                .toSet()
+            val (reservedKeywords, optionalKeywords) = readStarRocksKeywordSets(
+                keywordCatalogFile.asFile.readText()
+            )
+            val catalogKeywords = reservedKeywords + optionalKeywords
             val missingKeywords = grammarKeywords - catalogKeywords
             check(missingKeywords.isEmpty()) {
                 "Grammar keywords missing from StarRocksKeywordCatalog: ${missingKeywords.sorted().joinToString()}"
@@ -158,24 +191,7 @@ tasks {
 
         doLast {
             val source = keywordCatalog.asFile.readText()
-
-            fun readKeywordSet(propertyName: String): Set<String> {
-                val block = Regex(
-                    """private val ${Regex.escape(propertyName)}: Set<String> = setOf\((.*?)\n    \)""",
-                    RegexOption.DOT_MATCHES_ALL
-                ).find(source)?.groupValues?.get(1)
-                    ?: error("Cannot locate $propertyName in StarRocksKeywordCatalog.")
-                return Regex(""""([A-Z][A-Z0-9_]*)"""")
-                    .findAll(block)
-                    .map { it.groupValues[1] }
-                    .toSortedSet()
-            }
-
-            val reserved = readKeywordSet("CORE_KEYWORDS")
-            val optional = readKeywordSet("OFFICIAL_ADDITIONAL_KEYWORDS")
-            check((reserved intersect optional).isEmpty()) {
-                "Reserved and optional StarRocks keyword sets must be disjoint."
-            }
+            val (reserved, optional) = readStarRocksKeywordSets(source)
 
             fun registrySource(interfaceName: String, keywords: Set<String>): String = buildString {
                 appendLine("package com.github.ycyz.starrocks.datagrip.lang;")
@@ -219,10 +235,10 @@ tasks {
 
         doLast {
             val grammar = sourceGrammar.asFile.readText()
-            val keywords = Regex("""(?m)^\s*\"([A-Z][A-Z0-9_]*)\",?\s*$""")
-                .findAll(keywordCatalog.asFile.readText())
-                .map { it.groupValues[1] }
-                .toSortedSet()
+            val (reservedKeywords, optionalKeywords) = readStarRocksKeywordSets(
+                keywordCatalog.asFile.readText()
+            )
+            val keywords = (reservedKeywords + optionalKeywords).toSortedSet()
             val tokenDeclarations = buildString {
                 append("\n  tokens=[\n")
                 append("    SQL_LEFT_PAREN=\"(\"\n")

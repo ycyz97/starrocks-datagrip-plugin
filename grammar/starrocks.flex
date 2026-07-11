@@ -25,13 +25,16 @@ import java.util.Locale;
 WHITE_SPACE=[ \t\r\n\f]+
 LINE_COMMENT="--"[^\r\n]*
 BLOCK_COMMENT="/*"([^*]|\*+[^*/])*\*+"/"
-IDENT=[A-Za-z_][A-Za-z0-9_$]*
+IDENT=[A-Za-z_\p{L}][A-Za-z0-9_$\p{L}\p{N}]*
+DIGIT_IDENT=[0-9]+[\u0080-\uFFFF][A-Za-z0-9_$\p{L}\p{N}]*
+TEMPLATED_IDENT=[A-Za-z_\p{L}][A-Za-z0-9_$\p{L}\p{N}]*(\$\[[^\]]*\]|\$\{[^}]*\})
 SYSTEM_VARIABLE="@"{1,2}[A-Za-z_][A-Za-z0-9_.$]*
 DELIMITED_IDENT=`([^`]|``)*`
 NAMED_PARAMETER=":"[A-Za-z_][A-Za-z0-9_$]*
 BRACED_PARAMETER="$""{"[^}]*"}"
+BRACKETED_PARAMETER=\$\[[^\]]*\]
 INTEGER=[0-9]+
-FLOAT=([0-9]+"."[0-9]*|"."[0-9]+)([eE][+-]?[0-9]+)?
+FLOAT=[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?
 STRING='([^'\\]|\\.|'')*'|\"([^\"\\]|\\.|\"\")*\"
 
 %%
@@ -44,7 +47,10 @@ STRING='([^'\\]|\\.|'')*'|\"([^\"\\]|\\.|\"\")*\"
 {SYSTEM_VARIABLE}    { return SqlTokens.SQL_IDENT; }
 {NAMED_PARAMETER}    { return StarRocksHighlightTokenTypes.PARAMETER; }
 {BRACED_PARAMETER}   { return StarRocksHighlightTokenTypes.PARAMETER; }
+{BRACKETED_PARAMETER} { return StarRocksHighlightTokenTypes.PARAMETER; }
 "?"                  { return StarRocksHighlightTokenTypes.PARAMETER; }
+{TEMPLATED_IDENT}     { return SqlTokens.SQL_IDENT; }
+{DIGIT_IDENT}         { return SqlTokens.SQL_IDENT; }
 {FLOAT}              { return SqlTokens.SQL_FLOAT_TOKEN; }
 {INTEGER}            { return SqlTokens.SQL_INTEGER_TOKEN; }
 

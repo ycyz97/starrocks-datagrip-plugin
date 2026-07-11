@@ -65,6 +65,7 @@ private if_not_exists ::= "IF" "NOT" "EXISTS"
 private if_exists ::= "IF" "EXISTS"
 
 create_table_clause ::= key_model_clause
+  | engine_clause
   | partition_clause
   | distribution_clause
   | buckets_clause
@@ -72,17 +73,27 @@ create_table_clause ::= key_model_clause
   | properties_clause
   | order_by_clause
 
+private clause_recover ::= !(";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "REFRESH" | "PROPERTIES" | "ORDER" | "FROM" | "AS")
+
+engine_clause ::= "ENGINE" "="? identifier_reference {
+  pin=1
+  recoverWhile=clause_recover
+}
+
 key_model_clause ::= key_model "KEY" key_column_list {
   pin=2
   recoverWhile=clause_recover
 }
 private key_model ::= "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE"
 
-partition_clause ::= "PARTITION" "BY" partition_expression {
+partition_clause ::= "PARTITION" "BY" partition_expression partition_definition_list? {
   pin=2
   recoverWhile=clause_recover
 }
 partition_expression ::= function_call | parenthesized_value_expression | identifier_reference
+partition_definition_list ::= "(" (partition_definition ("," partition_definition)* | range_partition_bounds) ")"
+partition_definition ::= "PARTITION" identifier_reference "VALUES" "IN" parenthesized_value_expression
+private range_partition_bounds ::= "START" parenthesized_value_expression "END" parenthesized_value_expression "EVERY" "(" interval_expression ")"
 
 distribution_clause ::= "DISTRIBUTED" "BY" distribution_expression buckets_clause? {
   pin=2
@@ -182,7 +193,7 @@ private principal_type ::= "USER" | "ROLE"
 principal_tail ::= identified_by_clause | default_role_clause | properties_clause | set_principal_comment_clause
 identified_by_clause ::= "IDENTIFIED" "BY" value_expression
 default_role_clause ::= "DEFAULT" "ROLE" security_principal_list
-private set_principal_comment_clause ::= "SET" "COMMENT" string_literal
+private set_principal_comment_clause ::= "SET" <<parsePrincipalComment>>
 
 create_schema_statement ::= "CREATE" ("DATABASE" | "SCHEMA") if_not_exists? schema_reference properties_clause? comment_clause? {
   elementType="SQL_CREATE_SCHEMA_STATEMENT"
@@ -271,7 +282,7 @@ alter_user_statement ::= "ALTER" "USER" security_principal principal_tail* {
   pin=2
   recoverWhile=statement_recover
 }
-alter_role_statement ::= "ALTER" "ROLE" security_principal principal_tail* {
+alter_role_statement ::= "ALTER" "ROLE" security_principal (set_principal_comment_clause | principal_tail)* {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
@@ -355,11 +366,12 @@ truncate_table_statement ::= "TRUNCATE" "TABLE" table_reference {
   recoverWhile=statement_recover
 }
 
-refresh_materialized_view_statement ::= "REFRESH" "MATERIALIZED" "VIEW" materialized_view_reference ("PARTITION" parenthesized_value_expression)? {
+refresh_materialized_view_statement ::= "REFRESH" "MATERIALIZED" "VIEW" materialized_view_reference refresh_partition_clause? "FORCE"? ("WITH" "SYNC" "MODE")? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=3
   recoverWhile=statement_recover
 }
+private refresh_partition_clause ::= "PARTITION" (parenthesized_value_expression | "START" parenthesized_value_expression "END" parenthesized_value_expression)
 
 grant_statement ::= "GRANT" privilege_list "ON" privilege_target "TO" security_principal_list with_grant_option_clause? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -380,7 +392,8 @@ security_principal ::= principal_type? principal_name ("@" principal_name)?
 private principal_name ::= identifier_reference | string_literal
 with_grant_option_clause ::= "WITH" "GRANT" "OPTION"
 
-dml_statement ::= insert_statement | update_statement | delete_statement | merge_statement | select_statement
+dml_statement ::= with_update_statement | insert_statement | update_statement | delete_statement | merge_statement | select_statement
+private with_update_statement ::= &<<isWithUpdate>> with_clause update_statement
 
 select_statement ::= query_expression {
   elementType="SQL_SELECT_STATEMENT"
@@ -399,7 +412,7 @@ private repository_location_clause ::= "ON" "LOCATION" string_literal
 private alter_schema_action ::= set_properties_action | "SET" "DATA" "QUOTA" numeric_literal identifier_reference?
 private embedded_query_expression ::= query_body
 private query_body ::= set_query_expression_guarded | with_query_expression_guarded | values_expression_guarded
-private query_recover ::= !(";" | "," | ")" | "SELECT" | "WITH" | "VALUES" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
+private query_recover ::= !(";" | "," | ")" | "SELECT" | "WITH" | "VALUES" | "UPDATE" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS" | "ROWS" | "RANGE" | "GROUPS")
 private set_query_expression_guarded ::= &"SELECT" set_query_expression
 private with_query_expression_guarded ::= &"WITH" with_query_expression
 private values_expression_guarded ::= &"VALUES" values_expression
@@ -459,12 +472,12 @@ select_clause ::= "SELECT" select_modifier* select_item ("," select_item)* {
   recoverWhile=select_recover
 }
 private select_modifier ::= "ALL" | "DISTINCT"
-private select_recover ::= !(";" | ")" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT")
+private select_recover ::= !(";" | ")" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
 select_item ::= select_all | value_expression select_alias_clause?
 select_all ::= qualified_identifier "." "*" | "*"
 private select_alias_clause ::= "AS" select_alias | !select_alias_boundary select_alias
 private select_alias_boundary ::= "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS"
-select_alias ::= identifier_reference {
+select_alias ::= identifier_reference | string_literal {
   elementType="SELECT_ALIAS"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
@@ -475,15 +488,17 @@ from_clause ::= "FROM" table_expression ("," table_expression)* {
   pin=1
   recoverWhile=from_recover
 }
-private from_recover ::= !(";" | ")" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT")
+private from_recover ::= !(";" | "," | ")" | "JOIN" | "STRAIGHT_JOIN" | "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS" | "NATURAL" | "SEMI" | "ANTI" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
 table_expression ::= table_factor join_expression_guarded* {
   elementType="SQL_TABLE_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private table_factor ::= table_reference table_alias_clause?
-  | derived_query_table
+private table_factor ::= lateral_table_factor
   | table_function_call table_alias_clause?
+  | table_reference table_alias_clause?
+  | derived_query_table
   | parenthesized_join_table
+private lateral_table_factor ::= "LATERAL" table_function_call table_alias_clause?
 private derived_query_table ::= &parenthesized_query_start parenthesized_query_expression table_alias_clause?
 private parenthesized_query_start ::= "(" ("SELECT" | "WITH" | "VALUES")
 private parenthesized_join_table ::= &parenthesized_join_start parenthesized_join_expression table_alias_clause?
@@ -500,7 +515,7 @@ join_expression ::= join_operator table_factor join_condition_clause? {
   pin=1
   recoverWhile=from_recover
 }
-join_operator ::= ("INNER" | "LEFT" "OUTER"? | "RIGHT" "OUTER"? | "FULL" "OUTER"? | "CROSS" | "NATURAL" | "SEMI" | "ANTI")? ("JOIN" | "STRAIGHT_JOIN")
+join_operator ::= ("INNER" | "LEFT" ("OUTER" | "SEMI" | "ANTI")? | "RIGHT" ("OUTER" | "SEMI" | "ANTI")? | "FULL" "OUTER"? | "CROSS" | "NATURAL" | "SEMI" | "ANTI")? ("JOIN" | "STRAIGHT_JOIN")
 join_condition_clause ::= "ON" value_expression | using_clause {
   elementType="SQL_JOIN_CONDITION_CLAUSE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -588,12 +603,14 @@ values_clause ::= "VALUES" values_row ("," values_row)* {
 }
 values_row ::= "(" value_expression ("," value_expression)* ")"
 
-insert_statement ::= "INSERT" ("INTO" | "OVERWRITE") "TABLE"? table_reference insert_column_list? (embedded_query_expression | values_clause) {
+insert_statement ::= "INSERT" ("INTO" | "OVERWRITE") "TABLE"? table_reference insert_partition_clause? insert_column_list? (embedded_query_expression | values_clause) {
   elementType="SQL_INSERT_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
 }
+private insert_partition_clause ::= "PARTITION" "(" insert_partition_item ("," insert_partition_item)* ")"
+private insert_partition_item ::= identifier_reference ("=" value_expression)?
 private insert_column_list ::= parenthesized_identifier_list
 update_statement ::= "UPDATE" dml_target_table set_clause from_clause? where_clause? {
   elementType="SQL_UPDATE_STATEMENT"
@@ -673,7 +690,7 @@ analyze_target ::= "TABLE" table_reference analyze_column_list?
 analyze_column_list ::= parenthesized_identifier_list
 analyze_histogram_clause ::= "UPDATE" "HISTOGRAM" "ON" column_reference ("," column_reference)*
 
-set_statement ::= "SET" set_assignment ("," set_assignment)* {
+set_statement ::= "SET" ("SESSION" | "GLOBAL" | "LOCAL")? set_assignment ("," set_assignment)* {
   elementType="SQL_SET_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
@@ -771,16 +788,17 @@ backup_restore_statement ::= ("BACKUP" | "RESTORE") "SNAPSHOT" qualified_identif
 }
 
 value_expression ::= or_expression
-private expression_recover ::= !("," | ")" | ";" | "AS" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "THEN" | "ELSE" | "END")
+private expression_recover ::= !("," | ")" | ";" | "." | "[" | "+" | "-" | "*" | "/" | "%" | "||" | "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<=>" | "AND" | "OR" | "BETWEEN" | "NOT" | "IN" | "IS" | "LIKE" | "REGEXP" | "RLIKE" | "OVER" | "AS" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS" | "JOIN" | "STRAIGHT_JOIN" | "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS" | "NATURAL" | "SEMI" | "ANTI" | "WHEN" | "THEN" | "ELSE" | "END" | "SEPARATOR" | "ASC" | "DESC" | "NULLS" | "ROWS" | "RANGE" | "GROUPS" | "PRECEDING" | "FOLLOWING" | "MICROSECOND" | "MILLISECOND" | "SECOND" | "SECONDS" | "MINUTE" | "MINUTES" | "HOUR" | "HOURS" | "DAY" | "DAYS" | "WEEK" | "MONTH" | "QUARTER" | "YEAR" | SQL_IDENT | SQL_IDENT_DELIMITED | SQL_STRING_TOKEN)
 or_expression ::= and_expression ("OR" and_expression)*
 and_expression ::= not_expression ("AND" not_expression)*
 not_expression ::= "NOT"? comparison_expression
-comparison_expression ::= additive_expression (comparison_operator additive_expression | "BETWEEN" additive_expression "AND" additive_expression | "NOT" "IN" in_list_or_subquery | "IN" in_list_or_subquery)*
+comparison_expression ::= additive_expression (comparison_operator additive_expression | "BETWEEN" additive_expression "AND" additive_expression | "NOT" "BETWEEN" additive_expression "AND" additive_expression | "NOT" ("LIKE" | "REGEXP" | "RLIKE") additive_expression | "NOT" "IN" in_list_or_subquery | "IN" in_list_or_subquery)*
 private comparison_operator ::= "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<=>" | "LIKE" | "REGEXP" | "RLIKE" | "IS" "NOT"?
 additive_expression ::= multiplicative_expression (("+" | "-" | "||") multiplicative_expression)*
 multiplicative_expression ::= unary_expression (("*" | "/" | "%" | "DIV" | "MOD") unary_expression)*
 unary_expression ::= ("+" | "-" | "!" | "~" | "BINARY")* postfix_expression
-postfix_expression ::= (cast_expression_guarded | case_expression_guarded | exists_expression_guarded | interval_expression_guarded | scalar_subquery_guarded | literal | function_call | parenthesized_value_expression | column_reference | typed_literal_expression) analytic_clause_guarded? array_access_tail* field_access_tail*
+postfix_expression ::= (cast_expression_guarded | case_expression_guarded | exists_expression_guarded | interval_expression_guarded | scalar_subquery_guarded | array_literal | function_call | literal | parenthesized_value_expression | column_reference | typed_literal_expression) analytic_clause_guarded? array_access_tail* field_access_tail*
+array_literal ::= "[" (value_expression ("," value_expression)*)? "]"
 array_access_tail ::= "[" value_expression "]"
 field_access_tail ::= "." identifier_reference
 private cast_expression_guarded ::= &"CAST" cast_expression
@@ -808,9 +826,13 @@ function_call ::= function_name ("." function_name)* "(" function_argument_list?
   }
 function_name ::= identifier_reference | function_keyword
 function_keyword ::= <<parseFunctionKeyword>>
-function_argument_list ::= ("DISTINCT" | "ALL")? value_expression ("," value_expression)* | "*"
+function_argument_list ::= ("DISTINCT" | "ALL")? value_expression ("," value_expression)* function_order_by_clause? function_null_treatment_clause? function_separator_clause? | "*"
+private function_order_by_clause ::= "ORDER" "BY" ordering_item ("," ordering_item)*
+private function_null_treatment_clause ::= ("IGNORE" | "RESPECT") "NULLS"
+private function_separator_clause ::= "SEPARATOR" string_literal
 parenthesized_value_expression ::= "(" value_expression ("," value_expression)* ")"
-in_list_or_subquery ::= "(" (query_expression | value_expression ("," value_expression)*)? ")"
+in_list_or_subquery ::= "(" (in_subquery_guarded | value_expression ("," value_expression)*)? ")"
+private in_subquery_guarded ::= &("SELECT" | "WITH" | "VALUES") query_expression
 private analytic_clause_guarded ::= &"OVER" analytic_clause
 analytic_clause ::= "OVER" (window_reference_name | "(" window_specification ")") {
   pin=1
@@ -830,7 +852,7 @@ cast_type ::= type_element {
   recoverWhile=type_recover
 }
 private type_recover ::= !("," | ")" | ">" | "NULL" | "NOT" | "DEFAULT" | "COMMENT" | "AS")
-scalar_type ::= "BOOLEAN" | "BOOL" | "TINYINT" | "SMALLINT" | "INT" | "INTEGER" | "BIGINT" | "LARGEINT" | "FLOAT" | "DOUBLE" | "DECIMAL" | "DECIMALV2" | "DECIMAL32" | "DECIMAL64" | "DECIMAL128" | "CHAR" | "VARCHAR" | "VARCHAR2" | "STRING" | "TEXT" | "DATE" | "DATETIME" | "TIME" | "TIMESTAMP" | "JSON" | "BITMAP" | "HLL"
+scalar_type ::= "BOOLEAN" | "BOOL" | "TINYINT" | "SMALLINT" | "INT" | "INTEGER" | "BIGINT" | "LARGEINT" | "FLOAT" | "DOUBLE" | "DECIMAL" | "DECIMALV2" | "DECIMAL32" | "DECIMAL64" | "DECIMAL128" | "NUMERIC" | "CHAR" | "VARCHAR" | "VARCHAR2" | "STRING" | "TEXT" | "DATE" | "DATETIME" | "TIME" | "TIMESTAMP" | "JSON" | "BITMAP" | "HLL"
 type_parameters ::= "(" numeric_literal ("," numeric_literal)* ")"
 complex_type ::= array_type | map_type | struct_type
 array_type ::= "ARRAY" "<" type_element ">"
@@ -844,7 +866,7 @@ table_column_list ::= "(" table_column_item ("," table_column_item)* ","? ")" {
   pin=1
   recoverWhile=table_column_recover
 }
-private table_column_recover ::= !(")" | "," | ";" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "PROPERTIES" | "ORDER" | "AS")
+private table_column_recover ::= !(")" | "," | ";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "PROPERTIES" | "ORDER" | "AS")
 table_column_item ::= column_definition | table_constraint
 column_definition ::= column_name type_element column_attribute* {
   elementType="SQL_COLUMN_DEFINITION"
@@ -859,12 +881,12 @@ key_column ::= identifier_reference {
 
 parenthesized_identifier_list ::= "(" identifier_reference ("," identifier_reference)* ","? ")"
 qualified_identifier ::= identifier_reference ("." identifier_reference)*
-identifier_reference ::= identifier | delimited_identifier
+identifier_reference ::= identifier | delimited_identifier | quoted_identifier
 column_reference ::= qualified_column_prefix? column_reference_name
 qualified_column_prefix ::= identifier_reference "." (identifier_reference ".")* {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-column_reference_name ::= identifier_reference {
+column_reference_name ::= identifier_reference | "COMMENT" {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 column_name ::= identifier_reference {
@@ -886,11 +908,13 @@ index_reference ::= qualified_identifier
 
 literal ::= string_literal | numeric_literal | parameter_literal | keyword_literal
 string_literal ::= SQL_STRING_TOKEN
-numeric_literal ::= SQL_INTEGER_TOKEN | SQL_FLOAT_TOKEN
-parameter_literal ::= STARROCKS_PARAMETER
+numeric_literal ::= SQL_INTEGER_TOKEN | SQL_FLOAT_TOKEN | leading_dot_numeric_literal
+private leading_dot_numeric_literal ::= "." SQL_INTEGER_TOKEN
+parameter_literal ::= <<parseParameter>>
 keyword_literal ::= "TRUE" | "FALSE" | "NULL" | "CURRENT_DATE" | "CURRENT_TIME" | "CURRENT_TIMESTAMP" | "LOCALTIME" | "LOCALTIMESTAMP"
 typed_literal_prefix ::= "DATE" | "DATETIME" | "TIME" | "TIMESTAMP"
 interval_unit ::= "MICROSECOND" | "MILLISECOND" | "SECOND" | "SECONDS" | "MINUTE" | "MINUTES" | "HOUR" | "HOURS" | "DAY" | "DAYS" | "WEEK" | "MONTH" | "QUARTER" | "YEAR"
 
 identifier ::= SQL_IDENT | <<parseOptionalKeyword>>
 delimited_identifier ::= SQL_IDENT_DELIMITED
+quoted_identifier ::= SQL_STRING_TOKEN

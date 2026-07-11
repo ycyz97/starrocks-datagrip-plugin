@@ -1,8 +1,6 @@
 package com.github.ycyz.starrocks.datagrip.completion
 
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
-import com.github.ycyz.starrocks.datagrip.resolve.containingElement
 import com.intellij.codeInsight.completion.CompletionContributor
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionProvider
@@ -14,7 +12,6 @@ import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.openapi.project.DumbAware
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.util.ProcessingContext
-import java.util.Locale
 
 class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     init {
@@ -137,54 +134,19 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
     }
 
     private fun isTableCompletionContext(parameters: CompletionParameters): Boolean {
-        val text = textBeforeCompletion(parameters)
-        val previousWord = previousSqlWordBeforePrefix(text)
-        return previousWord in TABLE_COMPLETION_PREVIOUS_WORDS
+        return StarRocksCompletionContext.isTable(parameters.position)
     }
 
     private fun isColumnCompletionContext(parameters: CompletionParameters): Boolean {
-        if (isTableCompletionContext(parameters)) {
-            return false
-        }
-        if (isPropertyCompletionContext(parameters)) {
-            return false
-        }
-        val text = textBeforeCompletion(parameters)
-        val previousClause = previousQueryClause(text)
-        return previousClause in COLUMN_COMPLETION_CLAUSES
+        return StarRocksCompletionContext.isColumn(parameters.position)
     }
 
     private fun isOrderByCompletionContext(parameters: CompletionParameters): Boolean {
-        val text = textBeforeCompletion(parameters)
-        return previousQueryClause(text) == "ORDER BY"
+        return StarRocksCompletionContext.isOrderBy(parameters.position)
     }
 
     private fun isPropertyCompletionContext(parameters: CompletionParameters): Boolean {
-        return containingElement(parameters.position, StarRocksElementTypes.PROPERTIES_CLAUSE) != null
-    }
-
-    private fun textBeforeCompletion(parameters: CompletionParameters): String {
-        val documentText = parameters.editor.document.charsSequence
-        return documentText.subSequence(0, parameters.offset.coerceAtMost(documentText.length)).toString()
-    }
-
-    private fun previousSqlWordBeforePrefix(text: String): String? {
-        val withoutPrefix = text.replace(Regex("[A-Za-z_][A-Za-z0-9_]*$"), "")
-        return Regex("[A-Za-z_][A-Za-z0-9_]*")
-            .findAll(withoutPrefix)
-            .lastOrNull()
-            ?.value
-            ?.uppercase(Locale.ROOT)
-    }
-
-    private fun previousQueryClause(text: String): String? {
-        val withoutPrefix = text.replace(Regex("[A-Za-z_][A-Za-z0-9_]*$"), "")
-        return Regex("\\b(WITH|SELECT|FROM|JOIN|ON|WHERE|GROUP\\s+BY|HAVING|QUALIFY|ORDER\\s+BY|LIMIT|VALUES|SET)\\b", RegexOption.IGNORE_CASE)
-            .findAll(withoutPrefix)
-            .lastOrNull()
-            ?.value
-            ?.uppercase(Locale.ROOT)
-            ?.replace(Regex("\\s+"), " ")
+        return StarRocksCompletionContext.isProperty(parameters.position)
     }
 
     private fun snippetInsertHandler(insertText: String): InsertHandler<LookupElement> {
@@ -194,24 +156,4 @@ class StarRocksCompletionContributor : CompletionContributor(), DumbAware {
         }
     }
 
-    private companion object {
-        private val TABLE_COMPLETION_PREVIOUS_WORDS = setOf(
-            "FROM",
-            "JOIN",
-            "INTO",
-            "UPDATE"
-        )
-
-        private val COLUMN_COMPLETION_CLAUSES = setOf(
-            "SELECT",
-            "ON",
-            "WHERE",
-            "GROUP BY",
-            "HAVING",
-            "QUALIFY",
-            "ORDER BY",
-            "SET"
-        )
-
-    }
 }
