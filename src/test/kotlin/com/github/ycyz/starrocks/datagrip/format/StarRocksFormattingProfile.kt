@@ -1,5 +1,7 @@
 package com.github.ycyz.starrocks.datagrip.format
 
+// Assertions describing expected formatter behavior for tests.
+
 object StarRocksFormattingProfile {
     val QUERY_CLAUSE_ORDER: List<String> = listOf(
         "WITH",

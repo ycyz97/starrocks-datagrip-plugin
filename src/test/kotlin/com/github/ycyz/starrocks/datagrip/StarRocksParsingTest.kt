@@ -1,13 +1,18 @@
 package com.github.ycyz.starrocks.datagrip
 
+import com.github.ycyz.starrocks.datagrip.completion.StarRocksCompletionScope
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserLexer
 import com.intellij.lang.LanguageParserDefinitions
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.TokenType
+import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.elementType
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -122,6 +127,72 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertParsesWithoutPsiErrors(sql)
     }
 
+    fun testLocalColumnReferenceResolvesToCreateTableColumn() {
+        val file = createPsiFile(
+            """
+                CREATE TABLE orders (order_id BIGINT, amount DOUBLE);
+                SELECT order_id FROM orders;
+            """.trimIndent()
+        )
+        val referenceName = elementsOfType(file, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
+            .single { it.text.equals("order_id", ignoreCase = true) }
+        val target = referenceName.reference?.resolve()
+
+        assertNotNull("Local SELECT column should resolve to the preceding CREATE TABLE column.", target)
+        assertEquals(StarRocksElementTypes.COLUMN_NAME, target?.node?.elementType)
+        assertEquals("order_id", StarRocksNamedStubElement.normalizeName(target?.text))
+    }
+
+    fun testCompletionScopeUsesTheSameResolvedColumns() {
+        val file = createPsiFile(
+            """
+                CREATE TABLE orders (order_id BIGINT, amount DOUBLE);
+                SELECT order_ FROM orders;
+            """.trimIndent()
+        )
+        val position = elementsOfType(file, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
+            .single { it.text.equals("order_", ignoreCase = true) }
+        val variants = StarRocksCompletionScope.columnNames(position, file)
+
+        assertTrue("Completion must include columns exposed by local resolution: $variants", "order_id" in variants)
+        assertTrue("Completion must include every visible local table column: $variants", "amount" in variants)
+    }
+
+    fun testOrderByCompletionExposesSelectAliases() {
+        val file = createPsiFile("SELECT order_id AS order_key FROM orders ORDER BY order_;")
+        val position = elementsOfType(file, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
+            .last { it.text.equals("order_", ignoreCase = true) }
+        val variants = StarRocksCompletionScope.selectAliasNames(position, file)
+
+        assertTrue("ORDER BY completion must expose SELECT aliases: $variants", "order_key" in variants)
+    }
+
+    fun testNamedElementRenameUsesStarRocksPsiFactory() {
+        val file = createPsiFile("SELECT 1 AS old_name;")
+        val alias = elementsOfType(file, StarRocksElementTypes.SELECT_ALIAS)
+            .filterIsInstance<StarRocksNamedStubElement>()
+            .single()
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            alias.setName("new_name")
+        }
+
+        assertTrue(file.text.contains("new_name"))
+        assertFalse(file.text.contains("old_name"))
+    }
+
+    fun testPlatformFormatterCanReformatStarRocksPsi() {
+        val file = createPsiFile("SELECT order_id FROM orders WHERE order_id=1;")
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Reformatted StarRocks PSI must remain parseable: $errors", errors.isEmpty())
+        assertTrue(file.text.contains("SELECT", ignoreCase = true))
+    }
+
     private fun assertParsesWithoutPsiErrors(sql: String, fileName: String = "query.sql") {
         val parserDefinition = LanguageParserDefinitions.INSTANCE.forLanguage(StarRocksDialect.INSTANCE)
         assertTrue(
@@ -154,6 +225,13 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             },
             errors.isEmpty()
         )
+    }
+
+    private fun createPsiFile(sql: String) = PsiFileFactory.getInstance(project)
+        .createFileFromText("query.sql", StarRocksDialect.INSTANCE, sql)
+
+    private fun elementsOfType(root: PsiElement, elementType: Any): List<PsiElement> {
+        return PsiTreeUtil.collectElements(root) { it.node?.elementType == elementType }.toList()
     }
 
     private fun scenarioFixtureFiles(): List<File> {

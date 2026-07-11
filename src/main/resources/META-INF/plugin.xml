@@ -1,7 +1,6 @@
 <idea-plugin>
     <id>com.github.ycyz.starrocks.support</id>
     <name>StarRocks Support</name>
-    <version>2.0.0</version>
     <vendor>ycyz</vendor>
 
     <depends>com.intellij.modules.platform</depends>

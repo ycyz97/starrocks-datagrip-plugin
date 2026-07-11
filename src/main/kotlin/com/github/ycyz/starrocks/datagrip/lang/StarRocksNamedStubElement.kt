@@ -47,7 +47,7 @@ class StarRocksNamedStubElement :
         val file = PsiFileFactory.getInstance(project)
             .createFileFromText("rename.sql", StarRocksDialect.INSTANCE, text)
         return findNamedElement(file, type)
-            ?: throw IncorrectOperationException("Cannot rename StarRocks element ${type.debugName} to $name.")
+            ?: throw IncorrectOperationException("Cannot rename StarRocks element $type to $name.")
     }
 
     companion object {
@@ -91,7 +91,7 @@ class StarRocksNamedStubElement :
                 StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME -> "SELECT * FROM UNNEST([1]) AS rename_probe($identifier);"
                 StarRocksElementTypes.WINDOW_NAME -> "SELECT row_number() OVER $identifier FROM rename_probe WINDOW $identifier AS ();"
                 StarRocksElementTypes.SELECT_ALIAS -> "SELECT 1 AS $identifier;"
-                else -> throw IncorrectOperationException("StarRocks rename is not supported for ${type.debugName}.")
+                else -> throw IncorrectOperationException("StarRocks rename is not supported for $type.")
             }
         }
 

@@ -10,6 +10,13 @@ version = "2.0.0"
 
 val grammarKitGeneratedRoot = layout.buildDirectory.dir("generated/src/main/java")
 val generatedParserGrammar = layout.buildDirectory.file("generated/grammar/starrocks.bnf")
+val keywordRegistryGeneratedRoot = layout.buildDirectory.dir("generated/keyword-registry/main/java")
+val generatedReservedKeywords = keywordRegistryGeneratedRoot.map {
+    it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksReservedKeywords.java")
+}
+val generatedOptionalKeywords = keywordRegistryGeneratedRoot.map {
+    it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksOptionalKeywords.java")
+}
 
 repositories {
     mavenCentral()
@@ -21,6 +28,7 @@ repositories {
 sourceSets {
     named("main") {
         java.srcDir(grammarKitGeneratedRoot)
+        java.srcDir(keywordRegistryGeneratedRoot)
     }
 }
 
@@ -31,6 +39,8 @@ dependencies {
     intellijPlatform {
         datagrip("2025.1.4.1")
 
+        // DatabaseTools declares these as bundled runtime dependencies. They are
+        // required for loading its extension descriptors in platform tests.
         bundledPlugin("com.intellij.modules.json")
         bundledPlugin("com.intellij.platform.images")
         bundledPlugin("intellij.charts")
@@ -73,19 +83,9 @@ tasks {
         val keywordCatalogFile = layout.projectDirectory.file(
             "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
         )
-        val keywordRegistryFiles = listOf(
-            layout.projectDirectory.file(
-                "src/main/java/com/github/ycyz/starrocks/datagrip/lang/StarRocksReservedKeywords.java"
-            ),
-            layout.projectDirectory.file(
-                "src/main/java/com/github/ycyz/starrocks/datagrip/lang/StarRocksOptionalKeywords.java"
-            )
-        )
-
         inputs.file(flexFile)
         inputs.file(bnfFile)
         inputs.file(keywordCatalogFile)
-        inputs.files(keywordRegistryFiles)
 
         doLast {
             check(flexFile.asFile.isFile) { "Missing parser lexer grammar: ${flexFile.asFile}" }
@@ -141,20 +141,64 @@ tasks {
                 "Grammar keywords missing from StarRocksKeywordCatalog: ${missingKeywords.sorted().joinToString()}"
             }
 
-            val registryKeywords = keywordRegistryFiles
-                .flatMap { file ->
-                    Regex("""StarRocksElementFactory\.token\("([A-Z][A-Z0-9_]*)"\)""")
-                        .findAll(file.asFile.readText())
-                        .map { it.groupValues[1] }
-                        .toList()
+        }
+    }
+
+    register("generateStarRocksKeywordRegistries") {
+        group = "generation"
+        description = "Generates SQL token interfaces from the StarRocks keyword catalog."
+        notCompatibleWithConfigurationCache("Generates Java keyword registry sources from the Kotlin catalog.")
+
+        val keywordCatalog = layout.projectDirectory.file(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
+        )
+
+        inputs.file(keywordCatalog)
+        outputs.files(generatedReservedKeywords, generatedOptionalKeywords)
+
+        doLast {
+            val source = keywordCatalog.asFile.readText()
+
+            fun readKeywordSet(propertyName: String): Set<String> {
+                val block = Regex(
+                    """private val ${Regex.escape(propertyName)}: Set<String> = setOf\((.*?)\n    \)""",
+                    RegexOption.DOT_MATCHES_ALL
+                ).find(source)?.groupValues?.get(1)
+                    ?: error("Cannot locate $propertyName in StarRocksKeywordCatalog.")
+                return Regex(""""([A-Z][A-Z0-9_]*)"""")
+                    .findAll(block)
+                    .map { it.groupValues[1] }
+                    .toSortedSet()
+            }
+
+            val reserved = readKeywordSet("CORE_KEYWORDS")
+            val optional = readKeywordSet("OFFICIAL_ADDITIONAL_KEYWORDS")
+            check((reserved intersect optional).isEmpty()) {
+                "Reserved and optional StarRocks keyword sets must be disjoint."
+            }
+
+            fun registrySource(interfaceName: String, keywords: Set<String>): String = buildString {
+                appendLine("package com.github.ycyz.starrocks.datagrip.lang;")
+                appendLine()
+                appendLine("import com.intellij.sql.psi.SqlTokenType;")
+                appendLine()
+                appendLine("// Generated from StarRocksKeywordCatalog.kt. Do not edit manually.")
+                appendLine("public interface $interfaceName {")
+                keywords.forEach { keyword ->
+                    appendLine(
+                        "    SqlTokenType STARROCKS_$keyword = StarRocksElementFactory.token(\"$keyword\");"
+                    )
                 }
-                .toSet()
-            val missingRegistryKeywords = catalogKeywords - registryKeywords
-            val extraRegistryKeywords = registryKeywords - catalogKeywords
-            check(missingRegistryKeywords.isEmpty() && extraRegistryKeywords.isEmpty()) {
-                "StarRocks keyword registry must match StarRocksKeywordCatalog. " +
-                    "Missing: ${missingRegistryKeywords.sorted().joinToString()}; " +
-                    "extra: ${extraRegistryKeywords.sorted().joinToString()}"
+                appendLine("}")
+            }
+
+            generatedReservedKeywords.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(registrySource("StarRocksReservedKeywords", reserved))
+            }
+            generatedOptionalKeywords.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(registrySource("StarRocksOptionalKeywords", optional))
             }
         }
     }
@@ -258,11 +302,11 @@ tasks {
     }
 
     named("compileKotlin") {
-        dependsOn("generateParser")
+        dependsOn("generateParser", "generateStarRocksKeywordRegistries")
     }
 
     named("compileJava") {
-        dependsOn("generateLexer")
+        dependsOn("generateLexer", "generateStarRocksKeywordRegistries")
     }
 
     register("validateStarRocksFixtureManifest") {

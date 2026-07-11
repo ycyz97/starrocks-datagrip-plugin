@@ -21,7 +21,6 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksLexer
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElementType
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParser
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserScenarioCatalog
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokens
@@ -56,11 +55,10 @@ object StarRocksScenarioValidator {
         val testDataDir = projectDir.resolve("src/testData/sql")
         val manifest = loadManifest(testDataDir.resolve("scenarios.properties"))
 
-        checkManifestMatchesCatalog(manifest)
-        StarRocksParserScenarioCatalog.SCENARIOS.forEach { scenario ->
-            val sql = testDataDir.resolve(scenario.fileName).readText()
+        manifest.forEach { (fileName, _) ->
+            val sql = testDataDir.resolve(fileName).readText()
             val statements = splitStatements(sql)
-            check(statements.isNotEmpty()) { "${scenario.fileName} does not contain SQL statements." }
+            check(statements.isNotEmpty()) { "$fileName does not contain SQL statements." }
         }
 
         validateCoreQuery(testDataDir.resolve("query/core-query.sql").readText())
@@ -102,22 +100,6 @@ object StarRocksScenarioValidator {
                         .mapTo(mutableSetOf()) { StarRocksFeature.valueOf(it) }
                 )
             }
-    }
-
-    private fun checkManifestMatchesCatalog(manifest: Map<String, ScenarioMetadata>) {
-        val catalog = StarRocksParserScenarioCatalog.SCENARIOS.associateBy { it.fileName }
-        check(manifest.keys == catalog.keys) {
-            "Scenario manifest and catalog differ. manifest=${manifest.keys.sorted()} catalog=${catalog.keys.sorted()}"
-        }
-        manifest.forEach { (fileName, metadata) ->
-            val scenario = catalog.getValue(fileName)
-            check(metadata.milestone == scenario.milestone) {
-                "$fileName milestone differs between manifest and catalog."
-            }
-            check(metadata.features == scenario.requiredFeatures) {
-                "$fileName feature set differs between manifest and catalog."
-            }
-        }
     }
 
     private fun validateCoreQuery(sql: String) {

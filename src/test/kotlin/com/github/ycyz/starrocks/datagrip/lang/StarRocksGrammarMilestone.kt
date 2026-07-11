@@ -1,5 +1,7 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
+// Test fixture coverage metadata; not part of the runtime plugin model.
+
 /**
  * Grammar coverage milestones for the StarRocks parser.
  *
