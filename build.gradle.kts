@@ -1,11 +1,55 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
-    id("org.jetbrains.intellij.platform") version "2.5.0"
+    id("org.jetbrains.kotlin.jvm") version "2.1.21"
+    id("org.jetbrains.intellij.platform") version "2.17.0"
+    id("org.jetbrains.grammarkit") version "2023.3.0.3"
 }
 
 group = "com.github.ycyz.starrocks.datagrip"
 version = "2.0.0"
+
+val grammarKitGeneratedRoot = layout.buildDirectory.dir("generated/src/main/java")
+val generatedParserGrammar = layout.buildDirectory.file("generated/grammar/starrocks.bnf")
+val keywordRegistryGeneratedRoot = layout.buildDirectory.dir("generated/keyword-registry/main/java")
+val generatedReservedKeywords = keywordRegistryGeneratedRoot.map {
+    it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksReservedKeywords.java")
+}
+val generatedOptionalKeywords = keywordRegistryGeneratedRoot.map {
+    it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksOptionalKeywords.java")
+}
+
+fun readKeywordSet(source: String, propertyName: String): java.util.SortedSet<String> {
+    val lines = source.lineSequence().toList()
+    val declaration = Regex(
+        """\s*private val ${Regex.escape(propertyName)}: Set<String> = setOf\(\s*"""
+    )
+    val startIndex = lines.indexOfFirst(declaration::matches)
+    check(startIndex >= 0) { "Cannot locate $propertyName in StarRocksKeywordCatalog." }
+
+    val result = sortedSetOf<String>()
+    for (line in lines.drop(startIndex + 1)) {
+        if (line.trim() == ")") {
+            break
+        }
+        val keyword = Regex("""\s*"([A-Z][A-Z0-9_]*)",?\s*""")
+            .matchEntire(line)
+            ?.groupValues
+            ?.get(1)
+            ?: error("Invalid $propertyName entry: $line")
+        check(result.add(keyword)) { "Duplicate $propertyName entry: $keyword" }
+    }
+    check(result.isNotEmpty()) { "$propertyName must not be empty." }
+    return result
+}
+
+fun readStarRocksKeywordSets(source: String): Pair<Set<String>, Set<String>> {
+    val reserved = readKeywordSet(source, "CORE_KEYWORDS")
+    val optional = readKeywordSet(source, "OFFICIAL_ADDITIONAL_KEYWORDS")
+    check((reserved intersect optional).isEmpty()) {
+        "Reserved and optional StarRocks keyword sets must be disjoint."
+    }
+    return reserved to optional
+}
 
 repositories {
     mavenCentral()
@@ -14,12 +58,22 @@ repositories {
     }
 }
 
+sourceSets {
+    named("main") {
+        java.srcDir(grammarKitGeneratedRoot)
+        java.srcDir(keywordRegistryGeneratedRoot)
+    }
+}
+
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testRuntimeOnly(kotlin("stdlib"))
 
     intellijPlatform {
-        create("DB", "251.28774.27")
+        datagrip("2025.1.4.1")
 
+        // DatabaseTools declares these as bundled runtime dependencies. They are
+        // required for loading its extension descriptors in platform tests.
         bundledPlugin("com.intellij.modules.json")
         bundledPlugin("com.intellij.platform.images")
         bundledPlugin("intellij.charts")
@@ -37,7 +91,7 @@ intellijPlatform {
     }
     pluginVerification {
         ides {
-            ide("DB-251.28774.27")
+            create("DB", "251.28774.27")
         }
     }
 }
@@ -48,12 +102,232 @@ tasks {
         targetCompatibility = "17"
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
-    register("validateRewriteScenarios") {
+    register("validateGrammarSources") {
         group = "verification"
-        description = "Validates StarRocks rewrite SQL scenario fixtures."
+        description = "Validates StarRocks JFlex and Grammar-Kit grammar source assets."
+
+        val flexFile = layout.projectDirectory.file("grammar/starrocks.flex")
+        val bnfFile = layout.projectDirectory.file("grammar/starrocks.bnf")
+        val keywordCatalogFile = layout.projectDirectory.file(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
+        )
+        inputs.file(flexFile)
+        inputs.file(bnfFile)
+        inputs.file(keywordCatalogFile)
+
+        doLast {
+            check(flexFile.asFile.isFile) { "Missing parser lexer grammar: ${flexFile.asFile}" }
+            check(bnfFile.asFile.isFile) { "Missing parser grammar: ${bnfFile.asFile}" }
+
+            val flex = flexFile.asFile.readText()
+            check("%class _StarRocksParserLexer" in flex) {
+                "starrocks.flex must declare the generated parser lexer class."
+            }
+            check("StarRocksLexer" !in flex) {
+                "Parser lexer grammar must not depend on the highlighting lexer."
+            }
+            listOf("SQL_IDENT", "SQL_STRING_TOKEN", "SQL_INTEGER_TOKEN", "SQL_SEMICOLON").forEach { token ->
+                check(token in flex) { "starrocks.flex must map base SQL token $token." }
+            }
+
+            val bnf = bnfFile.asFile.readText()
+            listOf(
+                "script",
+                "statement",
+                "query_expression",
+                "value_expression",
+                "type_element",
+                "cast_type",
+                "table_column_list",
+                "analytic_clause"
+            ).forEach { rule ->
+                check(Regex("""(?m)^$rule\s*::=""").containsMatchIn(bnf)) {
+                    "starrocks.bnf must define required entry rule $rule."
+                }
+            }
+            check("pin=" in bnf) { "starrocks.bnf must model pin points explicitly." }
+            check("recoverWhile=" in bnf) { "starrocks.bnf must model recovery explicitly." }
+            check("STATEMENT_SEGMENT" !in bnf && "statement_tail" !in bnf) {
+                "starrocks.bnf must not define broad statement fallback segments."
+            }
+
+            val grammarRules = bnf.replace(
+                Regex("""(?m)^\s*(elementType|elementTypeFactory|pin|recoverWhile)=.*$"""),
+                ""
+            )
+            val grammarKeywords = Regex("""\"([A-Z][A-Z0-9_]*)\"""")
+                .findAll(grammarRules)
+                .map { it.groupValues[1] }
+                .filterNot { it.startsWith("SQL_") || it.startsWith("STARROCKS_") }
+                .toSet()
+            val (reservedKeywords, optionalKeywords) = readStarRocksKeywordSets(
+                keywordCatalogFile.asFile.readText()
+            )
+            val catalogKeywords = reservedKeywords + optionalKeywords
+            val missingKeywords = grammarKeywords - catalogKeywords
+            check(missingKeywords.isEmpty()) {
+                "Grammar keywords missing from StarRocksKeywordCatalog: ${missingKeywords.sorted().joinToString()}"
+            }
+
+        }
+    }
+
+    register("generateStarRocksKeywordRegistries") {
+        group = "generation"
+        description = "Generates SQL token interfaces from the StarRocks keyword catalog."
+        notCompatibleWithConfigurationCache("Generates Java keyword registry sources from the Kotlin catalog.")
+
+        val keywordCatalog = layout.projectDirectory.file(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
+        )
+
+        inputs.file(keywordCatalog)
+        outputs.files(generatedReservedKeywords, generatedOptionalKeywords)
+
+        doLast {
+            val source = keywordCatalog.asFile.readText()
+            val (reserved, optional) = readStarRocksKeywordSets(source)
+
+            fun registrySource(interfaceName: String, keywords: Set<String>): String = buildString {
+                appendLine("package com.github.ycyz.starrocks.datagrip.lang;")
+                appendLine()
+                appendLine("import com.intellij.sql.psi.SqlTokenType;")
+                appendLine()
+                appendLine("// Generated from StarRocksKeywordCatalog.kt. Do not edit manually.")
+                appendLine("public interface $interfaceName {")
+                keywords.forEach { keyword ->
+                    appendLine(
+                        "    SqlTokenType STARROCKS_$keyword = StarRocksElementFactory.token(\"$keyword\");"
+                    )
+                }
+                appendLine("}")
+            }
+
+            generatedReservedKeywords.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(registrySource("StarRocksReservedKeywords", reserved))
+            }
+            generatedOptionalKeywords.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(registrySource("StarRocksOptionalKeywords", optional))
+            }
+        }
+    }
+
+    register("prepareStarRocksParserGrammar") {
+        group = "generation"
+        description = "Generates the Grammar-Kit input with tokens derived from the keyword catalog."
+        notCompatibleWithConfigurationCache("Generates a Grammar-Kit source file from project inputs.")
+
+        val sourceGrammar = layout.projectDirectory.file("grammar/starrocks.bnf")
+        val keywordCatalog = layout.projectDirectory.file(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
+        )
+
+        inputs.file(sourceGrammar)
+        inputs.file(keywordCatalog)
+        outputs.file(generatedParserGrammar)
+
+        doLast {
+            val grammar = sourceGrammar.asFile.readText()
+            val (reservedKeywords, optionalKeywords) = readStarRocksKeywordSets(
+                keywordCatalog.asFile.readText()
+            )
+            val keywords = (reservedKeywords + optionalKeywords).toSortedSet()
+            val tokenDeclarations = buildString {
+                append("\n  tokens=[\n")
+                append("    SQL_LEFT_PAREN=\"(\"\n")
+                append("    SQL_RIGHT_PAREN=\")\"\n")
+                append("    SQL_LEFT_BRACKET=\"[\"\n")
+                append("    SQL_RIGHT_BRACKET=\"]\"\n")
+                append("    SQL_COMMA=\",\"\n")
+                append("    SQL_SEMICOLON=\";\"\n")
+                append("    SQL_PERIOD=\".\"\n")
+                append("    SQL_COLON=\":\"\n")
+                append("    SQL_OP_PLUS=\"+\"\n")
+                append("    SQL_OP_MINUS=\"-\"\n")
+                append("    SQL_ASTERISK=\"*\"\n")
+                append("    SQL_OP_DIV=\"/\"\n")
+                append("    SQL_OP_MODULO=\"%\"\n")
+                append("    SQL_OP_EQ=\"=\"\n")
+                append("    SQL_OP_LT=\"<\"\n")
+                append("    SQL_OP_GT=\">\"\n")
+                append("    SQL_OP_LE=\"<=\"\n")
+                append("    SQL_OP_GE=\">=\"\n")
+                append("    SQL_OP_NEQ=\"<>\"\n")
+                append("    SQL_OP_NEQ2=\"!=\"\n")
+                append("    SQL_OP_CONCAT=\"||\"\n")
+                append("    SQL_OP_NOT2=\"!\"\n")
+                append("    STARROCKS_OP_NULL_SAFE_EQ=\"<=>\"\n")
+                append("    STARROCKS_OP_BITWISE_NOT=\"~\"\n")
+                keywords.forEach { keyword -> append("    $keyword=\"$keyword\"\n") }
+                append("  ]")
+            }
+            val marker = "  tokenTypeFactory=\"com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.token\""
+            check(marker in grammar) { "Cannot locate token factory in starrocks.bnf." }
+            val preparedGrammar = grammar.replaceFirst(marker, marker + tokenDeclarations)
+            val target = generatedParserGrammar.get().asFile
+            target.parentFile.mkdirs()
+            target.writeText(preparedGrammar)
+        }
+    }
+
+    named<org.jetbrains.grammarkit.tasks.GenerateLexerTask>("generateLexer") {
+        group = "generation"
+        description = "Generates the StarRocks parser lexer from grammar/starrocks.flex."
+
+        dependsOn("validateGrammarSources")
+
+        val flexFile = layout.projectDirectory.file("grammar/starrocks.flex")
+        val generatedLexerDir = layout.buildDirectory.dir(
+            "generated/src/main/java/com/github/ycyz/starrocks/datagrip/lang"
+        )
+
+        sourceFile.set(flexFile)
+        targetOutputDir.set(generatedLexerDir)
+        purgeOldFiles.set(true)
+    }
+
+    named<org.jetbrains.grammarkit.tasks.GenerateParserTask>("generateParser") {
+        group = "generation"
+        description = "Generates the StarRocks parser from grammar/starrocks.bnf."
+
+        dependsOn("generateLexer", "prepareStarRocksParserGrammar")
+
+        val generatedRoot = grammarKitGeneratedRoot
+
+        sourceFile.set(generatedParserGrammar)
+        targetRootOutputDir.set(generatedRoot)
+        pathToParser.set("/com/github/ycyz/starrocks/datagrip/lang/StarRocksGeneratedParser.java")
+        pathToPsiRoot.set("/com/github/ycyz/starrocks/datagrip/lang/psi")
+        purgeOldFiles.set(true)
+
+        doFirst {
+            val generatedLanguageDir = generatedRoot.get().asFile.resolve(
+                "com/github/ycyz/starrocks/datagrip/lang"
+            )
+            generatedLanguageDir.resolve("psi").deleteRecursively()
+            generatedLanguageDir.resolve("StarRocksGeneratedParser.java").delete()
+            generatedLanguageDir.resolve("StarRocksElementTypes.java").delete()
+        }
+    }
+
+    named("compileKotlin") {
+        dependsOn("generateParser", "generateStarRocksKeywordRegistries")
+    }
+
+    named("compileJava") {
+        dependsOn("generateLexer", "generateStarRocksKeywordRegistries")
+    }
+
+    register("validateStarRocksFixtureManifest") {
+        group = "verification"
+        description = "Validates StarRocks SQL scenario fixture manifest and documentation."
 
         val testDataDir = layout.projectDirectory.dir("src/testData/sql")
         val manifestFile = testDataDir.file("scenarios.properties")
@@ -75,18 +349,18 @@ tasks {
                     val features = metadata[1].split(",").map { it.trim() }.filter { it.isNotEmpty() }
                     Triple(fileName, milestone, features)
                 }
-            check(scenarios.isNotEmpty()) { "No StarRocks rewrite scenarios declared." }
+            check(scenarios.isNotEmpty()) { "No StarRocks SQL scenarios declared." }
 
             val expectedFiles = scenarios.map { it.first }
             val missingFiles = expectedFiles.filterNot { testDataDir.file(it).asFile.isFile }
             check(missingFiles.isEmpty()) {
-                "Missing StarRocks rewrite SQL fixtures: ${missingFiles.joinToString()}"
+                "Missing StarRocks SQL fixtures: ${missingFiles.joinToString()}"
             }
 
             val readme = testDataDir.file("README.md").asFile.readText()
             val undocumentedFiles = expectedFiles.filterNot { readme.contains("`$it`") }
             check(undocumentedFiles.isEmpty()) {
-                "Missing StarRocks rewrite fixture documentation: ${undocumentedFiles.joinToString()}"
+                "Missing StarRocks fixture documentation: ${undocumentedFiles.joinToString()}"
             }
 
             val undocumentedMilestones = scenarios.map { it.second }.distinct().filterNot { readme.contains("`$it`") }
@@ -106,12 +380,12 @@ tasks {
         description = "Runs native StarRocks parser and local context scenario checks."
 
         dependsOn("testClasses")
-        classpath = sourceSets["test"].runtimeClasspath
+        classpath = sourceSets["test"].runtimeClasspath + sourceSets["test"].compileClasspath
         mainClass.set("com.github.ycyz.starrocks.datagrip.StarRocksScenarioValidator")
         args(layout.projectDirectory.asFile.absolutePath)
     }
 
     named("check") {
-        dependsOn("validateRewriteScenarios", "validateStarRocksScenarios")
+        dependsOn("validateGrammarSources", "validateStarRocksFixtureManifest", "validateStarRocksScenarios")
     }
 }

@@ -26,3 +26,29 @@ SELECT
 FROM sale_data
 JOIN UNNEST(tags) AS unnested_tags(tag)
 WHERE tag IS NOT NULL;
+
+SELECT
+    DATE_FORMAT(biz_date, '%Y-%m') AS biz_m,
+    COUNT(*) AS order_qty
+FROM dwm.dwm_trade_sale_ri_v2
+GROUP BY biz_m;
+
+SELECT *
+FROM (
+    SELECT
+        DATE_FORMAT(biz_date, '%Y-%m-%d') AS biz_m,
+        order_id,
+        order_detail_id
+    FROM dwm.dwm_trade_sale_ri
+    WHERE biz_date = '2025-10-27'
+    GROUP BY biz_m, order_id, order_detail_id
+) a1
+FULL JOIN (
+    SELECT
+        DATE_FORMAT(biz_date, '%Y-%m-%d') AS biz_m,
+        order_id,
+        order_detail_id
+    FROM dwm.dwm_trade_sale_ri_v2
+    WHERE biz_date = '2025-10-27'
+) a2
+ON a1.order_id = a2.order_id;

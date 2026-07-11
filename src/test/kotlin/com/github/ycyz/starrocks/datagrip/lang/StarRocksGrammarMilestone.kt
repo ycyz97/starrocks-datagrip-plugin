@@ -1,10 +1,11 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
+// Test fixture coverage metadata; not part of the runtime plugin model.
+
 /**
- * Rewrite milestones for the native StarRocks parser.
+ * Grammar coverage milestones for the StarRocks parser.
  *
- * These entries are intentionally not wired into parsing yet. They define the
- * order in which the replacement grammar should become executable.
+ * These entries track the acceptance scenarios covered by grammar fixtures.
  */
 enum class StarRocksGrammarMilestone {
     QUERY,

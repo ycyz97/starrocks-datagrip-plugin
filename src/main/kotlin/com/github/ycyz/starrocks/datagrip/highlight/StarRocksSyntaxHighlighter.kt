@@ -19,7 +19,10 @@ class StarRocksSyntaxHighlighter(
 
     override fun getTokenHighlights(tokenType: IElementType): Array<TextAttributesKey> {
         return when (tokenType) {
-            StarRocksHighlightTokenTypes.FUNCTION -> arrayOf(SqlColors.SQL_PROCEDURE)
+            // SQL_PROCEDURE inherits the static-method color, which is red in
+            // Darcula. Functions without a resolved database object should
+            // retain the platform's ordinary SQL identifier color instead.
+            StarRocksHighlightTokenTypes.FUNCTION -> arrayOf(SqlColors.SQL_IDENT)
             StarRocksHighlightTokenTypes.DATA_TYPE -> arrayOf(SqlColors.SQL_TYPE)
             StarRocksHighlightTokenTypes.VARIABLE -> arrayOf(SqlColors.SQL_VARIABLE)
             StarRocksHighlightTokenTypes.PARAMETER -> arrayOf(SqlColors.SQL_PARAMETER)

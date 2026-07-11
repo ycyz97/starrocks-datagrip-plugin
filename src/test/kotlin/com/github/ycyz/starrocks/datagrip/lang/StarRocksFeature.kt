@@ -1,5 +1,7 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
+// Test fixture coverage metadata; not part of the runtime plugin model.
+
 enum class StarRocksFeature {
     CAST_TYPE_SYNTAX,
     QUALIFY_CLAUSE,
