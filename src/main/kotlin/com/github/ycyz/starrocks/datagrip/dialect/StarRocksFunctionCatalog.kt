@@ -94,11 +94,18 @@ object StarRocksFunctionCatalog {
     )
 
     val BUILTIN_FUNCTION_NAMES: Set<String> = buildSet {
-        addAll(StarRocksBuiltinFunctionNames.NAMES)
-        addAll(FUNCTIONS.map { it.lookupName })
+        addAll(StarRocksFunctionNames.NAMES)
+        addAll(FUNCTIONS.map(StarRocksFunctionSignature::lookupName))
     }
 
     private val byName = FUNCTIONS.associateBy { it.lookupName }
 
     fun find(name: String): StarRocksFunctionSignature? = byName[name.uppercase()]
+
+    init {
+        check(FUNCTIONS.size == byName.size) { "Duplicate StarRocks function descriptions." }
+        check(BUILTIN_FUNCTION_NAMES.containsAll(byName.keys)) {
+            "Every described StarRocks function must be present in the function-name catalog."
+        }
+    }
 }

@@ -25,8 +25,9 @@ import java.util.Locale;
 WHITE_SPACE=[ \t\r\n\f]+
 LINE_COMMENT="--"[^\r\n]*
 BLOCK_COMMENT="/*"([^*]|\*+[^*/])*\*+"/"
-IDENT=[A-Za-z_\p{L}][A-Za-z0-9_$\p{L}\p{N}]*
-DIGIT_IDENT=[0-9]+[\u0080-\uFFFF][A-Za-z0-9_$\p{L}\p{N}]*
+IDENT=[A-Za-z_\p{L}][A-Za-z0-9_$\p{L}\p{N}\uFF08\uFF09]*
+DIGIT_IDENT=[0-9]+[A-Za-z_\p{L}][A-Za-z0-9_$\p{L}\p{N}\uFF08\uFF09]*
+SIZE_VALUE=[0-9]+[KMGTP]
 TEMPLATED_IDENT=[A-Za-z_\p{L}][A-Za-z0-9_$\p{L}\p{N}]*(\$\[[^\]]*\]|\$\{[^}]*\})
 SYSTEM_VARIABLE="@"{1,2}[A-Za-z_][A-Za-z0-9_.$]*
 DELIMITED_IDENT=`([^`]|``)*`
@@ -50,6 +51,7 @@ STRING='([^'\\]|\\.|'')*'|\"([^\"\\]|\\.|\"\")*\"
 {BRACKETED_PARAMETER} { return StarRocksHighlightTokenTypes.PARAMETER; }
 "?"                  { return StarRocksHighlightTokenTypes.PARAMETER; }
 {TEMPLATED_IDENT}     { return SqlTokens.SQL_IDENT; }
+{SIZE_VALUE}          { yypushback(1); return SqlTokens.SQL_INTEGER_TOKEN; }
 {DIGIT_IDENT}         { return SqlTokens.SQL_IDENT; }
 {FLOAT}              { return SqlTokens.SQL_FLOAT_TOKEN; }
 {INTEGER}            { return SqlTokens.SQL_INTEGER_TOKEN; }
@@ -87,7 +89,7 @@ STRING='([^'\\]|\\.|'')*'|\"([^\"\\]|\\.|\"\")*\"
 
 {IDENT}              {
                        String word = yytext().toString().toUpperCase(Locale.ROOT);
-                       return StarRocksKeywordCatalog.INSTANCE.isKeyword(word)
+                       return StarRocksKeywordCatalog.isKeyword(word)
                          ? keyword()
                          : SqlTokens.SQL_IDENT;
                      }

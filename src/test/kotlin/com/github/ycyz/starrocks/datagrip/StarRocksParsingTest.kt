@@ -1,10 +1,8 @@
 package com.github.ycyz.starrocks.datagrip
 
-import com.github.ycyz.starrocks.datagrip.completion.StarRocksCompletionScope
-import com.github.ycyz.starrocks.datagrip.completion.StarRocksCompletionContext
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserLexer
 import com.intellij.lang.LanguageParserDefinitions
@@ -17,7 +15,30 @@ import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.elementType
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlAsExpression
+import com.intellij.sql.psi.SqlColumnDefinition
+import com.intellij.sql.psi.SqlFunctionCallExpression
+import com.intellij.sql.psi.SqlExpression
+import com.intellij.sql.psi.SqlLiteralExpression
+import com.intellij.sql.psi.SqlReferenceExpression
+import com.intellij.sql.dialects.mysql.MysqlDialect
+import com.intellij.database.model.ObjectKind
+import com.intellij.database.types.DasArrayType
+import com.github.ycyz.starrocks.datagrip.database.StarRocksDbms
+import com.intellij.database.dataSource.LocalDataSource
+import com.intellij.database.dataSource.LocalDataSourceManager
+import com.intellij.database.dialects.generic.model.GenericDatabase
+import com.intellij.database.dialects.generic.model.GenericModel
+import com.intellij.database.dialects.generic.model.GenericSchema
+import com.intellij.database.dialects.generic.model.GenericTable
+import com.intellij.database.model.ModelFactory
+import com.intellij.database.psi.DbDataSource
+import com.intellij.database.psi.DbPsiFacade
+import com.intellij.database.util.VirtualFileDataSourceProvider
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.sql.dialects.SqlDataSourceMappings
 import java.io.File
 
 class StarRocksParsingTest : BasePlatformTestCase() {
@@ -355,77 +376,620 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertParsesWithoutPsiErrors(sql)
     }
 
-    fun testLocalColumnReferenceResolvesToCreateTableColumn() {
+    fun testTableSwapAndTableStatusScriptParsesWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors(
+            """
+                ALTER TABLE dws.current_sales SWAP WITH replacement_sales;
+                SHOW TABLE STATUS FROM dws LIKE 'current_sales';
+                CREATE TABLE final_table (
+                    biz_date DATE NOT NULL,
+                    order_id VARCHAR(36) NOT NULL
+                ) ENGINE = OLAP
+                PRIMARY KEY (biz_date, order_id)
+                DISTRIBUTED BY HASH(order_id) BUCKETS 11
+                PROPERTIES ("replication_num" = "3");
+            """.trimIndent()
+        )
+    }
+
+    fun testScreenshotCreateTableColumnsResolveInKeyPartitionAndDistributionClauses() {
+        val file = createPsiFile(
+            """
+                CREATE TABLE `dwm_trade_sale_ri_v2` (
+                    `biz_date` DATE NOT NULL COMMENT "业务日期",
+                    `order_id` VARCHAR(36) NOT NULL COMMENT "订单ID",
+                    `order_detail_id` VARCHAR(36) NOT NULL COMMENT "子订单ID",
+                    `remark` VARCHAR(65533) NULL COMMENT "备注",
+                    `etl_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "etl时间"
+                ) ENGINE=OLAP
+                PRIMARY KEY (`biz_date`, `order_id`, `order_detail_id`)
+                COMMENT "交易_销售_业务宽表"
+                PARTITION BY date_trunc('day', biz_date)
+                DISTRIBUTED BY HASH(`order_id`, `order_detail_id`) BUCKETS 11
+                PROPERTIES ("compression" = "LZ4");
+            """.trimIndent()
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Screenshot CREATE TABLE syntax must parse without errors: $errors\n${psiSummary(file)}", errors.isEmpty())
+
+        val definitions = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_DEFINITION)
+            .filterIsInstance<SqlColumnDefinition>()
+            .associateBy { it.name }
+        val clauseReferences = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        assertEquals(2, clauseReferences.count { it.name == "biz_date" })
+        assertEquals(2, clauseReferences.count { it.name == "order_id" })
+        assertEquals(2, clauseReferences.count { it.name == "order_detail_id" })
+        clauseReferences.forEach { reference ->
+            assertSame(
+                "DDL clause column ${reference.text} must resolve to its CREATE TABLE definition.",
+                definitions[reference.name],
+                reference.resolve()
+            )
+        }
+    }
+
+    fun testOlapEngineIsRecognizedAsStarRocksKeyword() {
+        val lexer = StarRocksParserLexer()
+        lexer.start("OLAP")
+        assertSame(StarRocksElementFactory.token("OLAP"), lexer.tokenType)
+        assertParsesWithoutPsiErrors("CREATE TABLE engine_probe (id BIGINT) ENGINE=OLAP;")
+    }
+
+    fun testEtlIdentifierAndSeparatorExtensionsParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors(
+            """
+                WITH 1st AS (SELECT 1 AS amount), 2nd AS (SELECT 2 AS amount)
+                SELECT amount AS 券抵用金额（元） FROM 1st;
+                WITH label AS (SELECT 1 AS id), location AS (SELECT 1 AS id)
+                SELECT label.id FROM label JOIN location ON label.id = location.id;
+                SELECT source.value FROM json_each('{}') AS source;
+                SELECT lag(driver, 1) IGNORE NULLS OVER (PARTITION BY store_code ORDER BY biz_date)
+                FROM delivery;
+                SELECT value FROM source, LATERAL json_each(payload);
+                SELECT ods.ds.gid FROM ods.ods_hd_erp_hd40_store AS ds;
+                SELECT metrics.7qty, metrics.28qty FROM metrics;
+                ALTER DATABASE dws SET DATA QUOTA 1024G;
+                SELECT 1;;
+            """.trimIndent()
+        )
+    }
+
+    fun testParserLexerEmitsParametersAsSingleTokens() {
+        listOf("?", ":biz_date", "${'$'}{biz_date}", "${'$'}[biz_date]").forEach { parameter ->
+            val lexer = StarRocksParserLexer()
+            lexer.start(parameter)
+            assertSame(
+                "Parser parameters must use the dedicated StarRocks parameter token.",
+                com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes.PARAMETER,
+                lexer.tokenType
+            )
+            assertEquals("Parameter placeholders must be emitted as one token.", parameter.length, lexer.tokenEnd)
+        }
+    }
+
+    fun testColumnReferencesUsePlatformSqlPsi() {
         val file = createPsiFile(
             """
                 CREATE TABLE orders (order_id BIGINT, amount DOUBLE);
                 SELECT order_id FROM orders;
             """.trimIndent()
         )
-        val referenceName = elementsOfType(file, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
+        val definition = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_DEFINITION)
+            .filterIsInstance<SqlColumnDefinition>()
+            .single { it.name.equals("order_id", ignoreCase = true) }
+        val referenceName = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
             .single { it.text.equals("order_id", ignoreCase = true) }
-        val target = referenceName.reference?.resolve()
-
-        assertNotNull("Local SELECT column should resolve to the preceding CREATE TABLE column.", target)
-        assertEquals(StarRocksElementTypes.COLUMN_NAME, target?.node?.elementType)
-        assertEquals("order_id", StarRocksNamedStubElement.normalizeName(target?.text))
+        assertNotNull("Platform SQL column references must expose a SqlReference.", referenceName.reference)
+        assertEquals("Column definitions must expose their platform name element.", "order_id", definition.nameElement?.name)
     }
 
-    fun testCompletionScopeUsesTheSameResolvedColumns() {
+    fun testAliasesUsePlatformSqlPsiAndResolveLocally() {
+        val file = createPsiFile(
+            "SELECT o.order_id AS order_key FROM orders AS o ORDER BY order_key;"
+        )
+        val selectAlias = elementsOfType(file, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+            .single { it.name == "order_key" }
+        val tableAlias = elementsOfType(file, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+            .single { it.name == "o" }
+        assertEquals("order_key", selectAlias.name)
+        assertEquals("o", tableAlias.name)
+
+        val qualifiedColumn = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.text == "o.order_id" }
+        val qualifier = qualifiedColumn.qualifierExpression as? SqlReferenceExpression
+        assertNotNull("Qualified columns must expose the platform qualifier reference.", qualifier)
+        assertSame("Table qualifiers must resolve through the platform alias PSI.", tableAlias, qualifier?.resolve())
+
+        val orderByAlias = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.text == "order_key" }
+        assertSame("ORDER BY aliases must resolve through the platform alias PSI.", selectAlias, orderByAlias.resolve())
+    }
+
+    fun testGroupByAliasAndDerivedTableAliasesResolveLocally() {
         val file = createPsiFile(
             """
-                CREATE TABLE orders (order_id BIGINT, amount DOUBLE);
-                SELECT order_ FROM orders;
+                SELECT DATE_FORMAT(biz_date, '%Y-%m') AS biz_m, COUNT(*)
+                FROM (SELECT biz_date FROM sales) AS source_sales
+                GROUP BY biz_m;
             """.trimIndent()
         )
-        val position = elementsOfType(file, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
-            .single { it.text.equals("order_", ignoreCase = true) }
-        val variants = StarRocksCompletionScope.columnNames(position, file)
+        val aliases = elementsOfType(file, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+        val selectAlias = aliases.single { it.name == "biz_m" }
+        val groupByAlias = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.text == "biz_m" }
+        assertSame("GROUP BY aliases must resolve through platform alias PSI.", selectAlias, groupByAlias.resolve())
 
-        assertTrue("Completion must include columns exposed by local resolution: $variants", "order_id" in variants)
-        assertTrue("Completion must include every visible local table column: $variants", "amount" in variants)
+        val tableAlias = elementsOfType(file, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+            .single { it.name == "source_sales" }
+        assertEquals("source_sales", tableAlias.name)
     }
 
-    fun testOrderByCompletionExposesSelectAliases() {
-        val file = createPsiFile("SELECT order_id AS order_key FROM orders ORDER BY order_;")
-        val position = elementsOfType(file, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
-            .last { it.text.equals("order_", ignoreCase = true) }
-        val variants = StarRocksCompletionScope.selectAliasNames(position, file)
-
-        assertTrue("ORDER BY completion must expose SELECT aliases: $variants", "order_key" in variants)
+    fun testNamedWindowsUsePlatformDefinitionsAndReferences() {
+        val file = createPsiFile(
+            "SELECT row_number() OVER w FROM orders WINDOW w AS (ORDER BY order_id);"
+        )
+        val references = elementsOfType(file, StarRocksElementTypes.SQL_WINDOW_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        assertEquals(2, references.size)
+        val definition = elementsOfType(file, StarRocksElementTypes.SQL_GENERIC_DEFINITION).single()
+        assertSame("Named window references must resolve to the platform window definition.", definition, references.first().resolve())
     }
 
-    fun testCompletionContextPrefersPsiStructure() {
-        val tableFile = createPsiFile("SELECT * FROM orders;")
-        val tablePosition = elementsOfType(tableFile, SqlCompositeElementTypes.SQL_TABLE_REFERENCE).single()
-        assertTrue(StarRocksCompletionContext.isTable(tablePosition))
-        assertFalse(StarRocksCompletionContext.isColumn(tablePosition))
-
-        val whereFile = createPsiFile("SELECT order_id FROM orders WHERE order_;")
-        val wherePosition = elementsOfType(whereFile, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
-            .last { it.text.equals("order_", ignoreCase = true) }
-        assertTrue(StarRocksCompletionContext.isColumn(wherePosition))
-        assertFalse(StarRocksCompletionContext.isTable(wherePosition))
-
-        val orderFile = createPsiFile("SELECT order_id AS order_key FROM orders ORDER BY order_;")
-        val orderPosition = elementsOfType(orderFile, StarRocksElementTypes.COLUMN_REFERENCE_NAME)
-            .last { it.text.equals("order_", ignoreCase = true) }
-        assertTrue(StarRocksCompletionContext.isOrderBy(orderPosition))
-        assertTrue(StarRocksCompletionContext.isColumn(orderPosition))
+    fun testDialectPublishesStarRocksTypesToPlatformCompletion() {
+        val types = StarRocksDialect.INSTANCE.builtInTypes
+        listOf("BIGINT", "DECIMAL128", "JSON", "ARRAY", "MAP", "STRUCT").forEach { type ->
+            assertTrue("StarRocks dialect must publish $type through the platform type catalog.", type in types)
+        }
     }
 
-    fun testNamedElementRenameUsesStarRocksPsiFactory() {
-        val file = createPsiFile("SELECT 1 AS old_name;")
-        val alias = elementsOfType(file, StarRocksElementTypes.SELECT_ALIAS)
-            .filterIsInstance<StarRocksNamedStubElement>()
+    fun testDialectPublishesFunctionsToPlatformCompletion() {
+        assertTrue(
+            "StarRocks built-in functions must be loaded through the platform function catalog.",
+            StarRocksDialect.INSTANCE.supportedFunctions.contains("ABS")
+        )
+        listOf("COUNT", "DATE_FORMAT").forEach { function ->
+            assertTrue(
+                "StarRocks built-in function $function must be loaded through the platform function catalog.",
+                StarRocksDialect.INSTANCE.supportedFunctions.contains(function)
+            )
+        }
+    }
+
+    fun testBuiltinFunctionCallsResolveThroughPlatformPsi() {
+        val file = createPsiFile("SELECT DATE_FORMAT(biz_date, '%Y-%m'), COUNT(*) FROM sales;")
+        val calls = elementsOfType(file, StarRocksElementTypes.SQL_FUNCTION_CALL)
+        assertEquals(2, calls.size)
+        val functionCalls = calls.filterIsInstance<SqlFunctionCallExpression>()
+        assertEquals(2, functionCalls.size)
+        functionCalls.forEach { call ->
+            val nameElement = call.nameElement
+            assertNotNull("Built-in function ${call.text} must expose a platform name element.", nameElement)
+            val nameReference = nameElement?.reference
+            assertNotNull("Built-in function ${call.text} must expose a platform name reference.", nameReference)
+            if (call.text.startsWith("DATE_FORMAT")) {
+                assertNotNull("DATE_FORMAT must resolve through the dialect catalog.", nameReference?.resolve())
+            }
+        }
+    }
+
+    fun testQualifiedTableNamesExposePlatformReferenceChain() {
+        val file = createPsiFile("SELECT * FROM dws.dws_trade_sale_by_store_item_day_ri_v2;")
+        val tableReference = elementsOfType(file, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertEquals("dws.dws_trade_sale_by_store_item_day_ri_v2", tableReference.text)
+        assertNotNull("Qualified table names must expose a platform reference.", tableReference.reference)
+        assertNotNull("Qualified table names must expose a schema qualifier.", tableReference.qualifierExpression)
+    }
+
+    fun testStarRocksReferencePsiMatchesPlatformShape() {
+        val sql = "SELECT DATE_FORMAT(t.biz_date, '%Y-%m') FROM dws.sales AS t GROUP BY t.biz_date;"
+        val starRocks = createPsiFile(sql)
+        val mysql = PsiFileFactory.getInstance(project)
+            .createFileFromText("mysql.sql", MysqlDialect.INSTANCE, sql)
+
+        val starRocksTable = elementsOfType(starRocks, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        val mysqlTable = elementsOfType(mysql, SqlCompositeElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertEquals(mysqlTable.javaClass, starRocksTable.javaClass)
+        assertNotNull(starRocksTable.qualifierExpression)
+        assertEquals(mysqlTable.qualifierExpression?.text, starRocksTable.qualifierExpression?.text)
+        val starRocksTableQualifier = starRocksTable.qualifierExpression as SqlReferenceExpression
+        val mysqlTableQualifier = mysqlTable.qualifierExpression as SqlReferenceExpression
+        assertEquals(mysqlTableQualifier.kind, starRocksTableQualifier.kind)
+        assertEquals(mysqlTableQualifier.referenceElementType, starRocksTableQualifier.referenceElementType)
+        listOf(ObjectKind.SCHEMA, ObjectKind.TABLE).forEach { kind ->
+            assertEquals(
+                "Table reference part mismatch for $kind",
+                mysqlTable.getReferencePart(kind),
+                starRocksTable.getReferencePart(kind)
+            )
+        }
+
+        val starRocksColumns = elementsOfType(starRocks, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.qualifierExpression != null }
+        assertTrue(starRocksColumns.isNotEmpty())
+        assertTrue(starRocksColumns.all { it.qualifierExpression?.text == "t" })
+        val starRocksColumn = starRocksColumns.first { it.text == "t.biz_date" }
+        val mysqlColumn = elementsOfType(mysql, SqlCompositeElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .first { it.text == "t.biz_date" }
+        assertEquals(mysqlColumn.name, starRocksColumn.name)
+        assertEquals(mysqlColumn.identifier?.text, starRocksColumn.identifier?.text)
+        assertEquals(mysqlColumn.referenceElementType, starRocksColumn.referenceElementType)
+        assertEquals(mysqlColumn.kind, starRocksColumn.kind)
+        listOf(ObjectKind.TABLE, ObjectKind.COLUMN).forEach { kind ->
+            assertEquals(
+                "Column reference part mismatch for $kind",
+                mysqlColumn.getReferencePart(kind),
+                starRocksColumn.getReferencePart(kind)
+            )
+        }
+
+        assertTrue(
+            "StarRocks SELECT must expose the same platform statement PSI shape.\n${psiSummary(starRocks)}",
+            elementsOfType(starRocks, StarRocksElementTypes.SQL_SELECT_STATEMENT).isNotEmpty()
+        )
+
+        listOf(
+            SqlCompositeElementTypes.SQL_SELECT_STATEMENT,
+            SqlCompositeElementTypes.SQL_QUERY_EXPRESSION,
+            SqlCompositeElementTypes.SQL_FROM_CLAUSE,
+            SqlCompositeElementTypes.SQL_TABLE_EXPRESSION,
+            SqlCompositeElementTypes.SQL_COLUMN_REFERENCE
+        ).forEach { type ->
+            val starRocksClasses = elementsOfType(starRocks, type).map { it.javaClass }.toSet()
+            val mysqlClasses = elementsOfType(mysql, type).map { it.javaClass }.toSet()
+            assertEquals("Platform PSI implementation mismatch for $type", mysqlClasses, starRocksClasses)
+        }
+    }
+
+    fun testStarRocksOrdinaryObjectResolvePolicyMatchesPlatformDialect() {
+        val sql = "SELECT t.biz_date FROM dws.sales AS t;"
+        val starRocksFile = createPsiFile(sql)
+        val mysqlFile = PsiFileFactory.getInstance(project)
+            .createFileFromText("mysql.sql", MysqlDialect.INSTANCE, sql)
+        val starRocksColumn = elementsOfType(starRocksFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        val mysqlColumn = elementsOfType(mysqlFile, SqlCompositeElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        val starRocksTable = elementsOfType(starRocksFile, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        val mysqlTable = elementsOfType(mysqlFile, SqlCompositeElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
             .single()
 
+        assertEquals(
+            MysqlDialect.INSTANCE.shallResolve(mysqlColumn, ObjectKind.COLUMN),
+            StarRocksDialect.INSTANCE.shallResolve(starRocksColumn, ObjectKind.COLUMN)
+        )
+        assertEquals(
+            MysqlDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.COLUMN),
+            StarRocksDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.COLUMN)
+        )
+        assertEquals(
+            MysqlDialect.INSTANCE.shallResolve(mysqlTable, ObjectKind.TABLE),
+            StarRocksDialect.INSTANCE.shallResolve(starRocksTable, ObjectKind.TABLE)
+        )
+        assertEquals(
+            MysqlDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.TABLE),
+            StarRocksDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.TABLE)
+        )
+    }
+
+    fun testColumnResolvesAgainstStarRocksDataSourceModel() {
+        val model = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
+        val database = model.root.databases.createOrGet("") as GenericDatabase
+        database.isCurrent = true
+        val schema = database.schemas.createOrGet("dws") as GenericSchema
+        val table = schema.tables.createOrGet("sales") as GenericTable
+        val column = table.columns.createOrGet("biz_date")
+        val storeIdColumn = table.columns.createOrGet("store_id")
+        val storesTable = schema.tables.createOrGet("stores") as GenericTable
+        val storesStoreIdColumn = storesTable.columns.createOrGet("store_id")
+
+        val dataSource = LocalDataSource.temporary().also {
+            it.name = "StarRocks test"
+            it.model = model
+            it.introspectionScope = com.intellij.database.util.TreePattern(
+                com.intellij.database.util.TreePatternUtils.create(
+                    null as Array<com.intellij.database.model.ObjectName>?,
+                    ObjectKind.DATABASE,
+                    com.intellij.database.util.TreePatternUtils.create(
+                        null as Array<com.intellij.database.model.ObjectName>?,
+                        ObjectKind.SCHEMA
+                    )
+                )
+            )
+        }
+        val manager = LocalDataSourceManager.getInstance(project)
+        manager.addDataSource(dataSource)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        val dbDataSource = DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
+        assertNotNull(dbDataSource)
+        assertSame("DbPsi data source must expose the test model.", model, dbDataSource?.model)
+        val schemaPsi = dbDataSource?.findElement(schema)
+        val tablePsi = dbDataSource?.findElement(table)
+        val columnPsi = dbDataSource?.findElement(column)
+        val storeIdColumnPsi = dbDataSource?.findElement(storeIdColumn)
+        val storesStoreIdColumnPsi = dbDataSource?.findElement(storesStoreIdColumn)
+        assertNotNull("The test schema must be present in the DbPsi model.", schemaPsi)
+        assertNotNull("The test table must be present in the DbPsi model.", tablePsi)
+        assertNotNull("The test column must be present in the DbPsi model.", columnPsi)
+        assertNotNull("The test store_id column must be present in the DbPsi model.", storeIdColumnPsi)
+
+        VirtualFileDataSourceProvider.EP.point.registerExtension(
+            object : VirtualFileDataSourceProvider() {
+                override fun getDataSource(project: com.intellij.openapi.project.Project, file: VirtualFile): DbDataSource? {
+                    return dbDataSource
+                }
+            },
+            testRootDisposable
+        )
+
+        val file = createPsiFile("SELECT biz_date, s.biz_date FROM dws.sales AS s;")
+        assertTrue(
+            "The integration SQL file must be bound to the StarRocks data source.",
+            SqlDataSourceMappings.getInstance(project).getDataSources(file).contains(dbDataSource)
+        )
+        val tableReference = elementsOfType(file, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertSame("Data-source table must resolve before resolving its columns.", tablePsi, tableReference.resolve())
+        assertSame(
+            "The schema qualifier in a qualified table name must resolve independently.",
+            schemaPsi,
+            (tableReference.qualifierExpression as? SqlReferenceExpression)?.resolve()
+        )
+        val tableType = tableReference.dasType as? com.intellij.sql.psi.SqlTableType
+        assertNotNull("Resolved table reference must expose SqlTableType.", tableType)
+        assertEquals("Resolved table type must contain the introspected columns.", 2, tableType?.columnCount)
+        val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        assertEquals(2, references.size)
+        references.forEach { reference ->
+            assertSame(
+                "Data-source column ${reference.text} must resolve through StarRocks dialect.",
+                columnPsi,
+                reference.resolve()
+            )
+        }
+
+        val showPartitionsFile = createPsiFile("SHOW PARTITIONS FROM dws.sales;")
+        val showPartitionsTable = elementsOfType(showPartitionsFile, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertSame("SHOW PARTITIONS table must resolve.", tablePsi, showPartitionsTable.resolve())
+
+        val showStatusFile = createPsiFile("SHOW TABLE STATUS FROM dws LIKE 'sales';")
+        val showStatusSchema = elementsOfType(showStatusFile, StarRocksElementTypes.SQL_SCHEMA_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertSame("SHOW TABLE STATUS schema must resolve.", schemaPsi, showStatusSchema.resolve())
+
+        val connectedUnnestFile = createPsiFile(
+            "SELECT CAST(unnest AS INT) FROM (SELECT [0, 1] AS date_list) a, UNNEST(date_list);"
+        )
+        assertTrue(
+            "Connected UNNEST SQL must remain bound to the StarRocks data source.",
+            SqlDataSourceMappings.getInstance(project).getDataSources(connectedUnnestFile).contains(dbDataSource)
+        )
+        val connectedUnnest = elementsOfType(connectedUnnestFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.name.equals("unnest", ignoreCase = true) }
+        assertNotNull("UNNEST output must still resolve after a data source is loaded.", connectedUnnest.resolve())
+
+        val swapFile = createPsiFile("ALTER TABLE dws.sales SWAP WITH dws.stores;")
+        val swapTables = elementsOfType(swapFile, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        assertEquals(2, swapTables.size)
+        assertSame(tablePsi, swapTables[0].resolve())
+        assertSame(dbDataSource?.findElement(storesTable), swapTables[1].resolve())
+
+        listOf(
+            "CREATE BITMAP INDEX idx_sales ON dws.sales (biz_date, store_id);",
+            "INSERT INTO dws.sales (biz_date, store_id) SELECT biz_date, store_id FROM dws.sales;",
+            "ANALYZE TABLE dws.sales (biz_date, store_id);",
+            "ANALYZE TABLE dws.sales UPDATE HISTOGRAM ON biz_date, store_id;",
+            "DESCRIBE dws.sales biz_date;",
+            "UPDATE dws.sales SET biz_date = biz_date WHERE store_id = 1;",
+            "DELETE FROM dws.sales WHERE biz_date = '2026-01-01';",
+            "ALTER TABLE dws.sales DROP COLUMN biz_date;"
+        ).forEach { sql ->
+            val statementFile = createPsiFile(sql)
+            val statementErrors = PsiTreeUtil.findChildrenOfType(statementFile, PsiErrorElement::class.java)
+            assertTrue("Object-bearing statement must parse: $sql $statementErrors", statementErrors.isEmpty())
+            val statementColumns = listOf(
+                StarRocksElementTypes.SQL_COLUMN_REFERENCE,
+                StarRocksElementTypes.SQL_COLUMN_SHORT_REFERENCE
+            ).flatMap { type -> elementsOfType(statementFile, type) }
+                .filterIsInstance<SqlReferenceExpression>()
+            assertTrue("Statement must expose column references: $sql", statementColumns.isNotEmpty())
+            statementColumns.forEach { reference ->
+                val expected = when (reference.name) {
+                    "biz_date" -> columnPsi
+                    "store_id" -> storeIdColumnPsi
+                    else -> null
+                }
+                assertSame("Column ${reference.text} must resolve in: $sql", expected, reference.resolve())
+            }
+        }
+
+        val usingFile = createPsiFile(
+            "SELECT s.biz_date FROM dws.sales AS s JOIN dws.stores AS t USING (store_id);"
+        )
+        val usingReference = elementsOfType(usingFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.text == "store_id" }
+        val usingTargets = usingReference.multiResolve(false).mapNotNull { it.element }.toSet()
+        assertTrue(
+            "JOIN USING column must resolve against at least one joined table: $usingTargets",
+            usingTargets.any { it == storeIdColumnPsi || it == storesStoreIdColumnPsi }
+        )
+
+        val derivedFile = createPsiFile(
+            "SELECT x.biz_m FROM (SELECT biz_date AS biz_m FROM dws.sales) AS x;"
+        )
+        val derivedAlias = elementsOfType(derivedFile, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+            .single { it.name == "biz_m" }
+        val derivedColumn = elementsOfType(derivedFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.text == "x.biz_m" }
+        val derivedTableAlias = elementsOfType(derivedFile, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+            .single { it.name == "x" }
+        assertTrue(
+            "A derived-table alias must expose the subquery's SqlTableType.",
+            derivedTableAlias.dasType is com.intellij.sql.psi.SqlTableType
+        )
+        assertSame(
+            "Columns created with SELECT AS must resolve through a derived-table alias.",
+            derivedAlias,
+            derivedColumn.resolve()
+        )
+
+        val cteFile = createPsiFile(
+            "WITH x AS (SELECT biz_date AS biz_m FROM dws.sales) SELECT x.biz_m FROM x;"
+        )
+        val cteAlias = elementsOfType(cteFile, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+            .single { it.name == "biz_m" }
+        val cteColumn = elementsOfType(cteFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.text == "x.biz_m" }
+        assertSame(
+            "Columns created with SELECT AS must resolve through a CTE name.",
+            cteAlias,
+            cteColumn.resolve()
+        )
+
+        val multiCteFile = createPsiFile(
+            "WITH a AS (SELECT biz_date FROM dws.sales), b AS (SELECT store_id FROM dws.stores) SELECT a.biz_date FROM a;"
+        )
+        val unresolvedMultiCteColumns = elementsOfType(multiCteFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.resolve() == null }
+            .map { it.text }
+        assertTrue(
+            "Fields from multiple CTEs must resolve without a JOIN: $unresolvedMultiCteColumns",
+            unresolvedMultiCteColumns.isEmpty()
+        )
+
+        val directFullJoinFile = createPsiFile(
+            "SELECT s.biz_date, t.store_id FROM dws.sales AS s FULL JOIN dws.stores AS t ON s.store_id = t.store_id;"
+        )
+        val unresolvedDirectFullJoinColumns = elementsOfType(directFullJoinFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.resolve() == null }
+            .map { it.text }
+        assertTrue(
+            "Fields from physical tables in a FULL JOIN must resolve: $unresolvedDirectFullJoinColumns",
+            unresolvedDirectFullJoinColumns.isEmpty()
+        )
+
+        val fullJoinFile = createPsiFile(
+            """
+                WITH sales_cte AS (
+                    SELECT biz_date, store_id FROM dws.sales
+                ), stores_cte AS (
+                    SELECT store_id FROM dws.stores
+                )
+                SELECT s.biz_date, t.store_id
+                FROM sales_cte AS s
+                FULL JOIN stores_cte AS t ON s.store_id = t.store_id;
+            """.trimIndent()
+        )
+        val unresolvedFullJoinColumns = elementsOfType(fullJoinFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.resolve() == null }
+            .map { it.text }
+        assertTrue(
+            "Every field exposed by CTEs in a FULL JOIN must resolve: $unresolvedFullJoinColumns\n${psiSummary(fullJoinFile)}",
+            unresolvedFullJoinColumns.isEmpty()
+        )
+    }
+
+    fun testPlatformColumnDefinitionRenameUpdatesIdentifier() {
+        val file = createPsiFile("CREATE TABLE rename_probe (old_name BIGINT);")
+        val columns = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_DEFINITION)
+            .filterIsInstance<SqlColumnDefinition>()
+        assertEquals(psiSummary(file), 1, columns.size)
+        val column = columns.single()
+        val nameElement = requireNotNull(column.nameElement) {
+            "Platform column definitions must expose their identifier as a SqlNameElement."
+        }
+
         WriteCommandAction.runWriteCommandAction(project) {
-            alias.setName("new_name")
+            nameElement.setName("new_name")
         }
 
         assertTrue(file.text.contains("new_name"))
         assertFalse(file.text.contains("old_name"))
+    }
+
+    fun testExternalEtlProjectHasNoSyntaxErrors() {
+        val rootPath = System.getenv("STARROCKS_ETL_ROOT") ?: return
+        val root = File(rootPath)
+        assertTrue("ETL project root does not exist: ${root.absolutePath}", root.isDirectory)
+        val failures = mutableListOf<String>()
+        val sqlFiles = root.walkTopDown()
+            .filter { it.isFile && it.extension.equals("sql", ignoreCase = true) }
+            .filterNot { sqlFile ->
+                val sql = sqlFile.readText()
+                sql.lineSequence().take(20).any { line ->
+                    line.contains("-- type SERVERLESS_SPARK", ignoreCase = true)
+                } || (
+                    Regex("(?i)\\bFROM\\s+HD[0-9]+\\.").containsMatchIn(sql) &&
+                        Regex("(?i)\\bTO_DATE\\s*\\(").containsMatchIn(sql)
+                    )
+            }
+            .sortedBy { it.relativeTo(root).invariantSeparatorsPath }
+            .toList()
+        assertTrue("No SQL files found under ${root.absolutePath}", sqlFiles.isNotEmpty())
+
+        sqlFiles.forEach { sqlFile ->
+            val sql = sqlFile.readText()
+            val file = PsiFileFactory.getInstance(project)
+                .createFileFromText(sqlFile.name, StarRocksDialect.INSTANCE, sql)
+            PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+                .take(10)
+                .forEach { error ->
+                    val line = sql.substring(0, error.textOffset.coerceAtMost(sql.length)).count { it == '\n' } + 1
+                    val snippetStart = (error.textOffset - 40).coerceAtLeast(0)
+                    val snippetEnd = (error.textOffset + 80).coerceAtMost(sql.length)
+                    val snippet = sql.substring(snippetStart, snippetEnd).replace(Regex("\\s+"), " ")
+                    failures += "${sqlFile.relativeTo(root).invariantSeparatorsPath}:$line: ${error.errorDescription} near `$snippet`"
+                }
+            elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+                .filter { it.text.startsWith("@") }
+                .forEach { reference ->
+                    failures += "${sqlFile.relativeTo(root).invariantSeparatorsPath}: " +
+                        "SET/user variable was incorrectly parsed as a column reference: `${reference.text}`"
+                }
+        }
+
+        assertTrue(
+            "ETL PSI scan found ${failures.size} syntax errors in ${sqlFiles.size} SQL files:\n" +
+                failures.take(300).joinToString("\n"),
+            failures.isEmpty()
+        )
     }
 
     fun testPlatformFormatterCanReformatStarRocksPsi() {
@@ -438,6 +1002,114 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
         assertTrue("Reformatted StarRocks PSI must remain parseable: $errors", errors.isEmpty())
         assertTrue(file.text.contains("SELECT", ignoreCase = true))
+    }
+
+    fun testSetAndExpressionVariablesAreNotColumnReferences() {
+        val file = createPsiFile(
+            "SET @start_date = '2026-01-01'; SELECT @start_date, date_sub(@start_date, 1);"
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("StarRocks variables must parse without errors: $errors", errors.isEmpty())
+        assertTrue(
+            "@ variables must never be exposed as column references.",
+            elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE).none { it.text.startsWith("@") }
+        )
+        val variables = elementsOfType(file, StarRocksElementTypes.STARROCKS_VARIABLE_REFERENCE)
+        assertEquals(3, variables.size)
+        assertTrue(variables.all { it !is SqlReferenceExpression })
+    }
+
+    fun testUnnestColumnAliasResolvesThroughTableProcedureExpression() {
+        val file = createPsiFile(
+            """
+                SELECT t.point_val, point_val
+                FROM source_data AS s
+                CROSS JOIN LATERAL UNNEST(split(s.sell_points, ',')) AS t(point_val);
+            """.trimIndent()
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("LATERAL UNNEST with a column alias must parse: $errors", errors.isEmpty())
+        assertEquals(
+            1,
+            elementsOfType(file, StarRocksElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION).size
+        )
+        val aliases = elementsOfType(file, StarRocksElementTypes.STARROCKS_COLUMN_ALIAS_DEFINITION)
+            .filterIsInstance<com.intellij.sql.psi.SqlColumnAliasDefinition>()
+        assertEquals(psiSummary(file), 1, aliases.size)
+        val alias = aliases.single()
+        assertEquals(psiSummary(file), "point_val", alias.name)
+        val outputReferences = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.name == "point_val" }
+        assertEquals(2, outputReferences.size)
+        outputReferences.forEach { reference ->
+            assertSame("UNNEST output ${reference.text} must resolve to its column alias.", alias, reference.resolve())
+        }
+    }
+
+    fun testUnnestDefaultOutputColumnResolves() {
+        val file = createPsiFile(
+            """
+                SELECT unnest, get_json_string(unnest, '$.id')
+                FROM source_data AS s
+                CROSS JOIN LATERAL UNNEST(s.data);
+            """.trimIndent()
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("LATERAL UNNEST with its default output name must parse: $errors", errors.isEmpty())
+        val tableExpression = elementsOfType(file, StarRocksElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION).single()
+        assertTrue(psiSummary(file), tableExpression is com.intellij.sql.psi.SqlExplicitTableExpression)
+        val functionCall = PsiTreeUtil.findChildOfType(tableExpression, SqlFunctionCallExpression::class.java)!!
+        val functionDefinition = functionCall.functionDefinition
+        assertNotNull("UNNEST must be resolved through the builtin function catalog.", functionDefinition)
+        assertTrue(
+            functionDefinition!!.prototypes.any { prototype ->
+                prototype.toString().contains("table", ignoreCase = true)
+            }
+        )
+        val tableType = (tableExpression as com.intellij.sql.psi.SqlExpression).dasType
+            as com.intellij.database.types.DasTableType
+        assertEquals(1, tableType.columnCount)
+        assertTrue(tableType.getColumnName(0).equals("unnest", ignoreCase = true))
+        val outputReferences = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.name.equals("unnest", ignoreCase = true) }
+        assertEquals(2, outputReferences.size)
+        outputReferences.forEach { reference ->
+            assertNotNull(
+                "The default UNNEST output ${reference.text} must resolve through the table expression.",
+                reference.resolve()
+            )
+        }
+    }
+
+    fun testCommaUnnestCanReferencePreviousDerivedTableAndExposeDefaultColumn() {
+        val file = createPsiFile(
+            """
+                SELECT CAST(unnest AS INT) AS biz_hour
+                FROM (
+                    SELECT [0, 1, 2, 3] AS date_list
+                ) a, UNNEST(date_list);
+            """.trimIndent()
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Implicit lateral comma UNNEST must parse: $errors\n${psiSummary(file)}", errors.isEmpty())
+        val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        val dateList = references.single { it.name == "date_list" }
+        val unnest = references.single { it.name.equals("unnest", ignoreCase = true) }
+        val arrayLiteral = elementsOfType(file, StarRocksElementTypes.SQL_ARRAY_LITERAL).single()
+        assertTrue("Array literal must use the platform literal PSI.\n${psiSummary(file)}", arrayLiteral is SqlLiteralExpression)
+        assertTrue(
+            "Array literal must expose a DasArrayType, but was ${(arrayLiteral as SqlExpression).dasType}.\n${psiSummary(file)}",
+            arrayLiteral.dasType is DasArrayType
+        )
+        assertNotNull("UNNEST argument must resolve to the preceding derived-table output.\n${psiSummary(file)}", dateList.resolve())
+        assertTrue(
+            "Resolved derived-table output must preserve the array type, but was ${dateList.dasType}.\n${psiSummary(file)}",
+            dateList.dasType is DasArrayType
+        )
+        assertNotNull("Default UNNEST output must resolve in the SELECT list.\n${psiSummary(file)}", unnest.resolve())
     }
 
     private fun assertParsesWithoutPsiErrors(sql: String, fileName: String = "query.sql") {
@@ -480,6 +1152,11 @@ class StarRocksParsingTest : BasePlatformTestCase() {
     private fun elementsOfType(root: PsiElement, elementType: Any): List<PsiElement> {
         return PsiTreeUtil.collectElements(root) { it.node?.elementType == elementType }.toList()
     }
+
+    private fun psiSummary(root: PsiElement): String = PsiTreeUtil.collectElements(root) { true }
+        .joinToString("\n") { element ->
+            "${element.node?.elementType}: ${element.javaClass.name} `${element.text.take(80)}`"
+        }
 
     private fun scenarioFixtureFiles(): List<File> {
         val testDataDir = File(System.getProperty("user.dir"), "src/testData/sql")

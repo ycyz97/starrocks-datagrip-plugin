@@ -6,14 +6,14 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.CompositeElement
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.dialects.base.SqlElementFactory
-import com.intellij.sql.dialects.base.SqlElementFactoryBase
-import com.intellij.sql.dialects.sql92.Sql92ParserDefinition
 import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlTokenType
 import com.intellij.sql.psi.impl.SqlAlterStatementImpl
 import com.intellij.sql.psi.impl.SqlAlterTableStatementImpl
 import com.intellij.sql.psi.impl.SqlCommitStatementImpl
 import com.intellij.sql.psi.impl.SqlCompositeElementImpl
+import com.intellij.sql.psi.impl.SqlColumnDefinitionImpl
+import com.intellij.sql.psi.impl.SqlColumnAliasListImpl
 import com.intellij.sql.psi.impl.SqlCreateCatalogStatementImpl
 import com.intellij.sql.psi.impl.SqlCreateIndexStatementImpl
 import com.intellij.sql.psi.impl.SqlCreateSchemaStatementImpl
@@ -21,11 +21,15 @@ import com.intellij.sql.psi.impl.SqlCreateTableStatementImpl
 import com.intellij.sql.psi.impl.SqlCreateViewStatementImpl
 import com.intellij.sql.psi.impl.SqlDeleteStatementImpl
 import com.intellij.sql.psi.impl.SqlExplainStatementImpl
+import com.intellij.sql.psi.impl.SqlExpressionListImpl
 import com.intellij.sql.psi.impl.SqlFromClauseImpl
+import com.intellij.sql.psi.impl.SqlFunctionCallExpressionImpl
+import com.intellij.sql.psi.impl.SqlFunctionCallTableExpressionImpl
 import com.intellij.sql.psi.impl.SqlGrantStatementImpl
 import com.intellij.sql.psi.impl.SqlInsertStatementImpl
 import com.intellij.sql.psi.impl.SqlJoinConditionClauseImpl
 import com.intellij.sql.psi.impl.SqlJoinExpressionImpl
+import com.intellij.sql.psi.impl.SqlLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlMergeStatementImpl
 import com.intellij.sql.psi.impl.SqlRevokeStatementImpl
 import com.intellij.sql.psi.impl.SqlRollbackStatementImpl
@@ -39,13 +43,14 @@ import com.intellij.sql.psi.impl.SqlUsingClauseImpl
 import com.intellij.sql.util.SqlTokenRegistry
 
 class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
-    private val platformElementFactory: SqlElementFactoryBase = Sql92ParserDefinition().elementFactory
-
     override fun getStaticInfo(): Info = INFO
 
     override fun createElementNode(type: IElementType): CompositeElement {
-        if (type is StarRocksNamedStubElementType) {
-            return StarRocksNamedStubCompositeElement(type)
+        if (type == StarRocksElementTypes.STARROCKS_COLUMN_ALIAS_DEFINITION) {
+            return StarRocksColumnAliasDefinition(type)
+        }
+        if (type == SqlCompositeElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION) {
+            return SqlFunctionCallTableExpressionImpl(type)
         }
         if (type in StarRocksPlatformElementSets.registeredStarRocksTypes) {
             return super.createElementNode(type) ?: CompositeElement(type)
@@ -59,34 +64,15 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
         if (type in StarRocksPlatformElementSets.statementTypes) {
             return SqlStatementImpl(type)
         }
-        if (type == StarRocksElementTypes.QUALIFIED_COLUMN_PREFIX) {
-            return StarRocksQualifiedColumnPrefixElement(type)
-        }
-        if (type == StarRocksElementTypes.COLUMN_REFERENCE_NAME) {
-            return StarRocksColumnReferenceNameElement(type)
-        }
-        if (type == StarRocksElementTypes.WINDOW_REFERENCE_NAME) {
-            return StarRocksWindowReferenceNameElement(type)
-        }
         if (type is StarRocksElementType) {
             return SqlCompositeElementImpl(type)
         }
-        return platformElementFactory.createElementNode(type) ?: SqlCompositeElementImpl(type)
+        // getDefaultRegistrations(INFO) is the complete platform SQL PSI baseline.
+        // Only genuinely StarRocks-specific nodes fall back to a generic composite.
+        return super.createElementNode(type) ?: SqlCompositeElementImpl(type)
     }
 
     override fun createCompositeElement(node: ASTNode): PsiElement {
-        if (node.elementType is StarRocksNamedStubElementType) {
-            return StarRocksNamedStubElement(node)
-        }
-        if (node.elementType == StarRocksElementTypes.QUALIFIED_COLUMN_PREFIX && node is PsiElement) {
-            return node
-        }
-        if (node.elementType == StarRocksElementTypes.COLUMN_REFERENCE_NAME && node is PsiElement) {
-            return node
-        }
-        if (node.elementType == StarRocksElementTypes.WINDOW_REFERENCE_NAME && node is PsiElement) {
-            return node
-        }
         if (node.elementType in StarRocksPlatformElementSets.registeredStarRocksTypes) {
             return (node as? PsiElement) ?: super.createCompositeElement(node)
         }
@@ -102,7 +88,7 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
         if (node.elementType in StarRocksPlatformElementSets.statementTypes) {
             return (node as? PsiElement) ?: super.createCompositeElement(node)
         }
-        return platformElementFactory.createCompositeElement(node) ?: ASTWrapperPsiElement(node)
+        return super.createCompositeElement(node)
     }
 
     companion object {
@@ -123,6 +109,36 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
                 info,
                 SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT,
                 SqlCreateTableStatementImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_COLUMN_DEFINITION,
+                SqlColumnDefinitionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST,
+                SqlColumnAliasListImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION,
+                SqlFunctionCallTableExpressionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_FUNCTION_CALL,
+                SqlFunctionCallExpressionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_EXPRESSION_LIST,
+                SqlExpressionListImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_ARRAY_LITERAL,
+                SqlLiteralExpressionImpl::class.java
             )
             registerImplementation(
                 info,
@@ -281,6 +297,5 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
             )
             }
         }
-
     }
 }

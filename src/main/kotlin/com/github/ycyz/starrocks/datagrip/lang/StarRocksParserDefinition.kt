@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.sql.dialects.base.SqlElementFactoryBase
 import com.intellij.sql.dialects.base.SqlParserDefinitionBase
-import com.intellij.sql.psi.stubs.SqlFileElementType
 
 class StarRocksParserDefinition : SqlParserDefinitionBase() {
     override fun createElementFactory(): SqlElementFactoryBase = StarRocksElementFactory()
@@ -19,6 +18,7 @@ class StarRocksParserDefinition : SqlParserDefinitionBase() {
     override fun getFileNodeType(): IFileElementType = STARROCKS_SQL_FILE
 
     companion object {
-        val STARROCKS_SQL_FILE: IFileElementType = SqlFileElementType("STARROCKS_SQL_FILE", StarRocksDialect.INSTANCE)
+        val STARROCKS_SQL_FILE: IFileElementType =
+            IFileElementType("STARROCKS_SQL_FILE", StarRocksDialect.INSTANCE)
     }
 }

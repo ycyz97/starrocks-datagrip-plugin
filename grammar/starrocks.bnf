@@ -5,13 +5,10 @@
   tokenTypeClass="com.intellij.sql.psi.SqlTokens"
   tokenTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.token"
   elementTypeFactory(".*")="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-  psiClassPrefix="StarRocks"
-  psiImplClassSuffix="Impl"
-  psiPackage="com.github.ycyz.starrocks.datagrip.lang.psi"
-  psiImplPackage="com.github.ycyz.starrocks.datagrip.lang.psi.impl"
+  generatePsi=false
 }
 
-script ::= statement (statement_separator statement)* statement_separator? <<eof>>
+script ::= statement? (statement_separator statement?)* <<eof>>
 private statement_separator ::= ";"
 
 statement ::= dml_statement | ddl_statement | other_statement {
@@ -75,10 +72,11 @@ create_table_clause ::= key_model_clause
 
 private clause_recover ::= !(";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "REFRESH" | "PROPERTIES" | "ORDER" | "FROM" | "AS")
 
-engine_clause ::= "ENGINE" "="? identifier_reference {
+engine_clause ::= "ENGINE" "="? engine_name {
   pin=1
   recoverWhile=clause_recover
 }
+private engine_name ::= "OLAP" | identifier_reference
 
 key_model_clause ::= key_model "KEY" key_column_list {
   pin=2
@@ -90,7 +88,7 @@ partition_clause ::= "PARTITION" "BY" partition_expression partition_definition_
   pin=2
   recoverWhile=clause_recover
 }
-partition_expression ::= function_call | parenthesized_value_expression | identifier_reference
+partition_expression ::= function_call | parenthesized_value_expression | column_reference
 partition_definition_list ::= "(" (partition_definition ("," partition_definition)* | range_partition_bounds) ")"
 partition_definition ::= "PARTITION" identifier_reference "VALUES" "IN" parenthesized_value_expression
 private range_partition_bounds ::= "START" parenthesized_value_expression "END" parenthesized_value_expression "EVERY" "(" interval_expression ")"
@@ -99,7 +97,7 @@ distribution_clause ::= "DISTRIBUTED" "BY" distribution_expression buckets_claus
   pin=2
   recoverWhile=clause_recover
 }
-distribution_expression ::= "HASH" parenthesized_identifier_list | "RANDOM" | function_call
+distribution_expression ::= "HASH" "(" column_reference ("," column_reference)* ")" | "RANDOM" | function_call
 
 buckets_clause ::= "BUCKETS" numeric_literal {
   pin=1
@@ -193,7 +191,7 @@ private principal_type ::= "USER" | "ROLE"
 principal_tail ::= identified_by_clause | default_role_clause | properties_clause | set_principal_comment_clause
 identified_by_clause ::= "IDENTIFIED" "BY" value_expression
 default_role_clause ::= "DEFAULT" "ROLE" security_principal_list
-private set_principal_comment_clause ::= "SET" <<parsePrincipalComment>>
+private set_principal_comment_clause ::= "SET" "COMMENT" string_literal
 
 create_schema_statement ::= "CREATE" ("DATABASE" | "SCHEMA") if_not_exists? schema_reference properties_clause? comment_clause? {
   elementType="SQL_CREATE_SCHEMA_STATEMENT"
@@ -202,7 +200,7 @@ create_schema_statement ::= "CREATE" ("DATABASE" | "SCHEMA") if_not_exists? sche
   recoverWhile=statement_recover
 }
 
-create_index_statement ::= "CREATE" "BITMAP"? "INDEX" index_reference "ON" table_reference parenthesized_identifier_list ("USING" "BITMAP")? properties_clause? comment_clause? {
+create_index_statement ::= "CREATE" "BITMAP"? "INDEX" index_reference index_on_target_clause ("USING" "BITMAP")? properties_clause? comment_clause? {
   elementType="SQL_CREATE_INDEX_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=3
@@ -233,11 +231,12 @@ alter_table_statement ::= "ALTER" "TABLE" if_exists? table_reference alter_table
   pin=2
   recoverWhile=statement_recover
 }
-alter_table_action ::= add_column_action | modify_column_action | drop_column_action | rename_action | set_properties_action
+alter_table_action ::= add_column_action | modify_column_action | drop_column_action | rename_action | swap_table_action | set_properties_action
 add_column_action ::= "ADD" "COLUMN"? column_definition
 modify_column_action ::= ("MODIFY" | "CHANGE" | "ALTER") "COLUMN"? column_definition
-drop_column_action ::= "DROP" "COLUMN"? identifier_reference
+drop_column_action ::= "DROP" "COLUMN"? column_reference
 rename_action ::= "RENAME" ("TO" identifier_reference)?
+swap_table_action ::= "SWAP" "WITH" table_reference
 set_properties_action ::= "SET" properties_clause
 
 alter_view_statement ::= "ALTER" "VIEW" view_reference as_select_clause {
@@ -371,6 +370,22 @@ refresh_materialized_view_statement ::= "REFRESH" "MATERIALIZED" "VIEW" material
   pin=3
   recoverWhile=statement_recover
 }
+index_on_target_clause ::= "ON" index_table_columns_list {
+  elementType="SQL_ON_TARGET_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+index_table_columns_list ::= table_reference "(" index_column_reference_list ")" {
+  elementType="SQL_TABLE_COLUMNS_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+index_column_reference_list ::= column_short_reference ("," column_short_reference)* {
+  elementType="SQL_REFERENCE_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+column_short_reference ::= identifier {
+  elementType="SQL_COLUMN_SHORT_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 private refresh_partition_clause ::= "PARTITION" (parenthesized_value_expression | "START" parenthesized_value_expression "END" parenthesized_value_expression)
 
 grant_statement ::= "GRANT" privilege_list "ON" privilege_target "TO" security_principal_list with_grant_option_clause? {
@@ -402,7 +417,8 @@ select_statement ::= query_expression {
   recoverWhile=statement_recover
 }
 
-query_expression ::= query_body {
+private query_expression ::= with_query_expression_guarded | plain_query_expression
+plain_query_expression ::= set_query_expression_guarded | values_expression_guarded {
   elementType="SQL_QUERY_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
@@ -410,14 +426,15 @@ query_expression ::= query_body {
 }
 private repository_location_clause ::= "ON" "LOCATION" string_literal
 private alter_schema_action ::= set_properties_action | "SET" "DATA" "QUOTA" numeric_literal identifier_reference?
-private embedded_query_expression ::= query_body
-private query_body ::= set_query_expression_guarded | with_query_expression_guarded | values_expression_guarded
+private embedded_query_expression ::= query_expression
 private query_recover ::= !(";" | "," | ")" | "SELECT" | "WITH" | "VALUES" | "UPDATE" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS" | "ROWS" | "RANGE" | "GROUPS")
 private set_query_expression_guarded ::= &"SELECT" set_query_expression
 private with_query_expression_guarded ::= &"WITH" with_query_expression
 private values_expression_guarded ::= &"VALUES" values_expression
 
-with_query_expression ::= with_clause (set_query_expression_guarded | values_expression_guarded) {
+with_query_expression ::= with_clause plain_query_expression {
+  elementType="SQL_WITH_QUERY_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=query_recover
 }
@@ -427,23 +444,19 @@ with_clause ::= "WITH" "RECURSIVE"? named_query_definition ("," named_query_defi
   pin=1
   recoverWhile=query_recover
 }
-named_query_definition ::= identifier_reference cte_column_list? "AS" parenthesized_query_expression {
+named_query_definition ::= identifier_reference column_alias_list? "AS" "(" query_expression ")" {
   elementType="SQL_NAMED_QUERY_DEFINITION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=3
   recoverWhile=query_recover
 }
-cte_column_list ::= "(" cte_column_name ("," cte_column_name)* ","? ")"
-cte_column_name ::= identifier_reference {
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
-parenthesized_query_expression ::= "(" query_body ")" {
+parenthesized_query_expression ::= "(" query_expression ")" {
   elementType="SQL_PARENTHESIZED_QUERY_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
 }
 
-set_query_expression ::= simple_query_expression set_operation_clause* {
+private set_query_expression ::= simple_query_expression set_operation_clause* {
   pin=2
   recoverWhile=query_recover
 }
@@ -453,9 +466,13 @@ set_operation_clause ::= set_operator simple_query_expression {
 }
 set_operator ::= ("UNION" "ALL"?) | "INTERSECT" | "EXCEPT" | "MINUS"
 
-simple_query_expression ::= select_clause from_clause_guarded? where_clause_guarded? group_by_clause_guarded? having_clause_guarded? qualify_clause_guarded? window_clause_guarded? order_by_clause_guarded? limit_clause_guarded? {
+private simple_query_expression ::= select_clause query_table_expression? order_by_clause_guarded? limit_clause_guarded? {
   pin=1
   recoverWhile=query_recover
+}
+query_table_expression ::= from_clause_guarded? where_clause_guarded? group_by_clause_guarded? having_clause_guarded? qualify_clause_guarded? window_clause_guarded? {
+  elementType="SQL_TABLE_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 private from_clause_guarded ::= &"FROM" from_clause
 private where_clause_guarded ::= &"WHERE" where_clause
@@ -473,67 +490,75 @@ select_clause ::= "SELECT" select_modifier* select_item ("," select_item)* {
 }
 private select_modifier ::= "ALL" | "DISTINCT"
 private select_recover ::= !(";" | ")" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
-select_item ::= select_all | value_expression select_alias_clause?
+private select_item ::= select_all | select_as_expression | value_expression
 select_all ::= qualified_identifier "." "*" | "*"
-private select_alias_clause ::= "AS" select_alias | !select_alias_boundary select_alias
-private select_alias_boundary ::= "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS"
-select_alias ::= identifier_reference | string_literal {
-  elementType="SELECT_ALIAS"
+select_as_expression ::= value_expression select_alias_clause {
+  elementType="SQL_AS_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
+private select_alias_clause ::= "AS" (identifier_reference | string_literal) | !select_alias_boundary (identifier_reference | string_literal)
+private select_alias_boundary ::= "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS"
 
-from_clause ::= "FROM" table_expression ("," table_expression)* {
+from_clause ::= "FROM" table_source {
   elementType="SQL_FROM_CLAUSE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=from_recover
 }
 private from_recover ::= !(";" | "," | ")" | "JOIN" | "STRAIGHT_JOIN" | "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS" | "NATURAL" | "SEMI" | "ANTI" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
-table_expression ::= table_factor join_expression_guarded* {
-  elementType="SQL_TABLE_EXPRESSION"
+private table_source ::= &joined_table_start join_expression | table_factor
+private joined_table_start ::= table_factor &join_expression_tail_start
+private table_factor ::= table_as_expression | table_factor_base
+table_as_expression ::= table_factor_base table_alias_clause {
+  elementType="SQL_AS_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private table_factor ::= lateral_table_factor
-  | table_function_call table_alias_clause?
-  | table_reference table_alias_clause?
+private table_factor_base ::= lateral_table_factor
+  | table_function_call
+  | table_reference
   | derived_query_table
   | parenthesized_join_table
-private lateral_table_factor ::= "LATERAL" table_function_call table_alias_clause?
-private derived_query_table ::= &parenthesized_query_start parenthesized_query_expression table_alias_clause?
+private lateral_table_factor ::= "LATERAL" table_function_call
+private derived_query_table ::= &parenthesized_query_start parenthesized_query_expression
 private parenthesized_query_start ::= "(" ("SELECT" | "WITH" | "VALUES")
-private parenthesized_join_table ::= &parenthesized_join_start parenthesized_join_expression table_alias_clause?
+private parenthesized_join_table ::= &parenthesized_join_start parenthesized_join_expression
 private parenthesized_join_start ::= "(" !("SELECT" | "WITH" | "VALUES")
-private join_expression_guarded ::= &join_operator_start join_expression
+private join_expression_tail_guarded ::= &join_expression_tail_start join_expression_tail
+private join_expression_tail_start ::= join_operator_start | ","
 private join_operator_start ::= "JOIN" | "STRAIGHT_JOIN" | "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS" | "NATURAL" | "SEMI" | "ANTI"
-parenthesized_join_expression ::= "(" table_expression ")" {
+parenthesized_join_expression ::= "(" table_source ")" {
   elementType="SQL_PARENTHESIZED_JOIN_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-join_expression ::= join_operator table_factor join_condition_clause? {
+join_expression ::= table_factor join_expression_tail_guarded+ {
   elementType="SQL_JOIN_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-  pin=1
+  pin=2
   recoverWhile=from_recover
 }
-join_operator ::= ("INNER" | "LEFT" ("OUTER" | "SEMI" | "ANTI")? | "RIGHT" ("OUTER" | "SEMI" | "ANTI")? | "FULL" "OUTER"? | "CROSS" | "NATURAL" | "SEMI" | "ANTI")? ("JOIN" | "STRAIGHT_JOIN")
+private join_expression_tail ::= join_operator table_factor join_condition_clause? | "," table_factor
+private join_operator ::= ("INNER" | "LEFT" ("OUTER" | "SEMI" | "ANTI")? | "RIGHT" ("OUTER" | "SEMI" | "ANTI")? | "FULL" "OUTER"? | "CROSS" | "NATURAL" | "SEMI" | "ANTI")? ("JOIN" | "STRAIGHT_JOIN")
 join_condition_clause ::= "ON" value_expression | using_clause {
   elementType="SQL_JOIN_CONDITION_CLAUSE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-using_clause ::= "USING" parenthesized_identifier_list {
+using_clause ::= "USING" "(" column_reference ("," column_reference)* ")" {
   elementType="SQL_USING_CLAUSE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private table_alias_clause ::= "AS"? table_alias table_alias_column_list?
-table_alias ::= identifier_reference {
-  elementType="TABLE_ALIAS"
+private table_alias_clause ::= "AS"? identifier_reference column_alias_list?
+column_alias_list ::= "(" column_alias_definition ("," column_alias_definition)* ","? ")" {
+  elementType="SQL_COLUMN_ALIAS_LIST"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-table_alias_column_list ::= "(" table_alias_column_name ("," table_alias_column_name)* ","? ")"
-table_alias_column_name ::= identifier_reference {
+column_alias_definition ::= identifier_reference {
+  elementType="STARROCKS_COLUMN_ALIAS_DEFINITION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-table_function_call ::= "UNNEST" "(" value_expression ")"
+table_function_call ::= function_call {
+  elementType="SQL_TABLE_PROCEDURE_CALL_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 
 where_clause ::= "WHERE" value_expression {
   elementType="SQL_WHERE_CLAUSE"
@@ -568,8 +593,8 @@ window_clause ::= "WINDOW" window_definition ("," window_definition)* {
   pin=1
   recoverWhile=query_recover
 }
-window_definition ::= window_name "AS" "(" window_specification ")"
-window_name ::= identifier_reference {
+window_definition ::= window_reference "AS" "(" window_specification ")" {
+  elementType="SQL_GENERIC_DEFINITION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 window_specification ::= partition_by_clause? order_by_clause? frame_clause?
@@ -603,22 +628,38 @@ values_clause ::= "VALUES" values_row ("," values_row)* {
 }
 values_row ::= "(" value_expression ("," value_expression)* ")"
 
-insert_statement ::= "INSERT" ("INTO" | "OVERWRITE") "TABLE"? table_reference insert_partition_clause? insert_column_list? (embedded_query_expression | values_clause) {
+insert_statement ::= "INSERT" insert_dml_instruction {
   elementType="SQL_INSERT_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
 }
+insert_dml_instruction ::= ("INTO" | "OVERWRITE") "TABLE"? insert_table_columns_list (embedded_query_expression | values_clause) {
+  elementType="SQL_INSERT_DML_INSTRUCTION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+insert_table_columns_list ::= table_reference insert_partition_clause? insert_reference_list? {
+  elementType="SQL_TABLE_COLUMNS_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 private insert_partition_clause ::= "PARTITION" "(" insert_partition_item ("," insert_partition_item)* ")"
 private insert_partition_item ::= identifier_reference ("=" value_expression)?
-private insert_column_list ::= parenthesized_identifier_list
-update_statement ::= "UPDATE" dml_target_table set_clause from_clause? where_clause? {
+insert_reference_list ::= "(" column_reference ("," column_reference)* ")" {
+  elementType="SQL_REFERENCE_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+private insert_column_list ::= insert_reference_list
+update_statement ::= "UPDATE" update_dml_instruction {
   elementType="SQL_UPDATE_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
-delete_statement ::= "DELETE" "FROM"? dml_target_table where_clause? {
+update_dml_instruction ::= dml_target_table set_clause from_clause? where_clause? {
+  elementType="SQL_UPDATE_DML_INSTRUCTION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+delete_statement ::= "DELETE" delete_dml_instruction {
   elementType="SQL_DELETE_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
@@ -630,7 +671,7 @@ merge_statement ::= "MERGE" "INTO" dml_target_table merge_using_clause merge_on_
   pin=2
   recoverWhile=statement_recover
 }
-dml_target_table ::= table_reference table_alias_clause?
+private dml_target_table ::= table_reference table_alias_clause?
 set_clause ::= "SET" set_assignment ("," set_assignment)* {
   elementType="SQL_SET_CLAUSE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -638,8 +679,11 @@ set_clause ::= "SET" set_assignment ("," set_assignment)* {
   recoverWhile=set_clause_recover
 }
 private set_clause_recover ::= !(";" | "FROM" | "WHERE" | "WHEN")
-set_assignment ::= column_reference "=" value_expression
-merge_using_clause ::= "USING" table_expression
+set_assignment ::= column_reference "=" value_expression {
+  elementType="SQL_SET_ASSIGNMENT"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+merge_using_clause ::= "USING" table_source
 merge_on_clause ::= "ON" value_expression
 merge_when_clause ::= "WHEN" ("MATCHED" | "NOT" "MATCHED") ("THEN" ("UPDATE" set_clause | "DELETE" | "INSERT" insert_column_list? values_clause))
 
@@ -666,13 +710,25 @@ private set_password_guarded ::= &("SET" "PASSWORD") set_password_statement
 private cancel_load_guarded ::= &("CANCEL" "LOAD") cancel_load_statement
 private export_guarded ::= &(("EXPORT" "TABLE") | ("CANCEL" "EXPORT")) export_statement
 
-show_statement ::= "SHOW" show_target show_from_clause? {
+show_statement ::= "SHOW" (show_partitions_clause | show_table_status_clause | show_create_clause | show_schema_scoped_clause | show_generic_clause) {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
-show_target ::= "DATABASES" | "SCHEMAS" | "TABLES" | "PARTITIONS" | "VARIABLES" | "ROLES" | "USERS" | "FUNCTIONS" | "GRANTS" | "CATALOGS" | "RESOURCES" | "MATERIALIZED" "VIEWS" | "ANALYZE" "STATUS" | "STATS" "META" | "BACKUP" | "RESTORE" | "CREATE" show_create_target | "PROC" value_expression?
-show_from_clause ::= ("FROM" | "IN") qualified_identifier
+delete_dml_instruction ::= "FROM"? dml_target_table where_clause? {
+  elementType="SQL_DELETE_DML_INSTRUCTION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+private show_partitions_clause ::= "PARTITIONS" ("FROM" | "IN") table_reference show_like_clause?
+private show_table_status_clause ::= "TABLE" "STATUS" show_schema_from_clause? show_like_clause?
+private show_create_clause ::= "CREATE" show_create_target
+private show_schema_scoped_clause ::= show_schema_scoped_target show_schema_from_clause? show_like_clause?
+private show_schema_scoped_target ::= "TABLES" | "FUNCTIONS" | "MATERIALIZED" "VIEWS"
+private show_schema_from_clause ::= ("FROM" | "IN") schema_reference
+private show_generic_clause ::= show_generic_target show_from_clause? show_like_clause?
+private show_generic_target ::= "DATABASES" | "SCHEMAS" | "VARIABLES" | "ROLES" | "USERS" | "GRANTS" | "CATALOGS" | "RESOURCES" | "ANALYZE" "STATUS" | "STATS" "META" | "BACKUP" | "RESTORE" | "PROC" value_expression?
+private show_from_clause ::= ("FROM" | "IN") qualified_identifier
+private show_like_clause ::= "LIKE" string_literal
 show_create_target ::= ("TABLE" table_reference) | ("VIEW" view_reference) | ("MATERIALIZED" "VIEW" materialized_view_reference) | ("CATALOG" catalog_reference)
 
 admin_statement ::= "ADMIN" "SHOW" ("FRONTEND" | "FRONTENDS" | "BACKEND" | "BACKENDS" | "BROKER" | "BROKERS") ("CONFIG" | "STATUS")? {
@@ -681,16 +737,23 @@ admin_statement ::= "ADMIN" "SHOW" ("FRONTEND" | "FRONTENDS" | "BACKEND" | "BACK
   recoverWhile=statement_recover
 }
 
-analyze_statement ::= "ANALYZE" ("FULL" | "SAMPLE")? analyze_target analyze_histogram_clause? properties_clause? {
+analyze_statement ::= "ANALYZE" ("FULL" | "SAMPLE")? analyze_target properties_clause? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
-analyze_target ::= "TABLE" table_reference analyze_column_list?
-analyze_column_list ::= parenthesized_identifier_list
+analyze_target ::= "TABLE" analyze_table_columns_list
+analyze_table_columns_list ::= table_reference analyze_reference_list? analyze_histogram_clause? {
+  elementType="SQL_TABLE_COLUMNS_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+analyze_reference_list ::= "(" column_reference ("," column_reference)* ")" {
+  elementType="SQL_REFERENCE_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 analyze_histogram_clause ::= "UPDATE" "HISTOGRAM" "ON" column_reference ("," column_reference)*
 
-set_statement ::= "SET" ("SESSION" | "GLOBAL" | "LOCAL")? set_assignment ("," set_assignment)* {
+set_statement ::= "SET" ("SESSION" | "GLOBAL" | "LOCAL")? set_variable_assignment ("," set_variable_assignment)* {
   elementType="SQL_SET_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
@@ -750,12 +813,17 @@ explain_statement ::= "EXPLAIN" ("ANALYZE" | "VERBOSE" | "LOGICAL" | "COSTS")* q
   pin=1
   recoverWhile=statement_recover
 }
-describe_statement ::= ("DESC" | "DESCRIBE") "TABLE"? describe_target column_reference? {
+describe_statement ::= ("DESC" | "DESCRIBE") "TABLE"? describe_target column_short_reference? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
 describe_target ::= table_reference {
+  elementType="SQL_ON_TARGET_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+set_variable_assignment ::= (variable_reference | identifier_reference) "=" value_expression {
+  elementType="SQL_SET_ASSIGNMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 load_statement ::= "LOAD" "LABEL" qualified_identifier "(" load_payload ")" ("WITH" "BROKER")? properties_clause? {
@@ -787,18 +855,22 @@ backup_restore_statement ::= ("BACKUP" | "RESTORE") "SNAPSHOT" qualified_identif
   recoverWhile=statement_recover
 }
 
-value_expression ::= or_expression
-private expression_recover ::= !("," | ")" | ";" | "." | "[" | "+" | "-" | "*" | "/" | "%" | "||" | "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<=>" | "AND" | "OR" | "BETWEEN" | "NOT" | "IN" | "IS" | "LIKE" | "REGEXP" | "RLIKE" | "OVER" | "AS" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS" | "JOIN" | "STRAIGHT_JOIN" | "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS" | "NATURAL" | "SEMI" | "ANTI" | "WHEN" | "THEN" | "ELSE" | "END" | "SEPARATOR" | "ASC" | "DESC" | "NULLS" | "ROWS" | "RANGE" | "GROUPS" | "PRECEDING" | "FOLLOWING" | "MICROSECOND" | "MILLISECOND" | "SECOND" | "SECONDS" | "MINUTE" | "MINUTES" | "HOUR" | "HOURS" | "DAY" | "DAYS" | "WEEK" | "MONTH" | "QUARTER" | "YEAR" | SQL_IDENT | SQL_IDENT_DELIMITED | SQL_STRING_TOKEN)
-or_expression ::= and_expression ("OR" and_expression)*
-and_expression ::= not_expression ("AND" not_expression)*
-not_expression ::= "NOT"? comparison_expression
-comparison_expression ::= additive_expression (comparison_operator additive_expression | "BETWEEN" additive_expression "AND" additive_expression | "NOT" "BETWEEN" additive_expression "AND" additive_expression | "NOT" ("LIKE" | "REGEXP" | "RLIKE") additive_expression | "NOT" "IN" in_list_or_subquery | "IN" in_list_or_subquery)*
+private value_expression ::= or_expression
+private expression_recover ::= !("," | ")" | ";" | "." | "[" | "+" | "-" | "*" | "/" | "%" | "||" | "|" | "&" | "<<" | ">>" | "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<=>" | "AND" | "OR" | "BETWEEN" | "NOT" | "IN" | "IS" | "LIKE" | "REGEXP" | "RLIKE" | "OVER" | "AS" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS" | "JOIN" | "STRAIGHT_JOIN" | "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS" | "NATURAL" | "SEMI" | "ANTI" | "WHEN" | "THEN" | "ELSE" | "END" | "SEPARATOR" | "ASC" | "DESC" | "NULLS" | "ROWS" | "RANGE" | "GROUPS" | "PRECEDING" | "FOLLOWING" | "MICROSECOND" | "MILLISECOND" | "SECOND" | "SECONDS" | "MINUTE" | "MINUTES" | "HOUR" | "HOURS" | "DAY" | "DAYS" | "WEEK" | "MONTH" | "QUARTER" | "YEAR" | SQL_IDENT | SQL_IDENT_DELIMITED | SQL_STRING_TOKEN)
+private or_expression ::= and_expression ("OR" and_expression)*
+private and_expression ::= not_expression ("AND" not_expression)*
+private not_expression ::= "NOT"? comparison_expression
+private comparison_expression ::= bitwise_expression (comparison_operator bitwise_expression | "BETWEEN" bitwise_expression "AND" bitwise_expression | "NOT" "BETWEEN" bitwise_expression "AND" bitwise_expression | "NOT" ("LIKE" | "REGEXP" | "RLIKE") bitwise_expression | "NOT" "IN" in_list_or_subquery | "IN" in_list_or_subquery)*
 private comparison_operator ::= "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<=>" | "LIKE" | "REGEXP" | "RLIKE" | "IS" "NOT"?
-additive_expression ::= multiplicative_expression (("+" | "-" | "||") multiplicative_expression)*
-multiplicative_expression ::= unary_expression (("*" | "/" | "%" | "DIV" | "MOD") unary_expression)*
-unary_expression ::= ("+" | "-" | "!" | "~" | "BINARY")* postfix_expression
-postfix_expression ::= (cast_expression_guarded | case_expression_guarded | exists_expression_guarded | interval_expression_guarded | scalar_subquery_guarded | array_literal | function_call | literal | parenthesized_value_expression | column_reference | typed_literal_expression) analytic_clause_guarded? array_access_tail* field_access_tail*
-array_literal ::= "[" (value_expression ("," value_expression)*)? "]"
+private bitwise_expression ::= additive_expression (("|" | "&" | "<<" | ">>") additive_expression)*
+private additive_expression ::= multiplicative_expression (("+" | "-" | "||") multiplicative_expression)*
+private multiplicative_expression ::= unary_expression (("*" | "/" | "%" | "DIV" | "MOD") unary_expression)*
+private unary_expression ::= ("+" | "-" | "!" | "~" | "BINARY")* postfix_expression
+private postfix_expression ::= (cast_expression_guarded | case_expression_guarded | exists_expression_guarded | interval_expression_guarded | scalar_subquery_guarded | array_literal | function_call | literal | parenthesized_value_expression | variable_reference | column_reference | typed_literal_expression) function_null_treatment_clause? analytic_clause_guarded? array_access_tail* field_access_tail*
+array_literal ::= "[" (value_expression ("," value_expression)*)? "]" {
+  elementType="SQL_ARRAY_LITERAL"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 array_access_tail ::= "[" value_expression "]"
 field_access_tail ::= "." identifier_reference
 private cast_expression_guarded ::= &"CAST" cast_expression
@@ -824,9 +896,15 @@ function_call ::= function_name ("." function_name)* "(" function_argument_list?
     elementType="SQL_FUNCTION_CALL"
     elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   }
-function_name ::= identifier_reference | function_keyword
+function_name ::= identifier_reference | function_keyword {
+  elementType="SQL_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 function_keyword ::= <<parseFunctionKeyword>>
-function_argument_list ::= ("DISTINCT" | "ALL")? value_expression ("," value_expression)* function_order_by_clause? function_null_treatment_clause? function_separator_clause? | "*"
+function_argument_list ::= ("DISTINCT" | "ALL")? value_expression ("," value_expression)* function_order_by_clause? function_null_treatment_clause? function_separator_clause? | "*" {
+  elementType="SQL_EXPRESSION_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 private function_order_by_clause ::= "ORDER" "BY" ordering_item ("," ordering_item)*
 private function_null_treatment_clause ::= ("IGNORE" | "RESPECT") "NULLS"
 private function_separator_clause ::= "SEPARATOR" string_literal
@@ -834,10 +912,11 @@ parenthesized_value_expression ::= "(" value_expression ("," value_expression)* 
 in_list_or_subquery ::= "(" (in_subquery_guarded | value_expression ("," value_expression)*)? ")"
 private in_subquery_guarded ::= &("SELECT" | "WITH" | "VALUES") query_expression
 private analytic_clause_guarded ::= &"OVER" analytic_clause
-analytic_clause ::= "OVER" (window_reference_name | "(" window_specification ")") {
+analytic_clause ::= "OVER" (window_reference | "(" window_specification ")") {
   pin=1
 }
-window_reference_name ::= identifier_reference {
+window_reference ::= identifier_reference {
+  elementType="SQL_WINDOW_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 
@@ -868,53 +947,75 @@ table_column_list ::= "(" table_column_item ("," table_column_item)* ","? ")" {
 }
 private table_column_recover ::= !(")" | "," | ";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "PROPERTIES" | "ORDER" | "AS")
 table_column_item ::= column_definition | table_constraint
-column_definition ::= column_name type_element column_attribute* {
+column_definition ::= identifier_reference type_element column_attribute* {
   elementType="SQL_COLUMN_DEFINITION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 column_attribute ::= "NOT" "NULL" | "NULL" | "DEFAULT" value_expression | "COMMENT" string_literal | key_model "KEY" | "AUTO_INCREMENT"
 table_constraint ::= ("PRIMARY" | "UNIQUE" | "DUPLICATE" | "AGGREGATE") "KEY" key_column_list
 key_column_list ::= "(" key_column ("," key_column)* ","? ")"
-key_column ::= identifier_reference {
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
+private key_column ::= column_reference
 
 parenthesized_identifier_list ::= "(" identifier_reference ("," identifier_reference)* ","? ")"
-qualified_identifier ::= identifier_reference ("." identifier_reference)*
-identifier_reference ::= identifier | delimited_identifier | quoted_identifier
-column_reference ::= qualified_column_prefix? column_reference_name
-qualified_column_prefix ::= identifier_reference "." (identifier_reference ".")* {
+private qualified_identifier ::= identifier_reference ("." identifier_reference)*
+identifier_reference ::= identifier | delimited_identifier | quoted_identifier {
+  elementType="SQL_IDENTIFIER"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-column_reference_name ::= identifier_reference | "COMMENT" {
+column_reference ::= (qualified_column_prefix ".")? column_reference_name {
+  elementType="SQL_COLUMN_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-column_name ::= identifier_reference {
+qualified_column_prefix ::= identifier_reference "." identifier_reference &"." | identifier_reference &"." {
+  elementType="SQL_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
+private column_reference_name ::= identifier_reference | "COMMENT"
 table_reference ::= table_reference_name {
   elementType="SQL_TABLE_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-table_reference_name ::= qualified_identifier {
+private table_reference_name ::= (table_reference_prefix ".")? identifier_reference
+table_reference_prefix ::= identifier_reference "." identifier_reference &"." | identifier_reference &"." {
+  elementType="SQL_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-view_reference ::= qualified_identifier
-materialized_view_reference ::= qualified_identifier
-schema_reference ::= qualified_identifier
-catalog_reference ::= qualified_identifier
+view_reference ::= qualified_identifier {
+  elementType="SQL_VIEW_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+materialized_view_reference ::= qualified_identifier {
+  elementType="SQL_MATERIALIZED_VIEW_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+schema_reference ::= qualified_identifier {
+  elementType="SQL_SCHEMA_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+catalog_reference ::= qualified_identifier {
+  elementType="SQL_CATALOG_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 resource_reference ::= qualified_identifier
-index_reference ::= qualified_identifier
+index_reference ::= qualified_identifier {
+  elementType="SQL_INDEX_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 
 literal ::= string_literal | numeric_literal | parameter_literal | keyword_literal
 string_literal ::= SQL_STRING_TOKEN
 numeric_literal ::= SQL_INTEGER_TOKEN | SQL_FLOAT_TOKEN | leading_dot_numeric_literal
 private leading_dot_numeric_literal ::= "." SQL_INTEGER_TOKEN
 parameter_literal ::= <<parseParameter>>
+variable_reference ::= <<parseVariable>> {
+  elementType="STARROCKS_VARIABLE_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 keyword_literal ::= "TRUE" | "FALSE" | "NULL" | "CURRENT_DATE" | "CURRENT_TIME" | "CURRENT_TIMESTAMP" | "LOCALTIME" | "LOCALTIMESTAMP"
 typed_literal_prefix ::= "DATE" | "DATETIME" | "TIME" | "TIMESTAMP"
 interval_unit ::= "MICROSECOND" | "MILLISECOND" | "SECOND" | "SECONDS" | "MINUTE" | "MINUTES" | "HOUR" | "HOURS" | "DAY" | "DAYS" | "WEEK" | "MONTH" | "QUARTER" | "YEAR"
 
-identifier ::= SQL_IDENT | <<parseOptionalKeyword>>
-delimited_identifier ::= SQL_IDENT_DELIMITED
-quoted_identifier ::= SQL_STRING_TOKEN
+private identifier ::= SQL_IDENT | <<parseOptionalKeyword>> | identifier_keyword
+private identifier_keyword ::= "LABEL" | "LOCATION" | "VALUE"
+private delimited_identifier ::= SQL_IDENT_DELIMITED
+private quoted_identifier ::= SQL_STRING_TOKEN

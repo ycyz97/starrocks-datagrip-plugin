@@ -82,8 +82,6 @@ object StarRocksStatementElementSets {
         StarRocksElementTypes.SQL_MERGE_STATEMENT,
         StarRocksElementTypes.SQL_QUERY_EXPRESSION,
         StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION,
-        StarRocksElementTypes.WITH_QUERY_EXPRESSION,
-        StarRocksElementTypes.SET_QUERY_EXPRESSION,
-        StarRocksElementTypes.SIMPLE_QUERY_EXPRESSION
+        StarRocksElementTypes.SQL_WITH_QUERY_EXPRESSION
     )
 }

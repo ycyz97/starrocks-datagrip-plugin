@@ -9,7 +9,6 @@ import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingProfile
 import com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighter
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksColumnNameIndex
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksFeature
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
@@ -18,11 +17,8 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksGrammarMilestone
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightingLexer
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksLexer
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElement
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksNamedStubElementType
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParser
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokens
 import com.github.ycyz.starrocks.datagrip.resolve.StarRocksLocalSqlContextAnalyzer
 import com.intellij.database.model.ObjectKind
@@ -46,11 +42,14 @@ import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_SEMICOLON
 import com.intellij.sql.psi.SqlUsingClause
 import com.intellij.sql.util.SqlTokenRegistry
+import com.intellij.ui.scale.JBUIScale
 import java.io.File
 
 object StarRocksScenarioValidator {
     @JvmStatic
     fun main(args: Array<String>) {
+        JBUIScale.setSystemScaleFactor(1.0f)
+        JBUIScale.setUserScaleFactorForTest(1.0f)
         val projectDir = args.firstOrNull()?.let(::File) ?: File(".")
         val testDataDir = projectDir.resolve("src/testData/sql")
         val manifest = loadManifest(testDataDir.resolve("scenarios.properties"))
@@ -69,13 +68,14 @@ object StarRocksScenarioValidator {
         validateLocalDdlReference(testDataDir.resolve("dml/insert-local-ddl.sql").readText())
         validateComplexTypes(testDataDir.resolve("types/complex-types.sql").readText())
         validateFunctionCatalog()
-        validateCompletionCatalog()
+        validateSupplementaryCompletionCatalog()
         validateLexerKeywordTokens()
         validateSyntaxHighlighterColors()
         validateDialectTokens()
         validateGeneratedGrammarSkeleton(projectDir)
         validateFormattingProfile()
         validateElementFactory()
+        validateEditorArchitecture(projectDir)
         validateDatabaseIntegration(projectDir)
         validateLegacyTextAnalyzersAreTestOnly(projectDir)
         validateDmlMutationFixtureCoverage(testDataDir.resolve("dml/mutations.sql").readText())
@@ -228,14 +228,9 @@ object StarRocksScenarioValidator {
         }
     }
 
-    private fun validateCompletionCatalog() {
-        listOf("ARRAY_JOIN", "BITMAP_COUNT", "JSON_LENGTH", "WINDOW_FUNNEL").forEach { function ->
-            check(function in StarRocksCompletionCatalog.FUNCTIONS) {
-                "Completion catalog should include official builtin function $function."
-            }
-        }
-        check(StarRocksCompletionCatalog.FUNCTIONS.size >= StarRocksFunctionCatalog.BUILTIN_FUNCTION_NAMES.size) {
-            "Completion catalog should expose the full builtin function name set."
+    private fun validateSupplementaryCompletionCatalog() {
+        check(StarRocksCompletionCatalog.PROPERTIES.isNotEmpty() && StarRocksCompletionCatalog.SNIPPETS.isNotEmpty()) {
+            "Supplementary completion should retain only StarRocks-specific properties and snippets."
         }
     }
 
@@ -435,13 +430,13 @@ object StarRocksScenarioValidator {
         val levelClass = Int::class.javaPrimitiveType!!
         listOf(
             StarRocksGeneratedParser::class.java.getDeclaredMethod("script", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("statement", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("query_expression", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("value_expression", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("type_element", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("cast_type", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("table_column_list", builderClass, levelClass),
-            StarRocksGeneratedParser::class.java.getMethod("analytic_clause", builderClass, levelClass)
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("statement", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("query_expression", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("value_expression", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("type_element", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("cast_type", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("table_column_list", builderClass, levelClass),
+            StarRocksGeneratedParser::class.java.getDeclaredMethod("analytic_clause", builderClass, levelClass)
         ).forEach { method ->
             check(method.returnType == Boolean::class.javaPrimitiveType) {
                 "Generated grammar entry method ${method.name} must return boolean like JetBrains generated parsers."
@@ -559,7 +554,7 @@ object StarRocksScenarioValidator {
             "table_column_list",
             "analytic_clause"
         ).forEach { rule ->
-            check(Regex("""(?m)^$rule\s*::=""").containsMatchIn(bnfSource)) {
+            check(Regex("""(?m)^(?:private\s+)?$rule\s*::=""").containsMatchIn(bnfSource)) {
                 "Grammar-Kit grammar must define required entry rule $rule."
             }
         }
@@ -664,9 +659,10 @@ object StarRocksScenarioValidator {
             "Generated StarRocks JOIN conditions must use a platform formatter block."
         }
         listOf(
-            StarRocksElementTypes.DML_TARGET_TABLE,
+            StarRocksElementTypes.SQL_UPDATE_DML_INSTRUCTION,
+            StarRocksElementTypes.SQL_DELETE_DML_INSTRUCTION,
             StarRocksElementTypes.SQL_SET_CLAUSE,
-            StarRocksElementTypes.SET_ASSIGNMENT,
+            StarRocksElementTypes.SQL_SET_ASSIGNMENT,
             StarRocksElementTypes.MERGE_USING_CLAUSE,
             StarRocksElementTypes.MERGE_ON_CLAUSE,
             StarRocksElementTypes.MERGE_WHEN_CLAUSE
@@ -690,15 +686,14 @@ object StarRocksScenarioValidator {
         }
         listOf(
             StarRocksElementTypes.ANALYZE_TARGET,
-            StarRocksElementTypes.ANALYZE_COLUMN_LIST,
             StarRocksElementTypes.ANALYZE_HISTOGRAM_CLAUSE
         ).forEach { type ->
             check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
                 "Generated StarRocks ANALYZE clause $type must have a platform formatter block."
             }
         }
-        check(StarRocksElementTypes.DESCRIBE_TARGET in StarRocksFormatterHelper().basicBlockCreation.keys) {
-            "Generated StarRocks DESCRIBE target must have a platform formatter block."
+        check(StarRocksElementTypes.SQL_ON_TARGET_CLAUSE in StarRocksFormatterHelper().basicBlockCreation.keys) {
+            "Platform-backed StarRocks target clauses must have a formatter block."
         }
         check(StarRocksElementTypes.USE_TARGET in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks USE target must have a platform formatter block."
@@ -712,34 +707,33 @@ object StarRocksScenarioValidator {
         val factory = StarRocksElementFactory()
         listOf(
             StarRocksElementTypes.SQL_SELECT_CLAUSE,
-            StarRocksElementTypes.SELECT_ITEM,
             StarRocksElementTypes.SQL_WITH_CLAUSE,
             StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION,
-            StarRocksElementTypes.CTE_COLUMN_LIST,
+            StarRocksElementTypes.SQL_COLUMN_ALIAS_LIST,
             StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION,
             StarRocksElementTypes.SQL_WHERE_CLAUSE,
             StarRocksElementTypes.SQL_GROUP_BY_CLAUSE,
             StarRocksElementTypes.GROUPING_ITEM,
             StarRocksElementTypes.SQL_HAVING_CLAUSE,
-            StarRocksElementTypes.COMPARISON_EXPRESSION,
             StarRocksElementTypes.SQL_ORDER_BY_CLAUSE,
             StarRocksElementTypes.ORDERING_ITEM,
             StarRocksElementTypes.SQL_LIMIT_CLAUSE,
             StarRocksElementTypes.LIMIT_EXPRESSION,
             StarRocksElementTypes.SQL_VALUES_EXPRESSION,
             StarRocksElementTypes.VALUES_ROW,
-            StarRocksElementTypes.DML_TARGET_TABLE,
+            StarRocksElementTypes.SQL_UPDATE_DML_INSTRUCTION,
+            StarRocksElementTypes.SQL_DELETE_DML_INSTRUCTION,
             StarRocksElementTypes.SQL_SET_CLAUSE,
-            StarRocksElementTypes.SET_ASSIGNMENT,
+            StarRocksElementTypes.SQL_SET_ASSIGNMENT,
             StarRocksElementTypes.MERGE_USING_CLAUSE,
             StarRocksElementTypes.MERGE_ON_CLAUSE,
             StarRocksElementTypes.MERGE_WHEN_CLAUSE,
             StarRocksElementTypes.ANALYZE_TARGET,
-            StarRocksElementTypes.ANALYZE_COLUMN_LIST,
             StarRocksElementTypes.ANALYZE_HISTOGRAM_CLAUSE,
-            StarRocksElementTypes.DESCRIBE_TARGET,
+            StarRocksElementTypes.SQL_ON_TARGET_CLAUSE,
             StarRocksElementTypes.USE_TARGET,
             StarRocksElementTypes.SQL_TABLE_EXPRESSION,
+            StarRocksElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION,
             SqlCompositeElementTypes.SQL_TABLE_REFERENCE,
             StarRocksElementTypes.SET_OPERATION_CLAUSE,
             StarRocksElementTypes.SET_OPERATOR,
@@ -748,14 +742,13 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE,
             StarRocksElementTypes.SQL_USING_CLAUSE,
             StarRocksElementTypes.SQL_WINDOW_CLAUSE,
-            StarRocksElementTypes.WINDOW_DEFINITION,
-            StarRocksElementTypes.WINDOW_NAME,
-            StarRocksElementTypes.TABLE_ALIAS,
-            StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME,
-            StarRocksElementTypes.SELECT_ALIAS,
-            StarRocksElementTypes.COLUMN_NAME,
+            StarRocksElementTypes.SQL_GENERIC_DEFINITION,
+            StarRocksElementTypes.SQL_WINDOW_REFERENCE,
+            StarRocksElementTypes.SQL_AS_EXPRESSION,
+            StarRocksElementTypes.STARROCKS_COLUMN_ALIAS_DEFINITION,
+            StarRocksElementTypes.SQL_IDENTIFIER,
+            StarRocksElementTypes.SQL_COLUMN_DEFINITION,
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
-            StarRocksElementTypes.KEY_COLUMN,
             StarRocksElementTypes.COMMENT_CLAUSE,
             StarRocksElementTypes.PARTITION_CLAUSE,
             StarRocksElementTypes.PARTITION_EXPRESSION,
@@ -871,45 +864,6 @@ object StarRocksScenarioValidator {
         check(StarRocksStatementElementSets.STATEMENT_TYPES.none { it.toString() in legacyStatementNames }) {
             "Statement scope detection must not depend on legacy lightweight parser statement nodes."
         }
-        listOf(
-            "COLUMN_NAME" to StarRocksElementTypes.COLUMN_NAME,
-            "CTE_COLUMN_NAME" to StarRocksElementTypes.CTE_COLUMN_NAME,
-            "TABLE_ALIAS" to StarRocksElementTypes.TABLE_ALIAS,
-            "TABLE_ALIAS_COLUMN_NAME" to StarRocksElementTypes.TABLE_ALIAS_COLUMN_NAME,
-            "SELECT_ALIAS" to StarRocksElementTypes.SELECT_ALIAS,
-            "WINDOW_NAME" to StarRocksElementTypes.WINDOW_NAME
-        ).forEach { (name, type) ->
-            check(type is StarRocksNamedStubElementType) {
-                "StarRocks $name must be a registered stub element type."
-            }
-            check(type.externalId == "sql.STARROCKS_$name") {
-                "StarRocks $name stub external id is unstable."
-            }
-        }
-        listOf(
-            StarRocksStubElementTypes.STARROCKS_COLUMN_NAME,
-            StarRocksStubElementTypes.STARROCKS_CTE_COLUMN_NAME,
-            StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS,
-            StarRocksStubElementTypes.STARROCKS_TABLE_ALIAS_COLUMN_NAME,
-            StarRocksStubElementTypes.STARROCKS_SELECT_ALIAS,
-            StarRocksStubElementTypes.STARROCKS_WINDOW_NAME
-        ).forEach { type ->
-            check(type.externalId.startsWith("sql.STARROCKS_")) {
-                "StarRocks stub holder exposed an unstable external id: ${type.externalId}"
-            }
-        }
-        check(StarRocksNamedStubElementType::class.java.declaredFields.none { it.name == "externalName" }) {
-            "StarRocks stub external ids must not depend on subclass constructor fields during IStubElementType initialization."
-        }
-        check(StarRocksColumnNameIndex.INDEX_NAME == "starrocks.column.name") {
-            "StarRocks column name stub index id is unstable."
-        }
-        check(StarRocksNamedStubElement.normalizeName("`dws`.`sample_orders`") == "dws.sample_orders") {
-            "StarRocks named stubs must normalize qualified backtick identifiers."
-        }
-        check(StarRocksNamedStubElement.normalizeName("`order``id`") == "order`id") {
-            "StarRocks named stubs must unescape backtick identifiers."
-        }
         check(StarRocksDialect.INSTANCE.isOperatorSupported(null)) {
             "StarRocks dialect must tolerate the nullable operator token passed by the platform SqlParser."
         }
@@ -951,12 +905,75 @@ object StarRocksScenarioValidator {
             "<jdbcSourceLoader dbms=\"STARROCKS\"",
             "<jdbcMetadataWrapper dbms=\"STARROCKS\"",
             "<sql.dialectCodeStyleProvider implementation=\"com.github.ycyz.starrocks.datagrip.format.StarRocksCodeStyleProvider\"",
-            "<lang.formatter language=\"StarRocks\" implementationClass=\"com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingModelBuilder\"",
-            "<sql.formatterHelper language=\"StarRocks\" implementationClass=\"com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper\"",
-            "<stubElementTypeHolder class=\"com.github.ycyz.starrocks.datagrip.lang.StarRocksStubElementTypes\" externalIdPrefix=\"sql.\"",
-            "<stubIndex implementation=\"com.github.ycyz.starrocks.datagrip.lang.StarRocksColumnNameIndex\""
+            "<sql.formatterHelper language=\"StarRocks\" implementationClass=\"com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper\""
         ).forEach { marker ->
             check(marker in pluginXml) { "plugin.xml is missing database integration marker $marker." }
+        }
+        check("<lang.formatter language=\"StarRocks\"" !in pluginXml) {
+            "StarRocks must use the platform SQL formatting model instead of a private formatter builder."
+        }
+        check("<stubElementTypeHolder" !in pluginXml && "<stubIndex" !in pluginXml) {
+            "StarRocks must not register private named-stub infrastructure or an unused global SQL name index."
+        }
+    }
+
+    private fun validateEditorArchitecture(projectDir: File) {
+        val elementRegistry = projectDir.resolve(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksElementTypeRegistry.kt"
+        ).readText()
+        check("getField(" !in elementRegistry && "SqlCompositeElementTypes.SQL_COLUMN_REFERENCE" in elementRegistry) {
+            "StarRocks platform PSI mappings must be explicit and must not use reflective fallback."
+        }
+
+        val grammar = projectDir.resolve("grammar/starrocks.bnf").readText()
+        check("elementType=\"SQL_COLUMN_REFERENCE\"" in grammar && "elementType=\"SQL_WINDOW_REFERENCE\"" in grammar) {
+            "Column and window references must use platform SQL PSI reference element types."
+        }
+        check(Regex("column_definition\\s*::=.*elementType=\\\"SQL_COLUMN_DEFINITION\\\"", RegexOption.DOT_MATCHES_ALL).containsMatchIn(grammar)) {
+            "Column definitions must use platform SQL_COLUMN_DEFINITION PSI directly."
+        }
+
+        val productionSources = projectDir.resolve("src/main").walkTopDown()
+            .filter { it.isFile && it.extension in setOf("java", "kt", "xml") }
+            .joinToString("\n") { it.readText() }
+        check("StarRocksNamedStub" !in productionSources && "StarRocksStubElementTypes" !in productionSources) {
+            "Private StarRocks named-stub infrastructure must be removed from production sources."
+        }
+        check("SqlFileElementType" !in productionSources) {
+            "The parser definition must use stable IFileElementType API; SqlFileElementType is absent in DataGrip 2026.1."
+        }
+
+        val contributor = projectDir.resolve(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/completion/StarRocksCompletionContributor.kt"
+        ).readText()
+        listOf("addTableCompletions", "addColumnCompletions", "addKeywordCompletions", "addTypeCompletions", "addFunctionCompletions")
+            .forEach { legacyPath ->
+                check(legacyPath !in contributor) {
+                    "Platform SQL completion must own $legacyPath instead of the supplementary contributor."
+                }
+            }
+
+        val functionsXml = projectDir.resolve(
+            "src/main/resources/com/github/ycyz/starrocks/datagrip/dialect/functions.xml"
+        ).readText()
+        check(Regex("<function>").findAll(functionsXml).count() >= 450) {
+            "The platform function catalog must contain the StarRocks server function set."
+        }
+        check(
+            Regex(
+                "<name>UNNEST</name>\\s*<prototype>\\(a:array\\.\\.\\.\\):table\\(\\.\\.\\.args\\)</prototype>"
+            ).containsMatchIn(functionsXml)
+        ) {
+            "UNNEST must remain a table-valued builtin so connected data-source resolution keeps its output column."
+        }
+
+        val keywordCatalog = projectDir.resolve("grammar/starrocks-keywords.txt").readText()
+        check("[reserved]" in keywordCatalog && "[optional]" in keywordCatalog) {
+            "StarRocks keywords must come from the standalone canonical keyword catalog."
+        }
+        val buildScript = projectDir.resolve("build.gradle.kts").readText()
+        check("grammar/starrocks-keywords.txt" in buildScript && "StarRocksKeywordCatalog.kt" !in buildScript) {
+            "Gradle must generate keyword registries from the standalone catalog, not parse Kotlin source text."
         }
     }
 
@@ -964,7 +981,11 @@ object StarRocksScenarioValidator {
         listOf(
             "src/main/kotlin/com/github/ycyz/starrocks/datagrip/resolve/StarRocksLocalSqlContext.kt",
             "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksStatementWordsClassifier.kt",
-            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksStatementFamily.kt"
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksStatementFamily.kt",
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/resolve/StarRocksPsiScope.kt",
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/resolve/StarRocksColumnReference.kt",
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/resolve/StarRocksTableAliasReference.kt",
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/resolve/StarRocksWindowReference.kt"
         ).forEach { path ->
             check(!projectDir.resolve(path).exists()) {
                 "Legacy text analyzer/classifier must not stay in production sources: $path"

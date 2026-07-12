@@ -1,19 +1,6 @@
 package com.github.ycyz.starrocks.datagrip.completion
 
-import com.github.ycyz.starrocks.datagrip.database.StarRocksDataType
-import com.github.ycyz.starrocks.datagrip.dialect.StarRocksFunctionCatalog
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksKeywordCatalog
-
 object StarRocksCompletionCatalog {
-    val KEYWORDS: List<String> = StarRocksKeywordCatalog.KEYWORDS.sorted()
-
-    val DATA_TYPES: List<String> = StarRocksDataType.entries
-        .map { it.sqlName }
-        .sorted()
-
-    val FUNCTIONS: List<String> = StarRocksFunctionCatalog.BUILTIN_FUNCTION_NAMES
-        .sorted()
-
     val PROPERTIES: List<String> = listOf(
         "aws.s3.region",
         "aws.s3.use_instance_profile",
