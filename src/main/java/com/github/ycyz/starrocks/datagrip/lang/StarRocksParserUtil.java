@@ -2,7 +2,6 @@ package com.github.ycyz.starrocks.datagrip.lang;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.sql.dialects.base.SqlGeneratedParserUtil;
-import com.intellij.sql.psi.SqlCompositeElementTypes;
 import com.intellij.sql.psi.SqlTokens;
 
 import java.util.regex.Pattern;
@@ -15,10 +14,6 @@ public class StarRocksParserUtil extends SqlGeneratedParserUtil {
         "INTERSECT", "JOIN", "LIMIT", "ON", "ORDER", "OVER", "QUALIFY", "SELECT",
         "THEN", "UNION", "WHEN", "WHERE", "WINDOW", "WITH"
     );
-
-    public static boolean parseTableReference(PsiBuilder builder, int level) {
-        return parseReference(builder, level, SqlCompositeElementTypes.SQL_TABLE_REFERENCE);
-    }
 
     public static boolean parseFunctionKeyword(PsiBuilder builder, int level) {
         if (builder.getTokenType() == null || builder.getTokenType() == SqlTokens.SQL_IDENT ||
@@ -40,7 +35,7 @@ public class StarRocksParserUtil extends SqlGeneratedParserUtil {
 
     public static boolean parseOptionalKeyword(PsiBuilder builder, int level) {
         String text = builder.getTokenText();
-        if (text == null || !StarRocksKeywordCatalog.INSTANCE.isOptionalKeyword(text)) {
+        if (text == null || !StarRocksKeywordCatalog.isOptionalKeyword(text)) {
             return false;
         }
         builder.advanceLexer();
@@ -49,21 +44,20 @@ public class StarRocksParserUtil extends SqlGeneratedParserUtil {
 
     public static boolean parseParameter(PsiBuilder builder, int level) {
         String text = builder.getTokenText();
-        if (text == null) {
-            return false;
-        }
-        if (text.equals("${") || text.equals("$[")) {
+        // SqlParser's adapted builder may split an otherwise single JFlex template token
+        // into an opening marker, its body, and a closing marker.
+        if (text != null && (text.equals("${") || text.equals("$["))) {
             String closing = text.equals("${") ? "}" : "]";
             builder.advanceLexer();
             while (builder.getTokenType() != null && !closing.equals(builder.getTokenText())) {
                 builder.advanceLexer();
             }
-            if (builder.getTokenType() != null) {
+            if (closing.equals(builder.getTokenText())) {
                 builder.advanceLexer();
             }
             return true;
         }
-        if (!(text.equals("?") || text.startsWith(":") ||
+        if (text == null || !(text.equals("?") || text.startsWith(":") ||
             (text.startsWith("${") && text.endsWith("}")) ||
             (text.startsWith("$[") && text.endsWith("]")))) {
             return false;
@@ -72,45 +66,23 @@ public class StarRocksParserUtil extends SqlGeneratedParserUtil {
         return true;
     }
 
-    public static boolean isWithUpdate(PsiBuilder builder, int level) {
-        if (!"WITH".equalsIgnoreCase(builder.getTokenText())) {
+    public static boolean parseVariable(PsiBuilder builder, int level) {
+        String text = builder.getTokenText();
+        if (text == null || !text.startsWith("@")) {
             return false;
         }
-        int depth = 0;
-        for (int index = 1; ; index++) {
-            Object tokenType = builder.lookAhead(index);
-            if (tokenType == null) {
-                return false;
-            }
-            if (tokenType == StarRocksElementTypes.SQL_LEFT_PAREN) {
-                depth++;
-                continue;
-            }
-            if (tokenType == StarRocksElementTypes.SQL_RIGHT_PAREN) {
-                depth--;
-                continue;
-            }
-            if (depth == 0) {
-                if (tokenType == StarRocksElementTypes.UPDATE) {
-                    return true;
-                }
-                if (tokenType == StarRocksElementTypes.SELECT || tokenType == StarRocksElementTypes.VALUES ||
-                    tokenType == StarRocksElementTypes.SQL_SEMICOLON) {
-                    return false;
-                }
-            }
+        builder.advanceLexer();
+        if ((text.equals("@") || text.equals("@@")) && builder.getTokenType() == SqlTokens.SQL_IDENT) {
+            builder.advanceLexer();
         }
+        return true;
     }
 
-    public static boolean parsePrincipalComment(PsiBuilder builder, int level) {
-        if (!"COMMENT".equalsIgnoreCase(builder.getTokenText())) {
-            return false;
-        }
-        builder.advanceLexer();
-        if (builder.getTokenType() != SqlTokens.SQL_STRING_TOKEN) {
-            return false;
-        }
-        builder.advanceLexer();
-        return true;
+    public static boolean isWithUpdate(PsiBuilder builder, int level) {
+        PsiBuilder.Marker marker = builder.mark();
+        boolean result = StarRocksGeneratedParser.with_clause(builder, level + 1) &&
+            StarRocksGeneratedParser.update_statement(builder, level + 1);
+        marker.rollbackTo();
+        return result;
     }
 }

@@ -20,6 +20,7 @@ internal object StarRocksPlatformElementSets {
             StarRocksElementTypes.SQL_JOIN_EXPRESSION,
             StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE,
             StarRocksElementTypes.SQL_USING_CLAUSE,
+            StarRocksElementTypes.SQL_COLUMN_DEFINITION,
             SqlCompositeElementTypes.SQL_TABLE_REFERENCE,
             StarRocksElementTypes.SQL_INSERT_STATEMENT,
             StarRocksElementTypes.SQL_UPDATE_STATEMENT,

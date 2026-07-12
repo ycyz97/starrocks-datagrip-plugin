@@ -17,34 +17,32 @@ val generatedReservedKeywords = keywordRegistryGeneratedRoot.map {
 val generatedOptionalKeywords = keywordRegistryGeneratedRoot.map {
     it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksOptionalKeywords.java")
 }
-
-fun readKeywordSet(source: String, propertyName: String): java.util.SortedSet<String> {
-    val lines = source.lineSequence().toList()
-    val declaration = Regex(
-        """\s*private val ${Regex.escape(propertyName)}: Set<String> = setOf\(\s*"""
-    )
-    val startIndex = lines.indexOfFirst(declaration::matches)
-    check(startIndex >= 0) { "Cannot locate $propertyName in StarRocksKeywordCatalog." }
-
-    val result = sortedSetOf<String>()
-    for (line in lines.drop(startIndex + 1)) {
-        if (line.trim() == ")") {
-            break
-        }
-        val keyword = Regex("""\s*"([A-Z][A-Z0-9_]*)",?\s*""")
-            .matchEntire(line)
-            ?.groupValues
-            ?.get(1)
-            ?: error("Invalid $propertyName entry: $line")
-        check(result.add(keyword)) { "Duplicate $propertyName entry: $keyword" }
-    }
-    check(result.isNotEmpty()) { "$propertyName must not be empty." }
-    return result
+val generatedKeywordCatalog = keywordRegistryGeneratedRoot.map {
+    it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.java")
 }
 
 fun readStarRocksKeywordSets(source: String): Pair<Set<String>, Set<String>> {
-    val reserved = readKeywordSet(source, "CORE_KEYWORDS")
-    val optional = readKeywordSet(source, "OFFICIAL_ADDITIONAL_KEYWORDS")
+    val reserved = sortedSetOf<String>()
+    val optional = sortedSetOf<String>()
+    var target: MutableSet<String>? = null
+    source.lineSequence().forEachIndexed { index, rawLine ->
+        val line = rawLine.trim()
+        when {
+            line.isEmpty() || line.startsWith("#") -> Unit
+            line == "[reserved]" -> target = reserved
+            line == "[optional]" -> target = optional
+            line.startsWith("[") -> error("Unknown keyword section at line ${index + 1}: $line")
+            else -> {
+                check(Regex("[A-Z][A-Z0-9_]*").matches(line)) {
+                    "Invalid StarRocks keyword at line ${index + 1}: $line"
+                }
+                val section = target ?: error("Keyword declared before a section at line ${index + 1}: $line")
+                check(section.add(line)) { "Duplicate StarRocks keyword in section at line ${index + 1}: $line" }
+            }
+        }
+    }
+    check(reserved.isNotEmpty()) { "The reserved keyword section must not be empty." }
+    check(optional.isNotEmpty()) { "The optional keyword section must not be empty." }
     check((reserved intersect optional).isEmpty()) {
         "Reserved and optional StarRocks keyword sets must be disjoint."
     }
@@ -113,12 +111,14 @@ tasks {
 
         val flexFile = layout.projectDirectory.file("grammar/starrocks.flex")
         val bnfFile = layout.projectDirectory.file("grammar/starrocks.bnf")
-        val keywordCatalogFile = layout.projectDirectory.file(
-            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
+        val keywordCatalogFile = layout.projectDirectory.file("grammar/starrocks-keywords.txt")
+        val elementTypeRegistryFile = layout.projectDirectory.file(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksElementTypeRegistry.kt"
         )
         inputs.file(flexFile)
         inputs.file(bnfFile)
         inputs.file(keywordCatalogFile)
+        inputs.file(elementTypeRegistryFile)
 
         doLast {
             check(flexFile.asFile.isFile) { "Missing parser lexer grammar: ${flexFile.asFile}" }
@@ -146,7 +146,7 @@ tasks {
                 "table_column_list",
                 "analytic_clause"
             ).forEach { rule ->
-                check(Regex("""(?m)^$rule\s*::=""").containsMatchIn(bnf)) {
+                check(Regex("""(?m)^(?:private\s+)?$rule\s*::=""").containsMatchIn(bnf)) {
                     "starrocks.bnf must define required entry rule $rule."
                 }
             }
@@ -154,6 +154,22 @@ tasks {
             check("recoverWhile=" in bnf) { "starrocks.bnf must model recovery explicitly." }
             check("STATEMENT_SEGMENT" !in bnf && "statement_tail" !in bnf) {
                 "starrocks.bnf must not define broad statement fallback segments."
+            }
+
+            val platformGrammarTypes = Regex("""elementType=\"(SQL_[A-Z0-9_]+)\"""")
+                .findAll(bnf)
+                .map { it.groupValues[1] }
+                .toSortedSet()
+            val mappedPlatformTypes = Regex(
+                """\"(SQL_[A-Z0-9_]+)\"\s*->\s*SqlCompositeElementTypes\."""
+            )
+                .findAll(elementTypeRegistryFile.asFile.readText())
+                .map { it.groupValues[1] }
+                .toSet()
+            val unmappedPlatformTypes = platformGrammarTypes - mappedPlatformTypes
+            check(unmappedPlatformTypes.isEmpty()) {
+                "Grammar platform element types missing from StarRocksElementTypeRegistry: " +
+                    unmappedPlatformTypes.joinToString()
             }
 
             val grammarRules = bnf.replace(
@@ -180,14 +196,12 @@ tasks {
     register("generateStarRocksKeywordRegistries") {
         group = "generation"
         description = "Generates SQL token interfaces from the StarRocks keyword catalog."
-        notCompatibleWithConfigurationCache("Generates Java keyword registry sources from the Kotlin catalog.")
+        notCompatibleWithConfigurationCache("Generates Java keyword registry sources from the keyword catalog.")
 
-        val keywordCatalog = layout.projectDirectory.file(
-            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
-        )
+        val keywordCatalog = layout.projectDirectory.file("grammar/starrocks-keywords.txt")
 
         inputs.file(keywordCatalog)
-        outputs.files(generatedReservedKeywords, generatedOptionalKeywords)
+        outputs.files(generatedReservedKeywords, generatedOptionalKeywords, generatedKeywordCatalog)
 
         doLast {
             val source = keywordCatalog.asFile.readText()
@@ -198,7 +212,7 @@ tasks {
                 appendLine()
                 appendLine("import com.intellij.sql.psi.SqlTokenType;")
                 appendLine()
-                appendLine("// Generated from StarRocksKeywordCatalog.kt. Do not edit manually.")
+                appendLine("// Generated from grammar/starrocks-keywords.txt. Do not edit manually.")
                 appendLine("public interface $interfaceName {")
                 keywords.forEach { keyword ->
                     appendLine(
@@ -216,6 +230,48 @@ tasks {
                 parentFile.mkdirs()
                 writeText(registrySource("StarRocksOptionalKeywords", optional))
             }
+            generatedKeywordCatalog.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(buildString {
+                    appendLine("package com.github.ycyz.starrocks.datagrip.lang;")
+                    appendLine()
+                    appendLine("import java.util.Collections;")
+                    appendLine("import java.util.LinkedHashSet;")
+                    appendLine("import java.util.Locale;")
+                    appendLine("import java.util.Set;")
+                    appendLine()
+                    appendLine("// Generated from grammar/starrocks-keywords.txt. Do not edit manually.")
+                    appendLine("public final class StarRocksKeywordCatalog {")
+                    appendLine("    public static final Set<String> RESERVED_KEYWORDS = Set.of(")
+                    reserved.forEachIndexed { index, keyword ->
+                        appendLine("        \"$keyword\"${if (index == reserved.size - 1) "" else ","}")
+                    }
+                    appendLine("    );")
+                    appendLine("    public static final Set<String> OPTIONAL_KEYWORDS = Set.of(")
+                    optional.forEachIndexed { index, keyword ->
+                        appendLine("        \"$keyword\"${if (index == optional.size - 1) "" else ","}")
+                    }
+                    appendLine("    );")
+                    appendLine("    public static final Set<String> KEYWORDS;")
+                    appendLine()
+                    appendLine("    static {")
+                    appendLine("        LinkedHashSet<String> keywords = new LinkedHashSet<>(RESERVED_KEYWORDS);")
+                    appendLine("        keywords.addAll(OPTIONAL_KEYWORDS);")
+                    appendLine("        KEYWORDS = Collections.unmodifiableSet(keywords);")
+                    appendLine("    }")
+                    appendLine()
+                    appendLine("    private StarRocksKeywordCatalog() {}")
+                    appendLine()
+                    appendLine("    public static boolean isKeyword(String text) {")
+                    appendLine("        return text != null && KEYWORDS.contains(text.toUpperCase(Locale.ROOT));")
+                    appendLine("    }")
+                    appendLine()
+                    appendLine("    public static boolean isOptionalKeyword(String text) {")
+                    appendLine("        return text != null && OPTIONAL_KEYWORDS.contains(text.toUpperCase(Locale.ROOT));")
+                    appendLine("    }")
+                    appendLine("}")
+                })
+            }
         }
     }
 
@@ -225,9 +281,7 @@ tasks {
         notCompatibleWithConfigurationCache("Generates a Grammar-Kit source file from project inputs.")
 
         val sourceGrammar = layout.projectDirectory.file("grammar/starrocks.bnf")
-        val keywordCatalog = layout.projectDirectory.file(
-            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.kt"
-        )
+        val keywordCatalog = layout.projectDirectory.file("grammar/starrocks-keywords.txt")
 
         inputs.file(sourceGrammar)
         inputs.file(keywordCatalog)
@@ -315,6 +369,7 @@ tasks {
             generatedLanguageDir.resolve("StarRocksGeneratedParser.java").delete()
             generatedLanguageDir.resolve("StarRocksElementTypes.java").delete()
         }
+
     }
 
     named("compileKotlin") {
