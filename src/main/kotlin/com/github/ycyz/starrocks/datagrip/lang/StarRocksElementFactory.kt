@@ -21,6 +21,7 @@ import com.intellij.sql.psi.impl.SqlCreateTableStatementImpl
 import com.intellij.sql.psi.impl.SqlCreateViewStatementImpl
 import com.intellij.sql.psi.impl.SqlDeleteStatementImpl
 import com.intellij.sql.psi.impl.SqlExplainStatementImpl
+import com.intellij.sql.psi.impl.SqlExpressionListImpl
 import com.intellij.sql.psi.impl.SqlFromClauseImpl
 import com.intellij.sql.psi.impl.SqlFunctionCallExpressionImpl
 import com.intellij.sql.psi.impl.SqlFunctionCallTableExpressionImpl
@@ -28,6 +29,7 @@ import com.intellij.sql.psi.impl.SqlGrantStatementImpl
 import com.intellij.sql.psi.impl.SqlInsertStatementImpl
 import com.intellij.sql.psi.impl.SqlJoinConditionClauseImpl
 import com.intellij.sql.psi.impl.SqlJoinExpressionImpl
+import com.intellij.sql.psi.impl.SqlLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlMergeStatementImpl
 import com.intellij.sql.psi.impl.SqlRevokeStatementImpl
 import com.intellij.sql.psi.impl.SqlRollbackStatementImpl
@@ -127,6 +129,16 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
                 info,
                 SqlCompositeElementTypes.SQL_FUNCTION_CALL,
                 SqlFunctionCallExpressionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_EXPRESSION_LIST,
+                SqlExpressionListImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_ARRAY_LITERAL,
+                SqlLiteralExpressionImpl::class.java
             )
             registerImplementation(
                 info,

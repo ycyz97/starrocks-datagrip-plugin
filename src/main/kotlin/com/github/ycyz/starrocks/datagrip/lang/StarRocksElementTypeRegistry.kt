@@ -71,6 +71,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_ALTER_TABLE_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT
         "SQL_ALTER_VIEW_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT
         "SQL_AS_EXPRESSION" -> SqlCompositeElementTypes.SQL_AS_EXPRESSION
+        "SQL_ARRAY_LITERAL" -> SqlCompositeElementTypes.SQL_ARRAY_LITERAL
         "SQL_CALL_STATEMENT" -> SqlCompositeElementTypes.SQL_CALL_STATEMENT
         "SQL_CATALOG_REFERENCE" -> SqlCompositeElementTypes.SQL_CATALOG_REFERENCE
         "SQL_COLUMN_ALIAS_DEFINITION" -> SqlCompositeElementTypes.SQL_COLUMN_ALIAS_DEFINITION
@@ -89,6 +90,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_DELETE_DML_INSTRUCTION" -> SqlCompositeElementTypes.SQL_DELETE_DML_INSTRUCTION
         "SQL_EXPLAIN_STATEMENT" -> SqlCompositeElementTypes.SQL_EXPLAIN_STATEMENT
         "SQL_EXPLICIT_TABLE_EXPRESSION" -> SqlCompositeElementTypes.SQL_EXPLICIT_TABLE_EXPRESSION
+        "SQL_EXPRESSION_LIST" -> SqlCompositeElementTypes.SQL_EXPRESSION_LIST
         "SQL_FROM_CLAUSE" -> SqlCompositeElementTypes.SQL_FROM_CLAUSE
         "SQL_FUNCTION_CALL" -> SqlCompositeElementTypes.SQL_FUNCTION_CALL
         "SQL_GENERIC_DEFINITION" -> SqlCompositeElementTypes.SQL_GENERIC_DEFINITION

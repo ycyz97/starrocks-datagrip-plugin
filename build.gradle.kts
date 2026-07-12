@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.1.21"
+    id("org.jetbrains.kotlin.jvm") version "2.3.0"
     id("org.jetbrains.intellij.platform") version "2.17.0"
     id("org.jetbrains.grammarkit") version "2023.3.0.3"
 }
@@ -20,6 +20,8 @@ val generatedOptionalKeywords = keywordRegistryGeneratedRoot.map {
 val generatedKeywordCatalog = keywordRegistryGeneratedRoot.map {
     it.file("com/github/ycyz/starrocks/datagrip/lang/StarRocksKeywordCatalog.java")
 }
+val localIntellijPlatformPath = providers.gradleProperty("intellijPlatformLocalPath").orNull
+val intellijPlatformVersion = providers.gradleProperty("intellijPlatformVersion").orElse("2026.1.4")
 
 fun readStarRocksKeywordSets(source: String): Pair<Set<String>, Set<String>> {
     val reserved = sortedSetOf<String>()
@@ -68,13 +70,17 @@ dependencies {
     testRuntimeOnly(kotlin("stdlib"))
 
     intellijPlatform {
-        datagrip("2025.1.4.1")
+        if (localIntellijPlatformPath != null) {
+            local(localIntellijPlatformPath)
+        } else {
+            datagrip(intellijPlatformVersion.get())
+        }
 
         // DatabaseTools declares these as bundled runtime dependencies. They are
         // required for loading its extension descriptors in platform tests.
         bundledPlugin("com.intellij.modules.json")
         bundledPlugin("com.intellij.platform.images")
-        bundledPlugin("intellij.charts")
+        bundledModule("intellij.charts")
         bundledPlugin("intellij.grid.plugin")
         bundledPlugin("com.intellij.database")
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)

@@ -42,11 +42,14 @@ import com.intellij.sql.psi.SqlTokens.SQL_RIGHT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_SEMICOLON
 import com.intellij.sql.psi.SqlUsingClause
 import com.intellij.sql.util.SqlTokenRegistry
+import com.intellij.ui.scale.JBUIScale
 import java.io.File
 
 object StarRocksScenarioValidator {
     @JvmStatic
     fun main(args: Array<String>) {
+        JBUIScale.setSystemScaleFactor(1.0f)
+        JBUIScale.setUserScaleFactorForTest(1.0f)
         val projectDir = args.firstOrNull()?.let(::File) ?: File(".")
         val testDataDir = projectDir.resolve("src/testData/sql")
         val manifest = loadManifest(testDataDir.resolve("scenarios.properties"))
@@ -936,6 +939,9 @@ object StarRocksScenarioValidator {
         check("StarRocksNamedStub" !in productionSources && "StarRocksStubElementTypes" !in productionSources) {
             "Private StarRocks named-stub infrastructure must be removed from production sources."
         }
+        check("SqlFileElementType" !in productionSources) {
+            "The parser definition must use stable IFileElementType API; SqlFileElementType is absent in DataGrip 2026.1."
+        }
 
         val contributor = projectDir.resolve(
             "src/main/kotlin/com/github/ycyz/starrocks/datagrip/completion/StarRocksCompletionContributor.kt"
@@ -952,6 +958,13 @@ object StarRocksScenarioValidator {
         ).readText()
         check(Regex("<function>").findAll(functionsXml).count() >= 450) {
             "The platform function catalog must contain the StarRocks server function set."
+        }
+        check(
+            Regex(
+                "<name>UNNEST</name>\\s*<prototype>\\(a:array\\.\\.\\.\\):table\\(\\.\\.\\.args\\)</prototype>"
+            ).containsMatchIn(functionsXml)
+        ) {
+            "UNNEST must remain a table-valued builtin so connected data-source resolution keeps its output column."
         }
 
         val keywordCatalog = projectDir.resolve("grammar/starrocks-keywords.txt").readText()

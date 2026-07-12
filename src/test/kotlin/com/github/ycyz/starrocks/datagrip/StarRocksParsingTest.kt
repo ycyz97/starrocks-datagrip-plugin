@@ -20,9 +20,12 @@ import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlAsExpression
 import com.intellij.sql.psi.SqlColumnDefinition
 import com.intellij.sql.psi.SqlFunctionCallExpression
+import com.intellij.sql.psi.SqlExpression
+import com.intellij.sql.psi.SqlLiteralExpression
 import com.intellij.sql.psi.SqlReferenceExpression
 import com.intellij.sql.dialects.mysql.MysqlDialect
 import com.intellij.database.model.ObjectKind
+import com.intellij.database.types.DasArrayType
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDbms
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
@@ -780,6 +783,18 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             .single()
         assertSame("SHOW TABLE STATUS schema must resolve.", schemaPsi, showStatusSchema.resolve())
 
+        val connectedUnnestFile = createPsiFile(
+            "SELECT CAST(unnest AS INT) FROM (SELECT [0, 1] AS date_list) a, UNNEST(date_list);"
+        )
+        assertTrue(
+            "Connected UNNEST SQL must remain bound to the StarRocks data source.",
+            SqlDataSourceMappings.getInstance(project).getDataSources(connectedUnnestFile).contains(dbDataSource)
+        )
+        val connectedUnnest = elementsOfType(connectedUnnestFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.name.equals("unnest", ignoreCase = true) }
+        assertNotNull("UNNEST output must still resolve after a data source is loaded.", connectedUnnest.resolve())
+
         val swapFile = createPsiFile("ALTER TABLE dws.sales SWAP WITH dws.stores;")
         val swapTables = elementsOfType(swapFile, StarRocksElementTypes.SQL_TABLE_REFERENCE)
             .filterIsInstance<SqlReferenceExpression>()
@@ -1044,6 +1059,14 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertTrue("LATERAL UNNEST with its default output name must parse: $errors", errors.isEmpty())
         val tableExpression = elementsOfType(file, StarRocksElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION).single()
         assertTrue(psiSummary(file), tableExpression is com.intellij.sql.psi.SqlExplicitTableExpression)
+        val functionCall = PsiTreeUtil.findChildOfType(tableExpression, SqlFunctionCallExpression::class.java)!!
+        val functionDefinition = functionCall.functionDefinition
+        assertNotNull("UNNEST must be resolved through the builtin function catalog.", functionDefinition)
+        assertTrue(
+            functionDefinition!!.prototypes.any { prototype ->
+                prototype.toString().contains("table", ignoreCase = true)
+            }
+        )
         val tableType = (tableExpression as com.intellij.sql.psi.SqlExpression).dasType
             as com.intellij.database.types.DasTableType
         assertEquals(1, tableType.columnCount)
@@ -1075,7 +1098,17 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             .filterIsInstance<SqlReferenceExpression>()
         val dateList = references.single { it.name == "date_list" }
         val unnest = references.single { it.name.equals("unnest", ignoreCase = true) }
+        val arrayLiteral = elementsOfType(file, StarRocksElementTypes.SQL_ARRAY_LITERAL).single()
+        assertTrue("Array literal must use the platform literal PSI.\n${psiSummary(file)}", arrayLiteral is SqlLiteralExpression)
+        assertTrue(
+            "Array literal must expose a DasArrayType, but was ${(arrayLiteral as SqlExpression).dasType}.\n${psiSummary(file)}",
+            arrayLiteral.dasType is DasArrayType
+        )
         assertNotNull("UNNEST argument must resolve to the preceding derived-table output.\n${psiSummary(file)}", dateList.resolve())
+        assertTrue(
+            "Resolved derived-table output must preserve the array type, but was ${dateList.dasType}.\n${psiSummary(file)}",
+            dateList.dasType is DasArrayType
+        )
         assertNotNull("Default UNNEST output must resolve in the SELECT list.\n${psiSummary(file)}", unnest.resolve())
     }
 

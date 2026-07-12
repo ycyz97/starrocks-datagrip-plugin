@@ -1734,7 +1734,7 @@
   </function>
   <function>
     <name>UNNEST</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(a:array...):table(...args)</prototype>
   </function>
   <function>
     <name>UNNEST_BITMAP</name>
