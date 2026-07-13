@@ -491,7 +491,10 @@ select_clause ::= "SELECT" select_modifier* select_item ("," select_item)* {
 private select_modifier ::= "ALL" | "DISTINCT"
 private select_recover ::= !(";" | ")" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
 private select_item ::= select_all | select_as_expression | value_expression
-select_all ::= qualified_identifier "." "*" | "*"
+select_all ::= (qualified_column_prefix ".")? "*" {
+  elementType="SQL_COLUMN_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 select_as_expression ::= value_expression select_alias_clause {
   elementType="SQL_AS_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -860,7 +863,15 @@ private expression_recover ::= !("," | ")" | ";" | "." | "[" | "+" | "-" | "*" |
 private or_expression ::= and_expression ("OR" and_expression)*
 private and_expression ::= not_expression ("AND" not_expression)*
 private not_expression ::= "NOT"? comparison_expression
-private comparison_expression ::= bitwise_expression (comparison_operator bitwise_expression | "BETWEEN" bitwise_expression "AND" bitwise_expression | "NOT" "BETWEEN" bitwise_expression "AND" bitwise_expression | "NOT" ("LIKE" | "REGEXP" | "RLIKE") bitwise_expression | "NOT" "IN" in_list_or_subquery | "IN" in_list_or_subquery)*
+private comparison_expression ::= between_expression | binary_comparison_expression | bitwise_expression
+between_expression ::= bitwise_expression "NOT"? "BETWEEN" bitwise_expression "AND" bitwise_expression {
+  elementType="SQL_BETWEEN_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+binary_comparison_expression ::= bitwise_expression (comparison_operator bitwise_expression | "NOT" ("LIKE" | "REGEXP" | "RLIKE") bitwise_expression | "NOT"? "IN" in_list_or_subquery) {
+  elementType="SQL_BINARY_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 private comparison_operator ::= "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<=>" | "LIKE" | "REGEXP" | "RLIKE" | "IS" "NOT"?
 private bitwise_expression ::= additive_expression (("|" | "&" | "<<" | ">>") additive_expression)*
 private additive_expression ::= multiplicative_expression (("+" | "-" | "||") multiplicative_expression)*
@@ -891,11 +902,17 @@ case_else_clause ::= "ELSE" value_expression
 exists_expression ::= "EXISTS" "(" query_expression ")"
 interval_expression ::= "INTERVAL" value_expression interval_unit
 typed_literal_expression ::= typed_literal_prefix literal
-function_call ::= function_name ("." function_name)* "(" function_argument_list? ")"
+function_call ::= function_name ("." function_name)* function_call_arguments
   {
     elementType="SQL_FUNCTION_CALL"
     elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   }
+private function_call_arguments ::= known_function_argument_list | generic_function_argument_list
+known_function_argument_list ::= <<parseKnownFunctionArgumentList>> {
+  elementType="SQL_ARGUMENT_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+private generic_function_argument_list ::= "(" function_argument_list? ")"
 function_name ::= identifier_reference | function_keyword {
   elementType="SQL_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -1002,16 +1019,25 @@ index_reference ::= qualified_identifier {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 
-literal ::= string_literal | numeric_literal | parameter_literal | keyword_literal
-string_literal ::= SQL_STRING_TOKEN
-numeric_literal ::= SQL_INTEGER_TOKEN | SQL_FLOAT_TOKEN | leading_dot_numeric_literal
+private literal ::= string_literal | numeric_literal | parameter_literal | keyword_literal
+string_literal ::= SQL_STRING_TOKEN {
+  elementType="SQL_STRING_LITERAL"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+numeric_literal ::= SQL_INTEGER_TOKEN | SQL_FLOAT_TOKEN | leading_dot_numeric_literal {
+  elementType="SQL_NUMERIC_LITERAL"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 private leading_dot_numeric_literal ::= "." SQL_INTEGER_TOKEN
 parameter_literal ::= <<parseParameter>>
 variable_reference ::= <<parseVariable>> {
   elementType="STARROCKS_VARIABLE_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-keyword_literal ::= "TRUE" | "FALSE" | "NULL" | "CURRENT_DATE" | "CURRENT_TIME" | "CURRENT_TIMESTAMP" | "LOCALTIME" | "LOCALTIMESTAMP"
+keyword_literal ::= "TRUE" | "FALSE" | "NULL" | "CURRENT_DATE" | "CURRENT_TIME" | "CURRENT_TIMESTAMP" | "LOCALTIME" | "LOCALTIMESTAMP" {
+  elementType="SQL_SPECIAL_LITERAL"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 typed_literal_prefix ::= "DATE" | "DATETIME" | "TIME" | "TIMESTAMP"
 interval_unit ::= "MICROSECOND" | "MILLISECOND" | "SECOND" | "SECONDS" | "MINUTE" | "MINUTES" | "HOUR" | "HOURS" | "DAY" | "DAYS" | "WEEK" | "MONTH" | "QUARTER" | "YEAR"
 

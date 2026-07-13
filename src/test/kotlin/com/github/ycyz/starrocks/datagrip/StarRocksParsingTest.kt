@@ -27,6 +27,7 @@ import com.intellij.sql.dialects.mysql.MysqlDialect
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.types.DasArrayType
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDbms
+import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
 import com.intellij.database.dialects.generic.model.GenericDatabase
@@ -38,7 +39,12 @@ import com.intellij.database.psi.DbDataSource
 import com.intellij.database.psi.DbPsiFacade
 import com.intellij.database.util.VirtualFileDataSourceProvider
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.FileContentUtil
+import com.intellij.sql.dialects.SqlDialectMappings
 import com.intellij.sql.dialects.SqlDataSourceMappings
+import com.intellij.sql.inspections.SqlSignatureInspection
+import com.intellij.sql.inspections.SqlResolveInspection
+import com.intellij.sql.inspections.SqlTypeInspection
 import java.io.File
 
 class StarRocksParsingTest : BasePlatformTestCase() {
@@ -73,6 +79,33 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertParsesWithoutPsiErrors("SELECT * FROM orders NATURAL JOIN customers;")
     }
 
+    fun testCommonFunctionsHaveNoArgumentHighlightWarnings() {
+        myFixture.enableInspections(SqlSignatureInspection())
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText(
+            "function-warning.sql",
+            "SELECT COUNT(*), SUM(price), ABS(1), IF(flag, 1, 0) FROM sales;"
+        )
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+        val argumentWarnings = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { it.contains("take such arguments", ignoreCase = true) }
+        val diagnostics = elementsOfType(myFixture.file, StarRocksElementTypes.SQL_FUNCTION_CALL)
+            .filterIsInstance<SqlFunctionCallExpression>()
+            .associate { call ->
+                call.text to mapOf(
+                    "arguments" to call.parameterList?.expressionList?.map { "${it.text}:${it.javaClass.simpleName}:${it.dasType}" },
+                    "prototypes" to call.functionDefinition?.prototypes?.map { it.toString() },
+                    "overloads" to com.intellij.sql.dialects.functions.SqlFunctionsUtil.getOverloads(call)
+                        .map { "matched=${it.isMatched},valid=${it.isValid}" },
+                    "psi" to psiSummary(call)
+                )
+            }
+        assertTrue("Function argument highlighting warnings: $argumentWarnings\n$diagnostics", argumentWarnings.isEmpty())
+    }
+
     fun testSemiAndAntiJoinsParseWithoutPsiErrors() {
         assertParsesWithoutPsiErrors(
             "SELECT * FROM orders o LEFT ANTI JOIN test_orders t ON o.id = t.id;"
@@ -97,6 +130,46 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
         assertParsesWithoutPsiErrors(
             "SELECT * FROM orders o RIGHT ANTI JOIN archived_orders a ON o.id = a.id;"
+        )
+    }
+
+    fun testQualifiedAsteriskUsesPlatformColumnReference() {
+        val file = createPsiFile("SELECT sales.*, s.* FROM sales, stores AS s;")
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Qualified asterisks must parse without errors: $errors", errors.isEmpty())
+
+        val asterisks = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.name == "*" }
+        assertEquals(2, asterisks.size)
+        assertEquals(listOf("sales", "s"), asterisks.map { it.qualifierExpression?.text })
+    }
+
+    fun testWhereComparisonsHaveBooleanType() {
+        myFixture.enableInspections(SqlTypeInspection())
+        myFixture.configureByText(
+            "where-comparison.sql",
+            "SELECT * FROM sales WHERE 1 = 1;"
+        )
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val booleanWarnings = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { it.contains("Boolean expression is expected", ignoreCase = true) }
+        val comparisonDiagnostics = elementsOfType(myFixture.file, SqlCompositeElementTypes.SQL_BINARY_EXPRESSION)
+            .map { element ->
+                "${element.text}:${element.javaClass.name}:${(element as? SqlExpression)?.dasType}"
+            }
+        assertEquals("WHERE comparison must produce one platform binary-expression PSI node.", 1, comparisonDiagnostics.size)
+        assertTrue(
+            "WHERE comparison must use SqlBinaryExpressionImpl: $comparisonDiagnostics",
+            comparisonDiagnostics.single().contains("SqlBinaryExpressionImpl")
+        )
+        assertTrue(
+            "WHERE comparisons must be typed as BOOLEAN: $booleanWarnings; comparisons=$comparisonDiagnostics\n${psiSummary(myFixture.file)}",
+            booleanWarnings.isEmpty()
         )
     }
 
@@ -701,6 +774,8 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         val table = schema.tables.createOrGet("sales") as GenericTable
         val column = table.columns.createOrGet("biz_date")
         val storeIdColumn = table.columns.createOrGet("store_id")
+        val priceColumn = table.columns.createOrGet("price")
+        priceColumn.setStoredType(StarRocksTypeSystem().realType)
         val storesTable = schema.tables.createOrGet("stores") as GenericTable
         val storesStoreIdColumn = storesTable.columns.createOrGet("store_id")
 
@@ -737,7 +812,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         VirtualFileDataSourceProvider.EP.point.registerExtension(
             object : VirtualFileDataSourceProvider() {
                 override fun getDataSource(project: com.intellij.openapi.project.Project, file: VirtualFile): DbDataSource? {
-                    return dbDataSource
+                    return DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
                 }
             },
             testRootDisposable
@@ -759,7 +834,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
         val tableType = tableReference.dasType as? com.intellij.sql.psi.SqlTableType
         assertNotNull("Resolved table reference must expose SqlTableType.", tableType)
-        assertEquals("Resolved table type must contain the introspected columns.", 2, tableType?.columnCount)
+        assertEquals("Resolved table type must contain the introspected columns.", 3, tableType?.columnCount)
         val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
             .filterIsInstance<SqlReferenceExpression>()
         assertEquals(2, references.size)
@@ -794,6 +869,48 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             .filterIsInstance<SqlReferenceExpression>()
             .single { it.name.equals("unnest", ignoreCase = true) }
         assertNotNull("UNNEST output must still resolve after a data source is loaded.", connectedUnnest.resolve())
+
+        val unloadedModel = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
+        dataSource.model = unloadedModel
+        manager.fireDataSourceUpdated(dataSource)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        myFixture.configureByText(
+            "connected-functions.sql",
+            """
+                SELECT CAST(unnest AS INT) AS biz_hour
+                FROM (
+                    SELECT [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] AS date_list
+                ) a, UNNEST(date_list);
+            """.trimIndent()
+        )
+        myFixture.enableInspections(SqlSignatureInspection())
+        myFixture.enableInspections(SqlResolveInspection())
+        val connectedVirtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(connectedVirtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(connectedVirtualFile), true)
+
+        dataSource.model = model
+        manager.fireDataSourceUpdated(dataSource)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        FileContentUtil.reparseFiles(project, listOf(connectedVirtualFile), true)
+
+        val connectedHighlights = myFixture.doHighlighting()
+        val connectedArgumentWarnings = connectedHighlights
+            .mapNotNull { it.description }
+            .filter { description ->
+                description.contains("take such arguments", ignoreCase = true) ||
+                    description.contains("unable to resolve", ignoreCase = true) ||
+                    description.contains("unresolved", ignoreCase = true)
+            }
+        assertTrue(
+            "Connected data-source functions must have no argument warnings: $connectedArgumentWarnings",
+            connectedArgumentWarnings.isEmpty()
+        )
+        val highlightedUnnest = elementsOfType(myFixture.file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.name.equals("unnest", ignoreCase = true) }
+        assertNotNull("Highlighted UNNEST output must resolve with a loaded data source.", highlightedUnnest.resolve())
 
         val swapFile = createPsiFile("ALTER TABLE dws.sales SWAP WITH dws.stores;")
         val swapTables = elementsOfType(swapFile, StarRocksElementTypes.SQL_TABLE_REFERENCE)

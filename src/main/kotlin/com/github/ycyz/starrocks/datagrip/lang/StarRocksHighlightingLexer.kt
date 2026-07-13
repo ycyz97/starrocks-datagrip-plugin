@@ -10,12 +10,13 @@ class StarRocksHighlightingLexer : StarRocksLexer() {
     override fun tokenTypeForParserToken(tokenType: IElementType): IElementType {
         val text = tokenText()
         val word = text.uppercase(Locale.ROOT)
+        val followedByArguments = nextNonWhitespaceChar() == '('
         return when {
             text.startsWith("@") -> StarRocksHighlightTokenTypes.VARIABLE
+            followedByArguments && word in FUNCTION_NAMES -> StarRocksHighlightTokenTypes.FUNCTION
+            followedByArguments && word in FUNCTION_LIKE_KEYWORDS -> StarRocksHighlightTokenTypes.FUNCTION
+            followedByArguments && tokenType == SQL_IDENT -> StarRocksHighlightTokenTypes.FUNCTION
             word in DATA_TYPE_NAMES -> StarRocksHighlightTokenTypes.DATA_TYPE
-            word in FUNCTION_NAMES && nextNonWhitespaceChar() == '(' -> StarRocksHighlightTokenTypes.FUNCTION
-            word in FUNCTION_LIKE_KEYWORDS && nextNonWhitespaceChar() == '(' -> StarRocksHighlightTokenTypes.FUNCTION
-            tokenType == SQL_IDENT && nextNonWhitespaceChar() == '(' -> StarRocksHighlightTokenTypes.FUNCTION
             else -> tokenType
         }
     }

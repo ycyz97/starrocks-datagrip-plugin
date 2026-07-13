@@ -2,7 +2,16 @@ package com.github.ycyz.starrocks.datagrip.database
 
 import com.intellij.database.Dbms
 import com.intellij.database.dialects.base.types.DasTypeSystemImpl
+import com.intellij.database.types.DasArrayType
+import com.intellij.database.types.DasType
 import com.intellij.database.types.DasTypeCategory
+import com.intellij.database.types.DasTypeSystemBase
+import com.intellij.psi.PsiElement
+import com.intellij.sql.dialects.BuiltinFunction
+import com.intellij.sql.dialects.SqlDialectImplUtilCore
+import com.intellij.sql.psi.SqlExpressionList
+import com.intellij.sql.psi.SqlReferenceExpression
+import com.intellij.sql.psi.impl.SqlImplUtil
 
 class StarRocksTypeSystem(dbms: Dbms = StarRocksDbms.INSTANCE) : DasTypeSystemImpl(dbms) {
     override fun getNormalizedTypeName(name: String): String {
@@ -16,6 +25,29 @@ class StarRocksTypeSystem(dbms: Dbms = StarRocksDbms.INSTANCE) : DasTypeSystemIm
 
     override fun getDefaultTypeName(category: DasTypeCategory): String {
         return DEFAULT_TYPE_NAMES[category] ?: super.getDefaultTypeName(category) ?: "STRING"
+    }
+
+    override fun getBuiltinFunctionReturnType(
+        prototype: BuiltinFunction.Prototype,
+        reference: SqlReferenceExpression?,
+        argumentList: PsiElement?,
+        routineElement: PsiElement
+    ): DasType? {
+        if (!reference?.name.equals("UNNEST", ignoreCase = true)) {
+            return super.getBuiltinFunctionReturnType(prototype, reference, argumentList, routineElement)
+        }
+
+        val componentType = ((argumentList as? SqlExpressionList)
+            ?.expressionList
+            ?.firstOrNull()
+            ?.dasType as? DasArrayType)
+            ?.componentType
+            ?: DasTypeSystemBase.UNKNOWN
+        val columnElement = reference ?: routineElement
+        return SqlImplUtil.createType(
+            listOf(SqlDialectImplUtilCore.col(columnElement, columnElement, "unnest", componentType)),
+            routineElement
+        )
     }
 
     override fun getTableTypeSpecification(type: String): String {

@@ -298,6 +298,19 @@ object StarRocksScenarioValidator {
             "StarRocks lexer should emit function tokens for builtin function calls."
         }
 
+        val basicFunctionTexts = lexSignificantTokenTexts(
+            sql = "SELECT COUNT(*), SUM(v), AVG(v), MIN(v), MAX(v), COALESCE(v, 0), IFNULL(v, 0), DATE(v), TIMESTAMP(v), MAP(), STRUCT(v), ROUND(v), CONCAT(v) FROM t;",
+            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
+            useHighlightingLexer = true
+        )
+        check(
+            basicFunctionTexts.containsAll(
+                listOf("COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "IFNULL", "DATE", "TIMESTAMP", "MAP", "STRUCT", "ROUND", "CONCAT")
+            )
+        ) {
+            "Basic and type-named StarRocks functions must share function highlighting. Actual: $basicFunctionTexts"
+        }
+
         val userFunctionTokens = lexSignificantTokens(
             sql = "SELECT my_udf(payload), analytics.custom_score(id) FROM t;",
             useHighlightingLexer = true
@@ -340,8 +353,8 @@ object StarRocksScenarioValidator {
 
     private fun validateSyntaxHighlighterColors() {
         val highlighter = StarRocksSyntaxHighlighter(project = null, file = null)
-        check(SqlColors.SQL_IDENT in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.FUNCTION)) {
-            "StarRocks function token should use the platform SQL identifier color."
+        check(SqlColors.SQL_PROCEDURE in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.FUNCTION)) {
+            "StarRocks function token should use the platform SQL function color."
         }
         check(SqlColors.SQL_TYPE in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.DATA_TYPE)) {
             "StarRocks data type token should use SQL type highlighting."
@@ -961,7 +974,7 @@ object StarRocksScenarioValidator {
         }
         check(
             Regex(
-                "<name>UNNEST</name>\\s*<prototype>\\(a:array\\.\\.\\.\\):table\\(\\.\\.\\.args\\)</prototype>"
+                "<name>UNNEST</name>\\s*<prototype>\\(a:array\\.\\.\\.\\):table\\(unnest:ANY\\)</prototype>"
             ).containsMatchIn(functionsXml)
         ) {
             "UNNEST must remain a table-valued builtin so connected data-source resolution keeps its output column."

@@ -11,7 +11,10 @@ import com.intellij.sql.dialects.base.SqlParserDefinitionBase
 class StarRocksParserDefinition : SqlParserDefinitionBase() {
     override fun createElementFactory(): SqlElementFactoryBase = StarRocksElementFactory()
 
-    override fun createLexer(project: Project?): Lexer = StarRocksParserLexer()
+    override fun createLexer(project: Project?): Lexer {
+        StarRocksTokenInitializer.ensureInitialized()
+        return StarRocksParserLexer()
+    }
 
     override fun createParser(project: Project?): PsiParser = StarRocksParser()
 

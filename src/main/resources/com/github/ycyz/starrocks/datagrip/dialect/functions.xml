@@ -6,7 +6,7 @@
   <!-- StarRocks built-in function names. Keep signatures generic until typed metadata is available. -->
   <function>
     <name>ABS</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(X:X):X</prototype>
   </function>
   <function>
     <name>ACOS</name>
@@ -422,6 +422,7 @@
   </function>
   <function aggregate="true">
     <name>COUNT</name>
+    <prototype>(\*):N</prototype>
     <prototype>([set_quantifier] expr:ANY...):N</prototype>
   </function>
   <function>
@@ -878,7 +879,7 @@
   </function>
   <function>
     <name>IF</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(expr1:ANY, expr2:ANY, expr3:ANY):P0</prototype>
   </function>
   <function>
     <name>IFNULL</name>
@@ -1632,9 +1633,9 @@
     <name>SUBTRACT</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>SUM</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>([set_quantifier] expr:X):P0</prototype>
   </function>
   <function>
     <name>SUM_MAP</name>
@@ -1734,7 +1735,7 @@
   </function>
   <function>
     <name>UNNEST</name>
-    <prototype>(a:array...):table(...args)</prototype>
+    <prototype>(a:array...):table(unnest:ANY)</prototype>
   </function>
   <function>
     <name>UNNEST_BITMAP</name>
