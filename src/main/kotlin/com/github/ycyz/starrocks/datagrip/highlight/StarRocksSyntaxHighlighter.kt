@@ -3,6 +3,7 @@ package com.github.ycyz.starrocks.datagrip.highlight
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightingLexer
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokenInitializer
 import com.intellij.lexer.Lexer
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
@@ -15,14 +16,15 @@ class StarRocksSyntaxHighlighter(
     project: Project?,
     file: VirtualFile?
 ) : SqlSyntaxHighlighter(StarRocksDialect.INSTANCE, project, file) {
+    init {
+        StarRocksTokenInitializer.ensureInitialized()
+    }
+
     override fun getHighlightingLexer(): Lexer = StarRocksHighlightingLexer()
 
     override fun getTokenHighlights(tokenType: IElementType): Array<TextAttributesKey> {
         return when (tokenType) {
-            // SQL_PROCEDURE inherits the static-method color, which is red in
-            // Darcula. Functions without a resolved database object should
-            // retain the platform's ordinary SQL identifier color instead.
-            StarRocksHighlightTokenTypes.FUNCTION -> arrayOf(SqlColors.SQL_IDENT)
+            StarRocksHighlightTokenTypes.FUNCTION -> arrayOf(SqlColors.SQL_PROCEDURE)
             StarRocksHighlightTokenTypes.DATA_TYPE -> arrayOf(SqlColors.SQL_TYPE)
             StarRocksHighlightTokenTypes.VARIABLE -> arrayOf(SqlColors.SQL_VARIABLE)
             StarRocksHighlightTokenTypes.PARAMETER -> arrayOf(SqlColors.SQL_PARAMETER)

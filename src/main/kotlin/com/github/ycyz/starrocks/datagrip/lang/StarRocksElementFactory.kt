@@ -31,10 +31,13 @@ import com.intellij.sql.psi.impl.SqlJoinConditionClauseImpl
 import com.intellij.sql.psi.impl.SqlJoinExpressionImpl
 import com.intellij.sql.psi.impl.SqlLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlMergeStatementImpl
+import com.intellij.sql.psi.impl.SqlNumericLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlRevokeStatementImpl
 import com.intellij.sql.psi.impl.SqlRollbackStatementImpl
 import com.intellij.sql.psi.impl.SqlSetStatementImpl
+import com.intellij.sql.psi.impl.SqlSpecialLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlStatementImpl
+import com.intellij.sql.psi.impl.SqlStringLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlTableExpressionImpl
 import com.intellij.sql.psi.impl.SqlTruncateTableStatementImpl
 import com.intellij.sql.psi.impl.SqlUpdateStatementImpl
@@ -93,7 +96,7 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
 
     companion object {
         init {
-            SqlTokenRegistry.ensureInterfacesAreInitializedInOrder(StarRocksElementFactory::class.java)
+            StarRocksTokenInitializer.ensureInitialized()
         }
 
         @JvmStatic
@@ -139,6 +142,21 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
                 info,
                 SqlCompositeElementTypes.SQL_ARRAY_LITERAL,
                 SqlLiteralExpressionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_NUMERIC_LITERAL,
+                SqlNumericLiteralExpressionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_STRING_LITERAL,
+                SqlStringLiteralExpressionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_SPECIAL_LITERAL,
+                SqlSpecialLiteralExpressionImpl::class.java
             )
             registerImplementation(
                 info,

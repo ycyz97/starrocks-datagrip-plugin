@@ -2,6 +2,7 @@ package com.github.ycyz.starrocks.datagrip.lang
 
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.psi.SqlCompositeElementTypes
+import com.intellij.sql.psi.SqlKeywordTokenType
 import com.intellij.sql.psi.SqlTokenType
 import com.intellij.sql.psi.SqlTokens
 import com.intellij.sql.util.SqlTokenRegistry
@@ -29,7 +30,7 @@ internal object StarRocksElementTypeRegistry {
             return StarRocksHighlightTokenTypes.PARAMETER
         }
         punctuationToken(normalized)?.let { return it }
-        return SqlTokenRegistry.getType(normalized)
+        return SqlTokenRegistry.getType(normalized, SqlKeywordTokenType.FACTORY)
     }
 
     private fun punctuationToken(text: String): SqlTokenType? = when (text) {
@@ -70,8 +71,11 @@ internal object StarRocksElementTypeRegistry {
         "SQL_ALTER_SCHEMA_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT
         "SQL_ALTER_TABLE_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT
         "SQL_ALTER_VIEW_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT
+        "SQL_ARGUMENT_LIST" -> SqlCompositeElementTypes.SQL_ARGUMENT_LIST
         "SQL_AS_EXPRESSION" -> SqlCompositeElementTypes.SQL_AS_EXPRESSION
         "SQL_ARRAY_LITERAL" -> SqlCompositeElementTypes.SQL_ARRAY_LITERAL
+        "SQL_BETWEEN_EXPRESSION" -> SqlCompositeElementTypes.SQL_BETWEEN_EXPRESSION
+        "SQL_BINARY_EXPRESSION" -> SqlCompositeElementTypes.SQL_BINARY_EXPRESSION
         "SQL_CALL_STATEMENT" -> SqlCompositeElementTypes.SQL_CALL_STATEMENT
         "SQL_CATALOG_REFERENCE" -> SqlCompositeElementTypes.SQL_CATALOG_REFERENCE
         "SQL_COLUMN_ALIAS_DEFINITION" -> SqlCompositeElementTypes.SQL_COLUMN_ALIAS_DEFINITION
@@ -106,6 +110,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_MERGE_STATEMENT" -> SqlCompositeElementTypes.SQL_MERGE_STATEMENT
         "SQL_MATERIALIZED_VIEW_REFERENCE" -> SqlCompositeElementTypes.SQL_MATERIALIZED_VIEW_REFERENCE
         "SQL_NAMED_QUERY_DEFINITION" -> SqlCompositeElementTypes.SQL_NAMED_QUERY_DEFINITION
+        "SQL_NUMERIC_LITERAL" -> SqlCompositeElementTypes.SQL_NUMERIC_LITERAL
         "SQL_ORDER_BY_CLAUSE" -> SqlCompositeElementTypes.SQL_ORDER_BY_CLAUSE
         "SQL_PARENTHESIZED_JOIN_EXPRESSION" -> SqlCompositeElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION
         "SQL_PARENTHESIZED_QUERY_EXPRESSION" -> SqlCompositeElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION
@@ -123,13 +128,17 @@ internal object StarRocksElementTypeRegistry {
         "SQL_SET_CLAUSE" -> SqlCompositeElementTypes.SQL_SET_CLAUSE
         "SQL_SET_ASSIGNMENT" -> SqlCompositeElementTypes.SQL_SET_ASSIGNMENT
         "SQL_SET_STATEMENT" -> SqlCompositeElementTypes.SQL_SET_STATEMENT
+        "SQL_SPECIAL_LITERAL" -> SqlCompositeElementTypes.SQL_SPECIAL_LITERAL
         "SQL_START_TRANSACTION_STATEMENT" -> SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT
+        "SQL_STRING_LITERAL" -> SqlCompositeElementTypes.SQL_STRING_LITERAL
         "SQL_TABLE_ELEMENT_LIST" -> SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST
         "SQL_TABLE_EXPRESSION" -> SqlCompositeElementTypes.SQL_TABLE_EXPRESSION
         "SQL_TABLE_PROCEDURE_CALL_EXPRESSION" -> SqlCompositeElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION
         "SQL_TABLE_REFERENCE" -> SqlCompositeElementTypes.SQL_TABLE_REFERENCE
         "SQL_TRUNCATE_TABLE_STATEMENT" -> SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT
         "SQL_TYPE_ELEMENT" -> SqlCompositeElementTypes.SQL_TYPE_ELEMENT
+        "SQL_TYPE_PARAMETER_LIST" -> SqlCompositeElementTypes.SQL_TYPE_PARAMETER_LIST
+        "SQL_UNION_EXPRESSION" -> SqlCompositeElementTypes.SQL_UNION_EXPRESSION
         "SQL_UPDATE_STATEMENT" -> SqlCompositeElementTypes.SQL_UPDATE_STATEMENT
         "SQL_UPDATE_DML_INSTRUCTION" -> SqlCompositeElementTypes.SQL_UPDATE_DML_INSTRUCTION
         "SQL_USE_SCHEMA_STATEMENT" -> SqlCompositeElementTypes.SQL_USE_SCHEMA_STATEMENT
