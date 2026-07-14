@@ -1,10 +1,12 @@
 package com.github.ycyz.starrocks.datagrip
 
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
+import com.github.ycyz.starrocks.datagrip.format.StarRocksCodeStyleSettings
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserLexer
+import com.intellij.application.options.CodeStyle
 import com.intellij.lang.LanguageParserDefinitions
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.psi.PsiElement
@@ -23,6 +25,7 @@ import com.intellij.sql.psi.SqlFunctionCallExpression
 import com.intellij.sql.psi.SqlExpression
 import com.intellij.sql.psi.SqlLiteralExpression
 import com.intellij.sql.psi.SqlReferenceExpression
+import com.intellij.sql.psi.SqlUnionExpression
 import com.intellij.sql.dialects.mysql.MysqlDialect
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.types.DasArrayType
@@ -766,6 +769,99 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
     }
 
+    fun testUnionBranchesKeepIndependentColumnScopes() {
+        val model = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
+        val database = model.root.databases.createOrGet("") as GenericDatabase
+        database.isCurrent = true
+        val schema = database.schemas.createOrGet("dws") as GenericSchema
+        val sales = schema.tables.createOrGet("sales") as GenericTable
+        val salesColumns = listOf("warehouse_id", "item_id").associateWith { sales.columns.createOrGet(it) }
+        val stores = schema.tables.createOrGet("stores") as GenericTable
+        val storesColumns = listOf("warehouse_id", "item_id").associateWith { stores.columns.createOrGet(it) }
+
+        val dataSource = LocalDataSource.temporary().also {
+            it.name = "StarRocks UNION scope test"
+            it.model = model
+            it.introspectionScope = com.intellij.database.util.TreePattern(
+                com.intellij.database.util.TreePatternUtils.create(
+                    null as Array<com.intellij.database.model.ObjectName>?,
+                    ObjectKind.DATABASE,
+                    com.intellij.database.util.TreePatternUtils.create(
+                        null as Array<com.intellij.database.model.ObjectName>?,
+                        ObjectKind.SCHEMA
+                    )
+                )
+            )
+        }
+        LocalDataSourceManager.getInstance(project).addDataSource(dataSource)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        val dbDataSource = DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
+        assertNotNull(dbDataSource)
+        VirtualFileDataSourceProvider.EP.point.registerExtension(
+            object : VirtualFileDataSourceProvider() {
+                override fun getDataSource(project: com.intellij.openapi.project.Project, file: VirtualFile): DbDataSource? {
+                    return DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
+                }
+            },
+            testRootDisposable
+        )
+
+        val sql = """
+            WITH stock_item AS (
+                SELECT warehouse_id, item_id FROM dws.sales
+            )
+            SELECT a.warehouse_id, a.item_id
+            FROM dws.sales AS a
+            JOIN dws.stores AS b
+              ON a.warehouse_id = b.warehouse_id
+             AND a.item_id = b.item_id
+            UNION ALL
+            SELECT warehouse_id, item_id
+            FROM stock_item;
+        """.trimIndent()
+        val file = createPsiFile(sql)
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("UNION scope fixture must parse: $errors\n${psiSummary(file)}", errors.isEmpty())
+        assertTrue(
+            "UNION scope fixture must be bound to the test data source.",
+            SqlDataSourceMappings.getInstance(project).getDataSources(file).contains(dbDataSource)
+        )
+
+        val union = elementsOfType(file, StarRocksElementTypes.SQL_UNION_EXPRESSION)
+            .filterIsInstance<SqlUnionExpression>()
+            .single()
+        assertEquals(2, union.operands.size)
+        assertTrue(union.operands.all { it.node.elementType == SqlCompositeElementTypes.SQL_QUERY_EXPRESSION })
+
+        val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        listOf("warehouse_id", "item_id").forEach { name ->
+            val finalReference = references.filter { it.text == name }.maxBy(PsiElement::getTextOffset)
+            val targets = finalReference.multiResolve(false).mapNotNull { it.element }.toSet()
+            assertEquals(
+                "The UNION right branch must resolve $name only through stock_item: $targets\n${psiSummary(file)}",
+                1,
+                targets.size
+            )
+            assertNotNull("The UNION right-branch field $name must resolve.", finalReference.resolve())
+
+            val salesReference = references.first { it.text == "a.$name" }
+            val storesReference = references.single { it.text == "b.$name" }
+            assertSame(dbDataSource?.findElement(salesColumns.getValue(name)), salesReference.resolve())
+            assertSame(dbDataSource?.findElement(storesColumns.getValue(name)), storesReference.resolve())
+        }
+
+        myFixture.configureByText("union-scope.sql", sql)
+        myFixture.enableInspections(SqlResolveInspection())
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+        val ambiguousWarnings = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { it.contains("ambiguous column reference", ignoreCase = true) }
+        assertTrue("UNION branches must not produce ambiguous column warnings: $ambiguousWarnings", ambiguousWarnings.isEmpty())
+    }
+
     fun testColumnResolvesAgainstStarRocksDataSourceModel() {
         val model = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
         val database = model.root.databases.createOrGet("") as GenericDatabase
@@ -1119,6 +1215,218 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
         assertTrue("Reformatted StarRocks PSI must remain parseable: $errors", errors.isEmpty())
         assertTrue(file.text.contains("SELECT", ignoreCase = true))
+    }
+
+    fun testPlatformFormatterKeepsEveryTopLevelStatementAtColumnZero() {
+        val file = createPsiFile(
+            "select order_id from orders where order_id=1; " +
+                "select store_id from stores where store_id=2; " +
+                "select 3;"
+        )
+        val topLevelBeforeFormatting = file.node.getChildren(null).joinToString("\n") { child ->
+            val children = child.getChildren(null).joinToString { it.elementType.toString() }
+            "${child.elementType}: `${child.text}` -> [$children]"
+        }
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+
+        val selectLines = file.text.lineSequence()
+            .filter { it.trimStart().startsWith("SELECT", ignoreCase = true) }
+            .toList()
+        assertTrue(
+            "Every top-level SQL statement must start at column zero.\n" +
+                "Before formatting:\n$topLevelBeforeFormatting\nAfter formatting:\n${file.text}\n${psiSummary(file)}",
+            selectLines.size == 3 && selectLines.all { it.startsWith("SELECT", ignoreCase = true) }
+        )
+
+        val mixedFile = createPsiFile("set @batch_size = 100; select @batch_size; show tables;")
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(mixedFile)
+        }
+        val mixedStatementLines = mixedFile.text.lineSequence()
+            .filter { line ->
+                val trimmed = line.trimStart()
+                listOf("SET", "SELECT", "SHOW").any { trimmed.startsWith(it, ignoreCase = true) }
+            }
+            .toList()
+        assertTrue(
+            "Mixed top-level SQL statements must start at column zero.\n${mixedFile.text}\n${psiSummary(mixedFile)}",
+            mixedStatementLines.size == 3 && mixedStatementLines.all { it.firstOrNull()?.isWhitespace() == false }
+        )
+    }
+
+    fun testPlatformFormatterAlignsUnionBranches() {
+        val cases = listOf(
+            """
+                select 1 as id
+                    union
+                        select 2 as id;
+            """.trimIndent(),
+            """
+                select id from active_ids
+                        union all
+                            select id from archived_ids
+                                    union all
+                                        select id from deleted_ids order by id limit 10;
+            """.trimIndent(),
+            """
+                with ids as (
+                        select id from active_ids
+                            union all
+                                select id from archived_ids
+                )
+                select id from ids;
+            """.trimIndent(),
+            """
+                select id from (
+                        select id from active_ids
+                            union
+                                select id from archived_ids
+                ) ids;
+            """.trimIndent()
+        )
+
+        cases.forEachIndexed { index, sql ->
+            val file = createPsiFile(sql)
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+
+            val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+            assertTrue("Formatted UNION case ${index + 1} must remain parseable: $errors\n${file.text}", errors.isEmpty())
+            val selects = elementsOfType(file, StarRocksElementTypes.SELECT).sortedBy(PsiElement::getTextOffset)
+            val unions = elementsOfType(file, StarRocksElementTypes.UNION).sortedBy(PsiElement::getTextOffset)
+            assertTrue("UNION case ${index + 1} must contain a UNION token.\n${psiSummary(file)}", unions.isNotEmpty())
+
+            fun columnAt(offset: Int): Int {
+                val lineStart = file.text.lastIndexOf('\n', (offset - 1).coerceAtLeast(0))
+                return offset - lineStart - 1
+            }
+
+            unions.forEach { union ->
+                val previousSelect = selects.last { it.textOffset < union.textOffset }
+                val nextSelect = selects.first { it.textOffset > union.textOffset }
+                val expectedColumn = columnAt(previousSelect.textOffset)
+                assertEquals(
+                    "UNION must align with its preceding SELECT in case ${index + 1}.\n${file.text}",
+                    expectedColumn,
+                    columnAt(union.textOffset)
+                )
+                assertEquals(
+                    "The SELECT after UNION must remain a peer branch in case ${index + 1}.\n${file.text}",
+                    expectedColumn,
+                    columnAt(nextSelect.textOffset)
+                )
+            }
+        }
+    }
+
+    fun testPlatformFormatterAlignsCreateTableColumnTypes() {
+        val file = createPsiFile(
+            """
+                create table alignment_probe (
+                  id bigint comment 'id',
+                  customer_name varchar(64) comment 'customer',
+                  sale_amount decimal(18,2) comment 'amount',
+                  hourly_values array<int> comment 'hours',
+                  properties map<string, string> comment 'properties'
+                );
+            """.trimIndent()
+        )
+        val style = CodeStyle.getSettings(file).getCustomSettings(StarRocksCodeStyleSettings::class.java)
+        val previousUseGeneralStyle = style.USE_GENERAL_STYLE
+        val previousTypesAlign = style.TABLE_TYPES_ALIGN
+        try {
+            style.USE_GENERAL_STYLE = false
+            style.TABLE_TYPES_ALIGN = true
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+
+            val definitions = listOf(
+                "id" to Regex("\\bBIGINT\\b", RegexOption.IGNORE_CASE),
+                "customer_name" to Regex("\\bVARCHAR\\b", RegexOption.IGNORE_CASE),
+                "sale_amount" to Regex("\\bDECIMAL\\b", RegexOption.IGNORE_CASE),
+                "hourly_values" to Regex("\\bARRAY\\b", RegexOption.IGNORE_CASE),
+                "properties" to Regex("\\bMAP\\b", RegexOption.IGNORE_CASE)
+            ).map { (name, typePattern) ->
+                val line = file.text.lineSequence().single { it.trimStart().startsWith(name, ignoreCase = true) }
+                Triple(line, line.indexOf(name, ignoreCase = true), typePattern.find(line)?.range?.first ?: -1)
+            }
+
+            assertEquals("Column names must share one indentation column.\n${file.text}", 1, definitions.map { it.second }.distinct().size)
+            assertEquals("Column types must be aligned.\n${file.text}", 1, definitions.map { it.third }.distinct().size)
+            assertTrue("Column comments must be preserved.\n${file.text}", definitions.all { "comment" in it.first.lowercase() })
+            assertTrue("VARCHAR length must stay attached to its type name.\n${file.text}", Regex("\\bVARCHAR\\(64\\)", RegexOption.IGNORE_CASE).containsMatchIn(file.text))
+            assertTrue("DECIMAL precision must stay attached to its type name.\n${file.text}", Regex("\\bDECIMAL\\(18,\\s*2\\)", RegexOption.IGNORE_CASE).containsMatchIn(file.text))
+        } finally {
+            style.USE_GENERAL_STYLE = previousUseGeneralStyle
+            style.TABLE_TYPES_ALIGN = previousTypesAlign
+        }
+    }
+
+    fun testPlatformFormatterIndentsCreateTablePostfixClausesConsistently() {
+        val file = createPsiFile(
+            """
+                create table formatting_probe (
+                    id bigint not null,
+                    event_date date not null,
+                    name varchar(64)
+                )
+                    engine=olap
+                        primary key(id)
+                            partition by date_trunc('day', event_date)
+                                distributed by hash(id) buckets 8
+                                    order by(event_date, id)
+                                        properties(
+                                            "replication_num"="3",
+                                            "compression"="LZ4"
+                                        );
+            """.trimIndent()
+        )
+        val style = CodeStyle.getSettings(file).getCustomSettings(StarRocksCodeStyleSettings::class.java)
+        val previousUseGeneralStyle = style.USE_GENERAL_STYLE
+        try {
+            style.USE_GENERAL_STYLE = false
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+        } finally {
+            style.USE_GENERAL_STYLE = previousUseGeneralStyle
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Formatted CREATE TABLE must remain parseable: $errors\n${file.text}", errors.isEmpty())
+        val lines = file.text.lineSequence().filter { it.isNotBlank() }.toList()
+        val createIndent = lines.single { it.trimStart().startsWith("CREATE TABLE", ignoreCase = true) }
+            .indexOfFirst { !it.isWhitespace() }
+        val postfixIndent = lines.single { it.trimStart().startsWith("ENGINE", ignoreCase = true) }
+            .indexOfFirst { !it.isWhitespace() }
+        assertTrue(
+            "CREATE TABLE postfix clauses must be indented from the statement header.\n${file.text}",
+            postfixIndent > createIndent
+        )
+        listOf("ENGINE", "PRIMARY KEY", "PARTITION BY", "DISTRIBUTED BY", "ORDER BY", "PROPERTIES").forEach { prefix ->
+            val line = lines.single { it.trimStart().startsWith(prefix, ignoreCase = true) }
+            assertEquals(
+                "$prefix must share the CREATE TABLE postfix indentation.\n${file.text}",
+                postfixIndent,
+                line.indexOfFirst { !it.isWhitespace() }
+            )
+        }
+        val tableClosingParenthesis = lines.first { it.trim() == ")" }
+        assertEquals(
+            "The table column-list closing parenthesis must align with CREATE.\n${file.text}",
+            createIndent,
+            tableClosingParenthesis.indexOfFirst { !it.isWhitespace() }
+        )
+        val propertyLine = lines.single { it.contains("replication_num") }
+        assertTrue(
+            "Property assignments must remain nested inside PROPERTIES.\n${file.text}",
+            propertyLine.indexOfFirst { !it.isWhitespace() } > postfixIndent
+        )
     }
 
     fun testSetAndExpressionVariablesAreNotColumnReferences() {

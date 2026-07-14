@@ -35,6 +35,7 @@ import com.intellij.sql.psi.SqlJoinConditionClause
 import com.intellij.sql.psi.SqlJoinExpression
 import com.intellij.sql.psi.SqlStatement
 import com.intellij.sql.psi.SqlTableExpression
+import com.intellij.sql.psi.SqlUnionExpression
 import com.intellij.sql.psi.SqlTokens.SQL_COMMA
 import com.intellij.sql.psi.SqlTokens.SQL_LEFT_PAREN
 import com.intellij.sql.psi.SqlTokens.SQL_PERIOD
@@ -610,8 +611,15 @@ object StarRocksScenarioValidator {
         check(SqlCompositeElementTypes.SQL_FUNCTION_CALL in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks UNNEST must use the platform SQL_FUNCTION_CALL formatter block."
         }
-        check(SqlCompositeElementTypes.SQL_TYPE_ELEMENT in StarRocksFormatterHelper().basicBlockCreation.keys) {
-            "Generated StarRocks complex types must use the platform SQL_TYPE_ELEMENT formatter block."
+        listOf(
+            SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST,
+            SqlCompositeElementTypes.SQL_COLUMN_DEFINITION,
+            SqlCompositeElementTypes.SQL_TYPE_ELEMENT,
+            SqlCompositeElementTypes.SQL_TYPE_PARAMETER_LIST
+        ).forEach { type ->
+            check(type !in StarRocksFormatterHelper().basicBlockCreation.keys) {
+                "StarRocks DDL element $type must use the platform default alignment block."
+            }
         }
         check(StarRocksElementTypes.CAST_TYPE in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks CAST types must have a formatter block."
@@ -685,13 +693,15 @@ object StarRocksScenarioValidator {
             }
         }
         listOf(
+            StarRocksElementTypes.ENGINE_CLAUSE,
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
             StarRocksElementTypes.COMMENT_CLAUSE,
             StarRocksElementTypes.PARTITION_CLAUSE,
             StarRocksElementTypes.DISTRIBUTION_CLAUSE,
             StarRocksElementTypes.BUCKETS_CLAUSE,
             StarRocksElementTypes.REFRESH_CLAUSE,
-            StarRocksElementTypes.PROPERTIES_CLAUSE
+            StarRocksElementTypes.PROPERTIES_CLAUSE,
+            StarRocksElementTypes.TABLE_ORDER_BY_CLAUSE
         ).forEach { type ->
             check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
                 "Generated StarRocks DDL clause $type must have a platform formatter block."
@@ -748,8 +758,7 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.SQL_TABLE_EXPRESSION,
             StarRocksElementTypes.SQL_TABLE_PROCEDURE_CALL_EXPRESSION,
             SqlCompositeElementTypes.SQL_TABLE_REFERENCE,
-            StarRocksElementTypes.SET_OPERATION_CLAUSE,
-            StarRocksElementTypes.SET_OPERATOR,
+            StarRocksElementTypes.SQL_UNION_EXPRESSION,
             StarRocksElementTypes.SQL_JOIN_EXPRESSION,
             StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION,
             StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE,
@@ -761,6 +770,8 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.STARROCKS_COLUMN_ALIAS_DEFINITION,
             StarRocksElementTypes.SQL_IDENTIFIER,
             StarRocksElementTypes.SQL_COLUMN_DEFINITION,
+            SqlCompositeElementTypes.SQL_TYPE_PARAMETER_LIST,
+            StarRocksElementTypes.ENGINE_CLAUSE,
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
             StarRocksElementTypes.COMMENT_CLAUSE,
             StarRocksElementTypes.PARTITION_CLAUSE,
@@ -854,6 +865,7 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.SQL_FROM_CLAUSE to SqlFromClause::class.java,
             StarRocksElementTypes.SQL_TABLE_EXPRESSION to SqlTableExpression::class.java,
             StarRocksElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION to SqlTableExpression::class.java,
+            StarRocksElementTypes.SQL_UNION_EXPRESSION to SqlUnionExpression::class.java,
             StarRocksElementTypes.SQL_JOIN_EXPRESSION to SqlJoinExpression::class.java,
             StarRocksElementTypes.SQL_JOIN_CONDITION_CLAUSE to SqlJoinConditionClause::class.java,
             StarRocksElementTypes.SQL_USING_CLAUSE to SqlUsingClause::class.java
@@ -952,8 +964,11 @@ object StarRocksScenarioValidator {
         check("StarRocksNamedStub" !in productionSources && "StarRocksStubElementTypes" !in productionSources) {
             "Private StarRocks named-stub infrastructure must be removed from production sources."
         }
-        check("SqlFileElementType" !in productionSources) {
-            "The parser definition must use stable IFileElementType API; SqlFileElementType is absent in DataGrip 2026.1."
+        val parserDefinition = projectDir.resolve(
+            "src/main/kotlin/com/github/ycyz/starrocks/datagrip/lang/StarRocksParserDefinition.kt"
+        ).readText()
+        check("SqlFileElementType" in parserDefinition) {
+            "The parser definition must use SqlFileElementType so the platform creates SqlFileBlock for scripts."
         }
 
         val contributor = projectDir.resolve(

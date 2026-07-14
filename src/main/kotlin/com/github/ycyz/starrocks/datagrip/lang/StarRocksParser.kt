@@ -23,10 +23,6 @@ class StarRocksParser : SqlParser(StarRocksDialect.INSTANCE) {
         return StarRocksGeneratedParser.parse_root_(root, builder, level)
     }
 
-    override fun parseScriptDefault(builder: PsiBuilder) {
-        StarRocksGeneratedParser.parse_root_(StarRocksParserDefinition.STARROCKS_SQL_FILE, builder, 0)
-    }
-
     override fun parseSqlStatement(builder: PsiBuilder, level: Int): Boolean {
         return StarRocksGeneratedParser.statement(builder, level)
     }
