@@ -6,6 +6,7 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserLexer
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokenInitializer
 import com.intellij.application.options.CodeStyle
 import com.intellij.lang.LanguageParserDefinitions
 import com.intellij.openapi.command.WriteCommandAction
@@ -21,6 +22,7 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlAsExpression
 import com.intellij.sql.psi.SqlColumnDefinition
+import com.intellij.sql.psi.SqlDefinition
 import com.intellij.sql.psi.SqlFunctionCallExpression
 import com.intellij.sql.psi.SqlExpression
 import com.intellij.sql.psi.SqlLiteralExpression
@@ -285,6 +287,62 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
     }
 
+    fun testDocumentedCreateMaterializedViewClausesParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.sync_sales
+                COMMENT 'synchronous materialized view'
+                PROPERTIES ("replication_num" = "3")
+                AS
+                SELECT store_id, SUM(amount) AS total_amount
+                FROM sales
+                GROUP BY store_id;
+            """.trimIndent()
+        )
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.scheduled_sales
+                COMMENT 'scheduled materialized view'
+                PARTITION BY (biz_date, region, date_trunc('day', event_time))
+                DISTRIBUTED BY HASH(order_id, region) BUCKETS 12
+                ORDER BY (biz_date, order_id)
+                REFRESH DEFERRED SCHEDULE START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY)
+                PROPERTIES (
+                    "partition_refresh_number" = "3",
+                    "query_rewrite_consistency" = "force_mv"
+                )
+                AS
+                SELECT biz_date, region, event_time, order_id
+                FROM sales;
+            """.trimIndent()
+        )
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE MATERIALIZED VIEW analytics.legacy_async_sales
+                PARTITION BY date_trunc('month', biz_date)
+                DISTRIBUTED BY HASH(order_id)
+                ORDER BY order_id
+                REFRESH ASYNC START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY)
+                AS SELECT biz_date, order_id FROM sales;
+            """.trimIndent()
+        )
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE MATERIALIZED VIEW analytics.incremental_sales
+                PARTITION BY biz_date
+                REFRESH DEFERRED MANUAL
+                PROPERTIES ("refresh_mode" = "INCREMENTAL")
+                AS SELECT biz_date, order_id FROM sales;
+            """.trimIndent()
+        )
+        assertParsesWithoutPsiErrors(
+            "CREATE MATERIALIZED VIEW analytics.immediate_sales REFRESH IMMEDIATE ASYNC AS SELECT order_id FROM sales;"
+        )
+        assertParsesWithoutPsiErrors(
+            "CREATE MATERIALIZED VIEW analytics.hourly_sales REFRESH SCHEDULE EVERY (INTERVAL 1 HOUR) AS SELECT order_id FROM sales;"
+        )
+    }
+
     fun testStarRocksOlapTableClausesParseWithoutPsiErrors() {
         assertParsesWithoutPsiErrors(
             """
@@ -329,6 +387,170 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 PROPERTIES ("replication_num" = "3");
             """.trimIndent()
         )
+    }
+
+    fun testStarRocksCreateTableEngineVariantsParseWithoutPsiErrors() {
+        listOf("OLAP", "MYSQL", "ELASTICSEARCH", "HIVE", "HUDI", "ICEBERG", "JDBC").forEach { engine ->
+            assertParsesWithoutPsiErrors(
+                "CREATE EXTERNAL TABLE ext_${engine.lowercase()} (id BIGINT) ENGINE = $engine PROPERTIES (\"resource\" = \"r0\");"
+            )
+        }
+        assertParsesWithoutPsiErrors(
+            "CREATE EXTERNAL TEMPORARY TABLE IF NOT EXISTS scratch.mixed_scope (id BIGINT) ENGINE = OLAP;"
+        )
+    }
+
+    fun testCreateTableLikeUsesPlatformClauseAndSupportsDocumentedOverrides() {
+        val lexer = StarRocksParserLexer()
+        lexer.start("LIKE")
+        assertSame("LIKE must use the grammar keyword token.", StarRocksElementTypes.LIKE, lexer.tokenType)
+
+        val simple = createPsiFile("CREATE TABLE tb1 LIKE tb2;")
+        val simpleErrors = PsiTreeUtil.findChildrenOfType(simple, PsiErrorElement::class.java)
+        assertTrue("Simple CREATE TABLE LIKE must parse: $simpleErrors\n${psiSummary(simple)}", simpleErrors.isEmpty())
+        assertParsesWithoutPsiErrors("CREATE EXTERNAL TABLE IF NOT EXISTS test1.tb1 LIKE test2.tb2;")
+
+        val file = createPsiFile(
+            """
+                CREATE TEMPORARY EXTERNAL TABLE IF NOT EXISTS test1.order_copy
+                PARTITION BY date_trunc('day', dt)
+                DISTRIBUTED BY HASH(dt) BUCKETS 8
+                PROPERTIES ("replication_num" = "1")
+                LIKE test1.orders;
+            """.trimIndent()
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Documented CREATE TABLE LIKE syntax must parse: $errors\n${psiSummary(file)}", errors.isEmpty())
+        assertEquals(
+            "CREATE TABLE LIKE must expose the platform SQL_LIKE_TABLE_CLAUSE.\n${psiSummary(file)}",
+            1,
+            elementsOfType(file, SqlCompositeElementTypes.SQL_LIKE_TABLE_CLAUSE).size
+        )
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+        val formattedErrors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Formatted CREATE TABLE LIKE must remain parseable: $formattedErrors\n${file.text}", formattedErrors.isEmpty())
+        assertTrue("LIKE source table must be preserved after formatting.\n${file.text}", "LIKE test1.orders" in file.text)
+    }
+
+    fun testStarRocksCreateTableIndexesRollupsAndColumnAttributesParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE TABLE aggregate_features (
+                    id BIGINT NOT NULL,
+                    name VARCHAR(64) REPLACE_IF_NOT_NULL,
+                    amount DECIMAL(18, 2) SUM DEFAULT '0',
+                    max_amount BIGINT MAX,
+                    min_amount BIGINT MIN,
+                    hll_value HLL HLL_UNION,
+                    bitmap_value BITMAP BITMAP_UNION,
+                    percentile_value PERCENTILE PERCENTILE_UNION,
+                    binary_value VARBINARY(128),
+                    variant_value VARIANT,
+                    generated_amount DECIMAL(18, 2) AS amount * 2 COMMENT 'generated',
+                    INDEX idx_name (name, amount) USING BITMAP COMMENT 'bitmap index'
+                )
+                ENGINE = OLAP
+                AGGREGATE KEY (id)
+                COMMENT 'aggregate features'
+                DISTRIBUTED BY HASH(id) BUCKETS 12
+                ROLLUP (
+                    rollup_amount (id, amount),
+                    rollup_name (id, name) FROM aggregate_features PROPERTIES ("storage_type" = "column")
+                )
+                ORDER BY (id, name)
+                PROPERTIES ("replication_num" = "3");
+            """.trimIndent()
+        )
+    }
+
+    fun testStarRocksRangePartitionFormsParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE TABLE range_less_than (event_date DATE, id BIGINT)
+                PARTITION BY RANGE(event_date) (
+                    PARTITION p1 VALUES LESS THAN ('2026-01-01'),
+                    PARTITION pmax VALUES LESS THAN MAXVALUE
+                )
+                DISTRIBUTED BY HASH(id);
+            """.trimIndent()
+        )
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE TABLE range_fixed (event_date DATE, id BIGINT)
+                PARTITION BY RANGE(event_date) (
+                    PARTITION p1 VALUES [('2026-01-01'), ('2026-02-01')),
+                    PARTITION p2 VALUES [('2026-02-01'), (MAXVALUE))
+                )
+                DISTRIBUTED BY HASH(id);
+            """.trimIndent()
+        )
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE TABLE range_batch (date_key INT, id BIGINT)
+                PARTITION BY RANGE(date_key) (
+                    START ('1') END ('5') EVERY (1)
+                )
+                DISTRIBUTED BY RANDOM BUCKETS 8;
+            """.trimIndent()
+        )
+        assertParsesWithoutPsiErrors(
+            "CREATE TABLE random_buckets (id BIGINT) DISTRIBUTED BY RANDOM BUCKETS;"
+        )
+    }
+
+    fun testRangeAndListPartitionMethodsAndNamesDoNotProduceUnresolvedSymbols() {
+        val sql = """
+            CREATE TABLE range_table (k1 DATE, id BIGINT)
+            PARTITION BY RANGE(k1) (
+                PARTITION p1 VALUES LESS THAN ('2024-01-01'),
+                PARTITION p2 VALUES LESS THAN MAXVALUE
+            );
+
+            CREATE TABLE list_table (region VARCHAR(16), id BIGINT)
+            PARTITION BY LIST(region) (
+                PARTITION p_cn VALUES IN ('CN'),
+                PARTITION p_us VALUES IN ('US')
+            );
+        """.trimIndent()
+        StarRocksTokenInitializer.ensureInitialized()
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("partition-symbols.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val file = createPsiFile(sql)
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Partition fixture must parse without PSI errors: $errors\n${psiSummary(file)}", errors.isEmpty())
+
+        val methodCalls = elementsOfType(file, SqlCompositeElementTypes.SQL_FUNCTION_CALL)
+            .filterIsInstance<SqlFunctionCallExpression>()
+            .filter { it.text.startsWith("RANGE", true) || it.text.startsWith("LIST", true) }
+        assertTrue("Partition methods must not be modeled as SQL function calls: $methodCalls", methodCalls.isEmpty())
+
+        val definitionElements = elementsOfType(file, SqlCompositeElementTypes.SQL_PARTITION_DEFINITION)
+        assertTrue("Partition definition nodes are missing.\n${psiSummary(file)}", definitionElements.isNotEmpty())
+        val definitions = definitionElements.filterIsInstance<SqlDefinition>()
+        assertEquals(
+            "Partition definition nodes must implement SqlDefinition: ${definitionElements.map { it.javaClass.name }}\n${psiSummary(file)}",
+            listOf("p1", "p2", "p_cn", "p_us"),
+            definitions.map { it.name }
+        )
+        assertTrue("Partition declarations must expose PARTITION definitions.", definitions.all { it.kind == ObjectKind.PARTITION })
+
+        val references = elementsOfType(file, SqlCompositeElementTypes.SQL_PARTITION_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        assertEquals(listOf("p1", "p2", "p_cn", "p_us"), references.map { it.name })
+        references.forEachIndexed { index, reference ->
+            assertSame("Partition name ${reference.text} must resolve to its declaration.", definitions[index], reference.resolve())
+        }
+
+        val unresolved = myFixture.doHighlighting()
+            .filter { it.description?.contains("Unable to resolve symbol", ignoreCase = true) == true }
+        assertTrue("RANGE/LIST methods and partition names must not be unresolved: $unresolved", unresolved.isEmpty())
     }
 
     fun testSessionSetStatementParsesWithoutPsiErrors() {
@@ -505,11 +727,49 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         }
     }
 
-    fun testOlapEngineIsRecognizedAsStarRocksKeyword() {
-        val lexer = StarRocksParserLexer()
-        lexer.start("OLAP")
-        assertSame(StarRocksElementFactory.token("OLAP"), lexer.tokenType)
+    fun testCreateTableEnginesAreRecognizedAsStarRocksKeywords() {
+        listOf("OLAP", "MYSQL", "ELASTICSEARCH", "HIVE", "HUDI", "ICEBERG", "JDBC").forEach { engine ->
+            val lexer = StarRocksParserLexer()
+            lexer.start(engine)
+            assertSame("$engine must use its registered SQL keyword token.", StarRocksElementFactory.token(engine), lexer.tokenType)
+        }
         assertParsesWithoutPsiErrors("CREATE TABLE engine_probe (id BIGINT) ENGINE=OLAP;")
+    }
+
+    fun testCreateTableSpecificClauseColumnsResolveToDefinitions() {
+        val file = createPsiFile(
+            """
+                CREATE TABLE ddl_resolve (
+                    id BIGINT,
+                    amount BIGINT,
+                    generated_amount BIGINT AS amount * 2,
+                    INDEX idx_amount (amount) USING BITMAP COMMENT 'amount index'
+                )
+                AGGREGATE KEY (id)
+                PARTITION BY RANGE(id) (
+                    PARTITION pmax VALUES LESS THAN MAXVALUE
+                )
+                DISTRIBUTED BY HASH(id)
+                ROLLUP (r_amount(id, amount))
+                ORDER BY (id, amount);
+            """.trimIndent()
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("StarRocks-specific CREATE TABLE clauses must parse: $errors\n${psiSummary(file)}", errors.isEmpty())
+
+        val definitions = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_DEFINITION)
+            .filterIsInstance<SqlColumnDefinition>()
+            .associateBy { it.name }
+        val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        assertTrue("The DDL fixture must expose column references.\n${psiSummary(file)}", references.isNotEmpty())
+        references.forEach { reference ->
+            assertSame(
+                "DDL column ${reference.text} must resolve to its CREATE TABLE definition.",
+                definitions[reference.name],
+                reference.resolve()
+            )
+        }
     }
 
     fun testEtlIdentifierAndSeparatorExtensionsParseWithoutPsiErrors() {
@@ -1364,6 +1624,151 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         } finally {
             style.USE_GENERAL_STYLE = previousUseGeneralStyle
             style.TABLE_TYPES_ALIGN = previousTypesAlign
+        }
+    }
+
+    fun testPlatformFormatterPreservesStarRocksSpecificCreateTableClauses() {
+        val file = createPsiFile(
+            """
+                create table formatter_specific (
+                    id bigint not null,
+                    amount decimal(18,2) sum,
+                    generated_amount decimal(18,2) as amount * 2 comment 'generated',
+                    index idx_amount(amount) using bitmap comment 'amount index'
+                )
+                engine=olap
+                aggregate key(id)
+                partition by range(id) (
+                    partition p1 values less than (100),
+                    partition pmax values less than maxvalue
+                )
+                distributed by hash(id) buckets 8
+                rollup (r_amount(id, amount) properties ("storage_type"="column"))
+                order by(id)
+                properties("replication_num"="3");
+            """.trimIndent()
+        )
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Formatted StarRocks CREATE TABLE must remain parseable: $errors\n${file.text}", errors.isEmpty())
+        assertEquals(
+            "Inline indexes must use the platform SQL_INDEX_DEFINITION PSI.\n${psiSummary(file)}",
+            1,
+            elementsOfType(file, SqlCompositeElementTypes.SQL_INDEX_DEFINITION).size
+        )
+        assertEquals(
+            "Generated columns must use the platform SQL_COLUMN_GENERATED_CLAUSE PSI.\n${psiSummary(file)}",
+            1,
+            elementsOfType(file, SqlCompositeElementTypes.SQL_COLUMN_GENERATED_CLAUSE).size
+        )
+        assertEquals(
+            "ROLLUP must remain a distinct StarRocks DDL clause.\n${psiSummary(file)}",
+            1,
+            elementsOfType(file, StarRocksElementTypes.ROLLUP_CLAUSE).size
+        )
+        assertTrue(
+            "Parameterized types must stay attached after formatting.\n${file.text}",
+            Regex("\\bdecimal\\(18,\\s*2\\)", RegexOption.IGNORE_CASE).containsMatchIn(file.text)
+        )
+    }
+
+    fun testPlatformFormatterAppliesViewQueryIndentSettingToViewsAndCtas() {
+        val samples = linkedMapOf(
+            "CREATE VIEW" to
+                "CREATE VIEW v_sales AS SELECT id, SUM(amount) AS total FROM sales GROUP BY id;",
+            "CREATE MATERIALIZED VIEW" to
+                "CREATE MATERIALIZED VIEW mv_sales DISTRIBUTED BY HASH(id) REFRESH ASYNC AS SELECT id, SUM(amount) AS total FROM sales GROUP BY id;",
+            "CREATE TABLE AS SELECT" to
+                "CREATE TABLE sales_copy AS SELECT id, amount FROM sales;"
+        )
+
+        samples.forEach { (name, sql) ->
+            listOf(false, true).forEach { indentQuery ->
+                val file = createPsiFile(sql)
+                val style = CodeStyle.getSettings(file).getCustomSettings(StarRocksCodeStyleSettings::class.java)
+                val previousUseGeneralStyle = style.USE_GENERAL_STYLE
+                val previousWrapQuery = style.VIEW_WRAP_QUERY
+                val previousIndentQuery = style.VIEW_INDENT_QUERY
+                try {
+                    style.USE_GENERAL_STYLE = false
+                    style.VIEW_WRAP_QUERY = true
+                    style.VIEW_INDENT_QUERY = indentQuery
+                    WriteCommandAction.runWriteCommandAction(project) {
+                        CodeStyleManager.getInstance(project).reformat(file)
+                    }
+                } finally {
+                    style.USE_GENERAL_STYLE = previousUseGeneralStyle
+                    style.VIEW_WRAP_QUERY = previousWrapQuery
+                    style.VIEW_INDENT_QUERY = previousIndentQuery
+                }
+
+                val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+                assertTrue("$name must remain parseable after formatting: $errors\n${file.text}", errors.isEmpty())
+                assertEquals(
+                    "$name must expose the platform AS query clause.\n${psiSummary(file)}",
+                    1,
+                    elementsOfType(file, SqlCompositeElementTypes.SQL_AS_QUERY_CLAUSE).size
+                )
+
+                val lines = file.text.lineSequence().filter { it.isNotBlank() }.toList()
+                val createIndent = lines.first().indexOfFirst { !it.isWhitespace() }
+                val selectIndent = lines.single { it.trimStart().startsWith("SELECT", ignoreCase = true) }
+                    .indexOfFirst { !it.isWhitespace() }
+                val fromIndent = lines.single { it.trimStart().startsWith("FROM", ignoreCase = true) }
+                    .indexOfFirst { !it.isWhitespace() }
+                assertEquals("$name query clauses must align.\n${file.text}", selectIndent, fromIndent)
+                if (indentQuery) {
+                    assertTrue("$name query must be indented when VIEW_INDENT_QUERY is enabled.\n${file.text}", selectIndent > createIndent)
+                } else {
+                    assertEquals("$name query must not be structurally indented when VIEW_INDENT_QUERY is disabled.\n${file.text}", createIndent, selectIndent)
+                }
+            }
+        }
+    }
+
+    fun testMaterializedViewFormatterUsesSingleIndentForDocumentedClauses() {
+        val file = createPsiFile(
+            """
+                CREATE MATERIALIZED VIEW order_mv COMMENT 'orders' PARTITION BY date_trunc('day', biz_date) DISTRIBUTED BY HASH(order_id) BUCKETS 12 ORDER BY (biz_date, order_id) REFRESH DEFERRED SCHEDULE START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY) PROPERTIES ("replication_num" = "3") AS SELECT biz_date, order_id FROM orders;
+            """.trimIndent()
+        )
+        val style = CodeStyle.getSettings(file).getCustomSettings(StarRocksCodeStyleSettings::class.java)
+        val previousUseGeneralStyle = style.USE_GENERAL_STYLE
+        val previousWrapAs = style.VIEW_WRAP_AS
+        val previousWrapQuery = style.VIEW_WRAP_QUERY
+        val previousIndentQuery = style.VIEW_INDENT_QUERY
+        try {
+            style.USE_GENERAL_STYLE = false
+            style.VIEW_WRAP_AS = true
+            style.VIEW_WRAP_QUERY = true
+            style.VIEW_INDENT_QUERY = false
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+        } finally {
+            style.USE_GENERAL_STYLE = previousUseGeneralStyle
+            style.VIEW_WRAP_AS = previousWrapAs
+            style.VIEW_WRAP_QUERY = previousWrapQuery
+            style.VIEW_INDENT_QUERY = previousIndentQuery
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Documented materialized view must remain parseable after formatting: $errors\n${file.text}", errors.isEmpty())
+
+        val lines = file.text.lineSequence().filter { it.isNotBlank() }.toList()
+        val createIndent = lines.first().indexOfFirst { !it.isWhitespace() }
+        listOf("COMMENT", "PARTITION BY", "DISTRIBUTED BY", "ORDER BY", "REFRESH", "PROPERTIES").forEach { prefix ->
+            val line = lines.single { it.trimStart().startsWith(prefix, ignoreCase = true) }
+            val indent = line.indexOfFirst { !it.isWhitespace() }
+            assertEquals("$prefix must use exactly one materialized-view clause indent.\n${file.text}", createIndent + 4, indent)
+        }
+        listOf("AS", "SELECT", "FROM").forEach { prefix ->
+            val line = lines.single { it.trimStart().startsWith(prefix, ignoreCase = true) }
+            assertEquals("$prefix must align with CREATE.\n${file.text}", createIndent, line.indexOfFirst { !it.isWhitespace() })
         }
     }
 

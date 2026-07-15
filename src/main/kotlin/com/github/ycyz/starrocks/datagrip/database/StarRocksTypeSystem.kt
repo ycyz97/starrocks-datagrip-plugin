@@ -81,9 +81,13 @@ class StarRocksTypeSystem(dbms: Dbms = StarRocksDbms.INSTANCE) : DasTypeSystemIm
             "CHAR",
             "VARCHAR",
             "STRING",
+            "BINARY",
+            "VARBINARY",
             "JSON",
+            "VARIANT",
             "BITMAP",
-            "HLL"
+            "HLL",
+            "PERCENTILE"
         )
 
         val COMPLEX_TYPES: Set<String> = setOf(
@@ -97,8 +101,11 @@ class StarRocksTypeSystem(dbms: Dbms = StarRocksDbms.INSTANCE) : DasTypeSystemIm
             "INTEGER" to "INT",
             "DECIMAL" to "DECIMAL128",
             "DECIMALV2" to "DECIMAL128",
+            "NUMERIC" to "DECIMAL128",
             "VARCHAR2" to "VARCHAR",
-            "TEXT" to "STRING"
+            "TEXT" to "STRING",
+            "BINARY" to "VARBINARY",
+            "TIMESTAMP" to "DATETIME"
         )
 
         private val DEFAULT_TYPE_NAMES: Map<DasTypeCategory, String> = mapOf(
@@ -109,7 +116,7 @@ class StarRocksTypeSystem(dbms: Dbms = StarRocksDbms.INSTANCE) : DasTypeSystemIm
             DasTypeCategory.DATE to "DATE",
             DasTypeCategory.DATE_TIME to "DATETIME",
             DasTypeCategory.TIMESTAMP to "DATETIME",
-            DasTypeCategory.BYTES to "STRING",
+            DasTypeCategory.BYTES to "VARBINARY",
             DasTypeCategory.RECORD to "STRUCT",
             DasTypeCategory.UNKNOWN to "STRING"
         )
