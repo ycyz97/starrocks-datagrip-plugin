@@ -8,6 +8,7 @@ import com.github.ycyz.starrocks.datagrip.database.StarRocksDdlStatements
 import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingProfile
+import com.github.ycyz.starrocks.datagrip.format.StarRocksMaterializedViewBlock
 import com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighter
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksFeature
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
@@ -614,6 +615,8 @@ object StarRocksScenarioValidator {
         listOf(
             SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST,
             SqlCompositeElementTypes.SQL_COLUMN_DEFINITION,
+            SqlCompositeElementTypes.SQL_COLUMN_GENERATED_CLAUSE,
+            SqlCompositeElementTypes.SQL_INDEX_DEFINITION,
             SqlCompositeElementTypes.SQL_TYPE_ELEMENT,
             SqlCompositeElementTypes.SQL_TYPE_PARAMETER_LIST
         ).forEach { type ->
@@ -632,6 +635,12 @@ object StarRocksScenarioValidator {
         }
         check(SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Generated StarRocks materialized view must use the platform SQL_CREATE_MATERIALIZED_VIEW_STATEMENT formatter block."
+        }
+        check(
+            StarRocksFormatterHelper().basicBlockCreation[SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT]
+                ?.call() is StarRocksMaterializedViewBlock
+        ) {
+            "StarRocks materialized views must use the dialect-aware view formatter block."
         }
         check(SqlCompositeElementTypes.SQL_SELECT_STATEMENT in StarRocksFormatterHelper().basicBlockCreation.keys) {
             "Ordinary StarRocks SELECT must use the platform SQL_SELECT_STATEMENT formatter block."
@@ -701,7 +710,9 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.BUCKETS_CLAUSE,
             StarRocksElementTypes.REFRESH_CLAUSE,
             StarRocksElementTypes.PROPERTIES_CLAUSE,
-            StarRocksElementTypes.TABLE_ORDER_BY_CLAUSE
+            StarRocksElementTypes.ROLLUP_CLAUSE,
+            StarRocksElementTypes.TABLE_ORDER_BY_CLAUSE,
+            StarRocksElementTypes.MATERIALIZED_VIEW_ORDER_BY_CLAUSE
         ).forEach { type ->
             check(type in StarRocksFormatterHelper().basicBlockCreation.keys) {
                 "Generated StarRocks DDL clause $type must have a platform formatter block."
@@ -770,6 +781,9 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.STARROCKS_COLUMN_ALIAS_DEFINITION,
             StarRocksElementTypes.SQL_IDENTIFIER,
             StarRocksElementTypes.SQL_COLUMN_DEFINITION,
+            SqlCompositeElementTypes.SQL_COLUMN_GENERATED_CLAUSE,
+            SqlCompositeElementTypes.SQL_INDEX_DEFINITION,
+            SqlCompositeElementTypes.SQL_LIKE_TABLE_CLAUSE,
             SqlCompositeElementTypes.SQL_TYPE_PARAMETER_LIST,
             StarRocksElementTypes.ENGINE_CLAUSE,
             StarRocksElementTypes.KEY_MODEL_CLAUSE,
@@ -780,6 +794,7 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.DISTRIBUTION_EXPRESSION,
             StarRocksElementTypes.BUCKETS_CLAUSE,
             StarRocksElementTypes.REFRESH_CLAUSE,
+            StarRocksElementTypes.MATERIALIZED_VIEW_ORDER_BY_CLAUSE,
             StarRocksElementTypes.RESOURCE_REFERENCE,
             StarRocksElementTypes.SECURITY_PRINCIPAL,
             StarRocksElementTypes.PRIVILEGE_LIST,
@@ -905,11 +920,17 @@ object StarRocksScenarioValidator {
         check(typeSystem.getNormalizedTypeName("array<bigint>") == "ARRAY") {
             "StarRocks type system should recognize ARRAY complex types."
         }
+        check(typeSystem.getNormalizedTypeName("binary(128)") == "VARBINARY") {
+            "StarRocks type system should normalize BINARY to VARBINARY."
+        }
         check(typeSystem.getDefaultTypeName(DasTypeCategory.INTEGER) == "BIGINT") {
             "StarRocks integer default type should be BIGINT."
         }
-        check("JSON" in StarRocksTypeSystem.SCALAR_TYPES && "STRUCT" in StarRocksTypeSystem.COMPLEX_TYPES) {
-            "StarRocks type catalog should include JSON and STRUCT."
+        check(
+            setOf("JSON", "VARIANT", "VARBINARY", "PERCENTILE").all(StarRocksTypeSystem.SCALAR_TYPES::contains) &&
+                "STRUCT" in StarRocksTypeSystem.COMPLEX_TYPES
+        ) {
+            "StarRocks type catalog should include current scalar and complex DDL types."
         }
 
         val quoted = StarRocksDefinitionProvider.quoteIdentifier("dws`schema")
@@ -998,6 +1019,9 @@ object StarRocksScenarioValidator {
         val keywordCatalog = projectDir.resolve("grammar/starrocks-keywords.txt").readText()
         check("[reserved]" in keywordCatalog && "[optional]" in keywordCatalog) {
             "StarRocks keywords must come from the standalone canonical keyword catalog."
+        }
+        check(setOf("ELASTICSEARCH", "HIVE", "HUDI", "ICEBERG", "JDBC", "MYSQL").all { it in keywordCatalog }) {
+            "StarRocks external table engines must be registered SQL keywords."
         }
         val buildScript = projectDir.resolve("build.gradle.kts").readText()
         check("grammar/starrocks-keywords.txt" in buildScript && "StarRocksKeywordCatalog.kt" !in buildScript) {

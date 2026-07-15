@@ -40,7 +40,7 @@ private create_materialized_view_start ::= "CREATE" "MATERIALIZED" "VIEW"
 private create_view_guarded ::= &create_view_start create_view_statement
 private create_view_start ::= "CREATE" (("OR" "REPLACE")? "VIEW")
 private create_table_guarded ::= &create_table_start create_table_statement
-private create_table_start ::= "CREATE" ("TEMPORARY" | "EXTERNAL")? "TABLE"
+private create_table_start ::= "CREATE" table_scope? "TABLE"
 private create_catalog_guarded ::= &create_catalog_start create_catalog_statement
 private create_catalog_start ::= "CREATE" "EXTERNAL"? "CATALOG"
 private create_resource_guarded ::= &create_resource_start create_resource_statement
@@ -51,14 +51,25 @@ private create_principal_guarded ::= &("CREATE" ("USER" | "ROLE")) create_princi
 private create_schema_guarded ::= &("CREATE" ("DATABASE" | "SCHEMA")) create_schema_statement
 private create_index_guarded ::= &("CREATE" "BITMAP"? "INDEX") create_index_statement
 
-create_table_statement ::= "CREATE" table_scope? "TABLE" if_not_exists? table_reference table_column_list? create_table_clause* as_select_clause? {
+create_table_statement ::= "CREATE" table_scope? "TABLE" if_not_exists? table_reference create_table_body {
   elementType="SQL_CREATE_TABLE_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=3
   recoverWhile=statement_recover
 }
 
-private table_scope ::= "TEMPORARY" | "EXTERNAL"
+private create_table_body ::= &"LIKE" like_table_clause
+  | table_column_list? create_table_clause* create_table_source?
+private create_table_source ::= &"LIKE" like_table_clause | &"AS" as_select_clause
+
+like_table_clause ::= "LIKE" table_reference {
+  elementType="SQL_LIKE_TABLE_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=1
+  recoverWhile=statement_recover
+}
+
+private table_scope ::= "EXTERNAL" "TEMPORARY"? | "TEMPORARY" "EXTERNAL"?
 private if_not_exists ::= "IF" "NOT" "EXISTS"
 private if_exists ::= "IF" "EXISTS"
 
@@ -69,15 +80,16 @@ private create_table_clause ::= engine_clause
   | buckets_clause
   | comment_clause
   | properties_clause
+  | rollup_clause
   | table_order_by_clause
 
-private clause_recover ::= !(";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "REFRESH" | "PROPERTIES" | "ORDER" | "FROM" | "AS")
+private clause_recover ::= !(";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "REFRESH" | "PROPERTIES" | "ROLLUP" | "ORDER" | "FROM" | "LIKE" | "AS")
 
 engine_clause ::= "ENGINE" "="? engine_name {
   pin=1
   recoverWhile=clause_recover
 }
-private engine_name ::= "OLAP" | identifier_reference
+private engine_name ::= "OLAP" | "MYSQL" | "ELASTICSEARCH" | "HIVE" | "HUDI" | "ICEBERG" | "JDBC"
 
 key_model_clause ::= key_model "KEY" key_column_list {
   pin=2
@@ -89,10 +101,24 @@ partition_clause ::= "PARTITION" "BY" partition_expression partition_definition_
   pin=2
   recoverWhile=clause_recover
 }
-partition_expression ::= function_call | parenthesized_value_expression | column_reference
+partition_expression ::= partition_method_expression | function_call | parenthesized_value_expression | column_reference
+private partition_method_expression ::= ("RANGE" | "LIST") "(" column_reference ("," column_reference)* ")"
 partition_definition_list ::= "(" (partition_definition ("," partition_definition)* | range_partition_bounds) ")"
-partition_definition ::= "PARTITION" identifier_reference "VALUES" "IN" parenthesized_value_expression
-private range_partition_bounds ::= "START" parenthesized_value_expression "END" parenthesized_value_expression "EVERY" "(" interval_expression ")"
+partition_definition ::= "PARTITION" partition_reference "VALUES" partition_values {
+  elementType="SQL_PARTITION_DEFINITION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+partition_reference ::= identifier_reference {
+  elementType="SQL_PARTITION_REFERENCE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+private partition_values ::= "IN" parenthesized_value_expression
+  | "LESS" "THAN" partition_upper_bound
+  | fixed_partition_range
+private partition_upper_bound ::= "MAXVALUE" | parenthesized_value_expression
+private fixed_partition_range ::= "[" partition_bound "," partition_bound ")"
+private partition_bound ::= "MAXVALUE" | parenthesized_value_expression
+private range_partition_bounds ::= "START" parenthesized_value_expression "END" parenthesized_value_expression "EVERY" "(" (interval_expression | value_expression) ")"
 
 distribution_clause ::= "DISTRIBUTED" "BY" distribution_expression buckets_clause? {
   pin=2
@@ -100,7 +126,7 @@ distribution_clause ::= "DISTRIBUTED" "BY" distribution_expression buckets_claus
 }
 distribution_expression ::= "HASH" "(" column_reference ("," column_reference)* ")" | "RANDOM" | function_call
 
-buckets_clause ::= "BUCKETS" numeric_literal {
+buckets_clause ::= "BUCKETS" numeric_literal? {
   pin=1
   recoverWhile=clause_recover
 }
@@ -119,7 +145,20 @@ property_pair ::= property_key "=" property_value
 property_key ::= string_literal | identifier_reference
 property_value ::= string_literal | numeric_literal | keyword_literal | identifier_reference
 
+rollup_clause ::= "ROLLUP" "(" rollup_definition ("," rollup_definition)* ")" {
+  pin=1
+  recoverWhile=clause_recover
+}
+private rollup_definition ::= identifier_reference key_column_list rollup_from_clause? rollup_properties_clause?
+private rollup_from_clause ::= "FROM" identifier_reference
+private rollup_properties_clause ::= "PROPERTIES" property_list
+
 table_order_by_clause ::= "ORDER" "BY" key_column_list {
+  pin=2
+  recoverWhile=clause_recover
+}
+
+materialized_view_order_by_clause ::= "ORDER" "BY" (key_column_list | key_column ("," key_column)*) {
   pin=2
   recoverWhile=clause_recover
 }
@@ -137,17 +176,29 @@ create_materialized_view_statement ::= "CREATE" "MATERIALIZED" "VIEW" if_not_exi
   pin=3
   recoverWhile=statement_recover
 }
-private create_materialized_view_clause ::= partition_clause | distribution_clause | buckets_clause | refresh_clause | comment_clause | properties_clause
+private create_materialized_view_clause ::= comment_clause
+  | partition_clause
+  | distribution_clause
+  | buckets_clause
+  | materialized_view_order_by_clause
+  | refresh_clause
+  | properties_clause
 private view_column_list ::= "(" view_column ("," view_column)* ","? ")"
 private view_column ::= identifier_reference view_column_comment?
 private view_column_comment ::= "COMMENT" string_literal
-refresh_clause ::= "REFRESH" refresh_mode? {
+refresh_clause ::= "REFRESH" refresh_moment? refresh_scheme? {
   pin=1
   recoverWhile=clause_recover
 }
-private refresh_mode ::= "ASYNC" | "MANUAL" | "IMMEDIATE" | "DEFERRED"
+private refresh_moment ::= "IMMEDIATE" | "DEFERRED"
+private refresh_scheme ::= "MANUAL" | "ASYNC" refresh_schedule? | "SCHEDULE" refresh_schedule
+private refresh_schedule ::= refresh_start? refresh_every
+private refresh_start ::= "START" parenthesized_value_expression
+private refresh_every ::= "EVERY" "(" interval_expression ")"
 
 as_select_clause ::= "AS" embedded_query_expression {
+  elementType="SQL_AS_QUERY_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
@@ -952,8 +1003,8 @@ cast_type ::= type_element {
   pin=1
   recoverWhile=type_recover
 }
-private type_recover ::= !("," | ")" | ">" | "NULL" | "NOT" | "DEFAULT" | "COMMENT" | "AS")
-scalar_type ::= "BOOLEAN" | "BOOL" | "TINYINT" | "SMALLINT" | "INT" | "INTEGER" | "BIGINT" | "LARGEINT" | "FLOAT" | "DOUBLE" | "DECIMAL" | "DECIMALV2" | "DECIMAL32" | "DECIMAL64" | "DECIMAL128" | "NUMERIC" | "CHAR" | "VARCHAR" | "VARCHAR2" | "STRING" | "TEXT" | "DATE" | "DATETIME" | "TIME" | "TIMESTAMP" | "JSON" | "BITMAP" | "HLL"
+private type_recover ::= !("," | ")" | ">" | "NULL" | "NOT" | "DEFAULT" | "COMMENT" | "AUTO_INCREMENT" | "AS" | "SUM" | "MAX" | "MIN" | "REPLACE" | "HLL_UNION" | "BITMAP_UNION" | "PERCENTILE_UNION" | "REPLACE_IF_NOT_NULL")
+scalar_type ::= "BOOLEAN" | "BOOL" | "TINYINT" | "SMALLINT" | "INT" | "INTEGER" | "BIGINT" | "LARGEINT" | "FLOAT" | "DOUBLE" | "DECIMAL" | "DECIMALV2" | "DECIMAL32" | "DECIMAL64" | "DECIMAL128" | "NUMERIC" | "CHAR" | "VARCHAR" | "VARCHAR2" | "STRING" | "TEXT" | "BINARY" | "VARBINARY" | "DATE" | "DATETIME" | "TIME" | "TIMESTAMP" | "JSON" | "VARIANT" | "BITMAP" | "HLL" | "PERCENTILE"
 type_parameters ::= "(" numeric_literal ("," numeric_literal)* ")" {
   elementType="SQL_TYPE_PARAMETER_LIST"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -970,13 +1021,26 @@ table_column_list ::= "(" table_column_item ("," table_column_item)* ","? ")" {
   pin=1
   recoverWhile=table_column_recover
 }
-private table_column_recover ::= !(")" | "," | ";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "PROPERTIES" | "ORDER" | "AS")
-private table_column_item ::= column_definition | table_constraint
+private table_column_recover ::= !(")" | "," | ";" | "INDEX" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "PROPERTIES" | "ROLLUP" | "ORDER" | "AS")
+private table_column_item ::= column_definition | index_definition | table_constraint
 column_definition ::= identifier_reference type_element column_attribute* {
   elementType="SQL_COLUMN_DEFINITION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-column_attribute ::= "NOT" "NULL" | "NULL" | "DEFAULT" value_expression | "COMMENT" string_literal | key_model "KEY" | "AUTO_INCREMENT"
+column_attribute ::= aggregation_type | "NOT" "NULL" | "NULL" | "DEFAULT" value_expression | "COMMENT" string_literal | key_model "KEY" | "AUTO_INCREMENT" | column_generated_clause
+private aggregation_type ::= "SUM" | "MAX" | "MIN" | "REPLACE" | "HLL_UNION" | "BITMAP_UNION" | "PERCENTILE_UNION" | "REPLACE_IF_NOT_NULL"
+column_generated_clause ::= "AS" value_expression {
+  elementType="SQL_COLUMN_GENERATED_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=1
+}
+index_definition ::= "INDEX" identifier_reference key_column_list ("USING" "BITMAP")? index_comment_clause? {
+  elementType="SQL_INDEX_DEFINITION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=1
+  recoverWhile=table_column_recover
+}
+private index_comment_clause ::= "COMMENT" string_literal
 table_constraint ::= ("PRIMARY" | "UNIQUE" | "DUPLICATE" | "AGGREGATE") "KEY" key_column_list
 key_column_list ::= "(" key_column ("," key_column)* ","? ")"
 private key_column ::= column_reference

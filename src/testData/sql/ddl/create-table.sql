@@ -30,3 +30,11 @@ SELECT
     sale_time,
     member_card_no
 FROM dws.dws_trade_sale_by_order_ri;
+
+CREATE TABLE dws.dws_trade_sale_by_order_copy LIKE dws.dws_trade_sale_by_order_ri;
+
+CREATE TEMPORARY EXTERNAL TABLE IF NOT EXISTS dws.dws_trade_sale_by_order_daily
+PARTITION BY date_trunc('day', biz_date)
+DISTRIBUTED BY HASH(order_id) BUCKETS 8
+PROPERTIES ("replication_num" = "1")
+LIKE dws.dws_trade_sale_by_order_ri;

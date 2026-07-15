@@ -72,6 +72,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_ALTER_TABLE_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT
         "SQL_ALTER_VIEW_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT
         "SQL_ARGUMENT_LIST" -> SqlCompositeElementTypes.SQL_ARGUMENT_LIST
+        "SQL_AS_QUERY_CLAUSE" -> SqlCompositeElementTypes.SQL_AS_QUERY_CLAUSE
         "SQL_AS_EXPRESSION" -> SqlCompositeElementTypes.SQL_AS_EXPRESSION
         "SQL_ARRAY_LITERAL" -> SqlCompositeElementTypes.SQL_ARRAY_LITERAL
         "SQL_BETWEEN_EXPRESSION" -> SqlCompositeElementTypes.SQL_BETWEEN_EXPRESSION
@@ -83,6 +84,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_COLUMN_REFERENCE" -> SqlCompositeElementTypes.SQL_COLUMN_REFERENCE
         "SQL_COLUMN_SHORT_REFERENCE" -> SqlCompositeElementTypes.SQL_COLUMN_SHORT_REFERENCE
         "SQL_COLUMN_DEFINITION" -> SqlCompositeElementTypes.SQL_COLUMN_DEFINITION
+        "SQL_COLUMN_GENERATED_CLAUSE" -> SqlCompositeElementTypes.SQL_COLUMN_GENERATED_CLAUSE
         "SQL_COMMIT_STATEMENT" -> SqlCompositeElementTypes.SQL_COMMIT_STATEMENT
         "SQL_CREATE_CATALOG_STATEMENT" -> SqlCompositeElementTypes.SQL_CREATE_CATALOG_STATEMENT
         "SQL_CREATE_INDEX_STATEMENT" -> SqlCompositeElementTypes.SQL_CREATE_INDEX_STATEMENT
@@ -104,9 +106,11 @@ internal object StarRocksElementTypeRegistry {
         "SQL_INSERT_DML_INSTRUCTION" -> SqlCompositeElementTypes.SQL_INSERT_DML_INSTRUCTION
         "SQL_IDENTIFIER" -> SqlCompositeElementTypes.SQL_IDENTIFIER
         "SQL_INDEX_REFERENCE" -> SqlCompositeElementTypes.SQL_INDEX_REFERENCE
+        "SQL_INDEX_DEFINITION" -> SqlCompositeElementTypes.SQL_INDEX_DEFINITION
         "SQL_JOIN_CONDITION_CLAUSE" -> SqlCompositeElementTypes.SQL_JOIN_CONDITION_CLAUSE
         "SQL_JOIN_EXPRESSION" -> SqlCompositeElementTypes.SQL_JOIN_EXPRESSION
         "SQL_LIMIT_CLAUSE" -> SqlCompositeElementTypes.SQL_LIMIT_CLAUSE
+        "SQL_LIKE_TABLE_CLAUSE" -> SqlCompositeElementTypes.SQL_LIKE_TABLE_CLAUSE
         "SQL_MERGE_STATEMENT" -> SqlCompositeElementTypes.SQL_MERGE_STATEMENT
         "SQL_MATERIALIZED_VIEW_REFERENCE" -> SqlCompositeElementTypes.SQL_MATERIALIZED_VIEW_REFERENCE
         "SQL_NAMED_QUERY_DEFINITION" -> SqlCompositeElementTypes.SQL_NAMED_QUERY_DEFINITION
@@ -114,6 +118,8 @@ internal object StarRocksElementTypeRegistry {
         "SQL_ORDER_BY_CLAUSE" -> SqlCompositeElementTypes.SQL_ORDER_BY_CLAUSE
         "SQL_PARENTHESIZED_JOIN_EXPRESSION" -> SqlCompositeElementTypes.SQL_PARENTHESIZED_JOIN_EXPRESSION
         "SQL_PARENTHESIZED_QUERY_EXPRESSION" -> SqlCompositeElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION
+        "SQL_PARTITION_DEFINITION" -> SqlCompositeElementTypes.SQL_PARTITION_DEFINITION
+        "SQL_PARTITION_REFERENCE" -> SqlCompositeElementTypes.SQL_PARTITION_REFERENCE
         "SQL_QUALIFY_CLAUSE" -> SqlCompositeElementTypes.SQL_QUALIFY_CLAUSE
         "SQL_QUERY_EXPRESSION" -> SqlCompositeElementTypes.SQL_QUERY_EXPRESSION
         "SQL_WITH_QUERY_EXPRESSION" -> SqlCompositeElementTypes.SQL_WITH_QUERY_EXPRESSION
