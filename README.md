@@ -1,123 +1,172 @@
 # StarRocks Support
 
-JetBrains DataGrip/IntelliJ plugin that adds StarRocks SQL dialect support.
+[简体中文](README.zh-CN.md)
 
-The plugin implements an independent StarRocks SQL dialect on top of JetBrains' SQL language platform. Its generated grammar, PSI mappings, function/type catalogs, formatting rules, and supplementary completion are scoped to the StarRocks language.
+StarRocks Support is a JetBrains DataGrip/IntelliJ plugin that provides an
+independent StarRocks SQL dialect and StarRocks database integration.
 
-JetBrains Marketplace: [StarRocks Support](https://plugins.jetbrains.com/plugin/32243-starrocks-support)
+The plugin is built on JetBrains' SQL language platform. Its parser grammar,
+parser lexer, dialect catalogs, formatting extensions, and supplementary
+completion are scoped to the StarRocks language.
 
-## Features
+- Marketplace: [StarRocks Support][marketplace]
+- Syntax coverage: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 
-- StarRocks dialect and data source registration.
-- Keyword highlighting and lenient parsing for common StarRocks query, DDL, DML, and management statements.
-- Function, keyword, snippet, and property completion for common StarRocks SQL editing workflows.
-- Formatting support for common StarRocks-specific statement clauses.
-- Native StarRocks `SHOW CREATE` support for viewing object DDL from StarRocks data sources.
+## Capabilities
+
+- Registers a dedicated StarRocks SQL dialect, DBMS, and data source type.
+- Parses StarRocks SQL with a JFlex-generated parser lexer and a
+  Grammar-Kit-generated parser.
+- Reuses JetBrains SQL PSI element types for standard SQL structures so that
+  platform formatting, references, resolution, and database-aware editing keep
+  working.
+- Highlights StarRocks keywords, identifiers, literals, comments, parameters,
+  and operators.
+- Publishes StarRocks keywords, scalar and complex types, and a broad built-in
+  function catalog to the SQL platform.
+- Provides supplementary completion for StarRocks-specific snippets and
+  properties while leaving ordinary table, column, type, and function
+  completion to the platform SQL completion system.
+- Extends platform SQL formatting for StarRocks DDL and materialized-view
+  clauses.
+- Integrates JDBC metadata, the StarRocks type system, and native `SHOW CREATE`
+  statements with the Database Tools platform.
+
+Syntax support is intentionally tracked as structured coverage rather than a
+claim of full StarRocks compatibility. The current target baseline is the
+StarRocks 4.1 documentation. See the [coverage checklist](SYNTAX_COVERAGE.md)
+for implemented, partial, missing, and pending areas.
+
+## Architecture
+
+The parser follows a generated-grammar architecture:
+
+```text
+grammar/starrocks-keywords.txt
+        -> generated keyword/token registries
+
+grammar/starrocks.flex
+        -> JFlex parser lexer
+
+grammar/starrocks.bnf
+        -> Grammar-Kit parser
+
+generated lexer + generated parser
+        -> DataGrip SQL parser adapter
+        -> JetBrains SQL PSI / formatter / resolve / completion
+        -> StarRocks database services
+```
+
+The main design rules are:
+
+- `grammar/starrocks.flex` is the source of truth for parser lexing.
+- `grammar/starrocks.bnf` is the source of truth for parser grammar.
+- `StarRocksParser` is an adapter for JetBrains SQL parser hooks; grammar logic
+  belongs in the generated parser.
+- Standard SQL nodes map to platform SQL PSI wherever possible.
+- StarRocks-only behavior is implemented through explicit PSI mappings,
+  formatter helpers, supplementary completion, and database services.
+- There is no handwritten whole-statement parser fallback.
+
+Generated source code under `build/generated` must not be edited manually.
+Change the grammar or keyword catalog and run the generation tasks instead.
+
+## Project layout
+
+```text
+grammar/
+  starrocks.flex              Parser lexer grammar
+  starrocks.bnf               Parser grammar and PSI element mappings
+  starrocks-keywords.txt      Canonical keyword catalog
+
+src/main/kotlin/.../
+  lang/                       Parser adapter, lexer facade, element mappings
+  dialect/                    Dialect identity and function catalogs
+  highlight/                  Syntax highlighting
+  format/                     SQL platform formatting extensions
+  completion/                 StarRocks-specific supplementary completion
+  database/                   DBMS, types, metadata, and DDL integration
+
+src/test/kotlin/              Parser, PSI, resolve, formatter, and integration tests
+src/testData/sql/             SQL acceptance and regression scenarios
+```
 
 ## Requirements
 
 - JDK 17
-- Gradle wrapper or Gradle 8.13
-- JetBrains DataGrip 2025.1 or compatible 251-based IDE
-- StarRocks syntax coverage is based on StarRocks 4.1 official documentation.
+- The bundled Gradle Wrapper, currently Gradle 9.6.1
+- DataGrip 2026.1 or later at runtime (`sinceBuild = 261`)
+- DataGrip 2026.1.4 (`261.26222.86`) is the default development, test, and
+  plugin-verification platform; it can be
+  overridden with `intellijPlatformVersion` or `intellijPlatformLocalPath`
 
-## Build
+## Build and verification
 
-Compile:
+Compile the plugin:
 
 ```powershell
 .\gradlew.bat compileKotlin --no-daemon
 ```
 
-Build plugin ZIP:
+Validate the lexer and grammar source assets:
+
+```powershell
+.\gradlew.bat validateGrammarSources --no-daemon
+```
+
+Generate the parser assets explicitly when working on grammar changes:
+
+```powershell
+.\gradlew.bat generateLexer generateParser --no-daemon
+```
+
+Run the StarRocks SQL scenario validator:
+
+```powershell
+.\gradlew.bat validateStarRocksScenarios --no-daemon
+```
+
+Run the complete verification suite:
+
+```powershell
+.\gradlew.bat check --no-daemon
+```
+
+Build the distributable plugin ZIP:
 
 ```powershell
 .\gradlew.bat buildPlugin --no-daemon
 ```
 
-The plugin ZIP is generated under:
-
-```text
-build/distributions/
-```
+The ZIP is written to `build/distributions/`.
 
 ## Development
 
-Run the IDE sandbox from IntelliJ IDEA/DataGrip using the checked-in run configuration:
+Use the checked-in run configuration to start a sandbox IDE from IntelliJ IDEA
+or DataGrip:
 
 ```text
 .run/Run IDE with Plugin.run.xml
 ```
 
-Or run from the command line:
+It can also be started from the command line:
 
 ```powershell
 .\gradlew.bat runIde --no-daemon
 ```
+
+When adding syntax support:
+
+1. Verify the syntax against the targeted StarRocks documentation.
+2. Update `starrocks.flex`, `starrocks.bnf`, or the canonical keyword catalog.
+3. Add focused parser tests and a scenario fixture when introducing a new
+   statement family.
+4. Verify PSI mappings, formatting, and references for object-bearing syntax.
+5. Update the syntax coverage checklist.
+6. Run the grammar validation, scenarios, and complete test suite.
 
 ## License
 
-This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+Licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
 
----
-
-# StarRocks Support 中文说明
-
-这是一个为 JetBrains DataGrip / IntelliJ 系列 IDE 提供 StarRocks SQL 方言支持的插件。
-
-插件以 JetBrains 内置 MySQL SQL 能力为基础，只在 StarRocks 方言文件或 StarRocks 数据源上下文中启用 StarRocks 专属增强。
-
-JetBrains 插件市场：[StarRocks Support](https://plugins.jetbrains.com/plugin/32243-starrocks-support)
-
-## 功能
-
-- StarRocks 方言和数据源注册。
-- 为常见 StarRocks 查询、DDL、DML 和管理语句提供关键字高亮和宽松解析。
-- 为常见 StarRocks SQL 编辑流程提供函数、关键字、片段和属性补全。
-- 为常见 StarRocks 专属语句子句提供格式化支持。
-- 在 StarRocks 数据源下使用原生 `SHOW CREATE` 获取对象 DDL。
-
-## 环境要求
-
-- JDK 17
-- Gradle Wrapper 或 Gradle 8.13
-- JetBrains DataGrip 2025.1，或兼容 251 平台版本的 IDE
-- StarRocks 语法覆盖基于 StarRocks 4.1 官方文档。
-
-## 构建
-
-编译：
-
-```powershell
-.\gradlew.bat compileKotlin --no-daemon
-```
-
-构建插件 ZIP：
-
-```powershell
-.\gradlew.bat buildPlugin --no-daemon
-```
-
-插件 ZIP 会生成在：
-
-```text
-build/distributions/
-```
-
-## 开发
-
-可以使用仓库中提交的运行配置，在 IntelliJ IDEA / DataGrip 中启动 IDE 沙箱：
-
-```text
-.run/Run IDE with Plugin.run.xml
-```
-
-也可以通过命令行运行：
-
-```powershell
-.\gradlew.bat runIde --no-daemon
-```
-
-## 许可证
-
-本项目使用 Apache License 2.0。详见 [LICENSE](LICENSE)。
+[marketplace]: https://plugins.jetbrains.com/plugin/32243-starrocks-support

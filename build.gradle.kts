@@ -90,12 +90,12 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "251"
+            sinceBuild = "261"
         }
     }
     pluginVerification {
         ides {
-            create("DB", "251.28774.27")
+            create("DB", "261.26222.86")
         }
     }
 }
