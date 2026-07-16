@@ -2,6 +2,7 @@ package com.github.ycyz.starrocks.datagrip.lang;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.sql.dialects.base.SqlGeneratedParserUtil;
+import com.intellij.sql.psi.SqlCompositeElementTypes;
 import com.intellij.sql.psi.SqlTokens;
 
 import java.util.regex.Pattern;
@@ -40,6 +41,26 @@ public class StarRocksParserUtil extends SqlGeneratedParserUtil {
         }
         builder.advanceLexer();
         return true;
+    }
+
+    public static boolean parseMaterializedViewReference(PsiBuilder builder, int level) {
+        return parseReference(builder, level, SqlCompositeElementTypes.SQL_MATERIALIZED_VIEW_REFERENCE);
+    }
+
+    public static boolean parseViewReference(PsiBuilder builder, int level) {
+        return parseReference(builder, level, SqlCompositeElementTypes.SQL_VIEW_REFERENCE);
+    }
+
+    public static boolean parseSchemaReference(PsiBuilder builder, int level) {
+        return parseReference(builder, level, SqlCompositeElementTypes.SQL_SCHEMA_REFERENCE);
+    }
+
+    public static boolean parseCatalogReference(PsiBuilder builder, int level) {
+        return parseReference(builder, level, SqlCompositeElementTypes.SQL_CATALOG_REFERENCE);
+    }
+
+    public static boolean parseIndexReference(PsiBuilder builder, int level) {
+        return parseReference(builder, level, SqlCompositeElementTypes.SQL_INDEX_REFERENCE);
     }
 
     public static boolean parseParameter(PsiBuilder builder, int level) {

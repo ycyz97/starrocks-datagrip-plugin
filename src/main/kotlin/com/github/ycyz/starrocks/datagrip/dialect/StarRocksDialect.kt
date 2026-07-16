@@ -5,6 +5,7 @@ import com.github.ycyz.starrocks.datagrip.database.StarRocksDataType
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDbms
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokens
 import com.intellij.database.Dbms
+import com.intellij.database.model.ObjectKind
 import com.intellij.database.model.ObjectName
 import com.intellij.database.psi.DbDataSource
 import com.intellij.database.util.TreePattern
@@ -36,6 +37,19 @@ class StarRocksDialect private constructor() : SqlLanguageDialectBase("StarRocks
     }
     override fun isOperatorSupported(token: IElementType?): Boolean = true
     override fun getSystemVariables(): Set<String> = emptySet()
+
+    override fun <T : MutableCollection<ObjectKind>> getParentDbTypes(result: T, type: ObjectKind): T {
+        super.getParentDbTypes(result, type)
+        val parentType = when (type) {
+            ObjectKind.MAT_VIEW, ObjectKind.VIEW -> ObjectKind.SCHEMA
+            ObjectKind.SCHEMA -> ObjectKind.DATABASE
+            else -> null
+        }
+        if (parentType != null && parentType !in result) {
+            result.add(parentType)
+        }
+        return result
+    }
 
     override fun getBaseImports(dataSource: DbDataSource?, path: Array<out ObjectName?>?): TreePattern {
         if (dataSource == null || path == null) {

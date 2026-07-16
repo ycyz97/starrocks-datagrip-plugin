@@ -927,6 +927,39 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertNotNull("Qualified table names must expose a schema qualifier.", tableReference.qualifierExpression)
     }
 
+    fun testQualifiedMaterializedViewNamesExposePlatformReferenceChain() {
+        val file = createPsiFile("SHOW CREATE MATERIALIZED VIEW ads.mv_ads_xxx;")
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Qualified materialized-view SHOW CREATE must parse.\n${psiSummary(file)}", errors.isEmpty())
+
+        val reference = elementsOfType(file, SqlCompositeElementTypes.SQL_MATERIALIZED_VIEW_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertEquals("mv_ads_xxx", reference.name)
+        assertEquals("ads", reference.qualifierExpression?.text)
+        assertEquals(ObjectKind.MAT_VIEW, reference.kind)
+        assertEquals("ads", reference.getReferencePart(ObjectKind.SCHEMA))
+        assertEquals("mv_ads_xxx", reference.getReferencePart(ObjectKind.MAT_VIEW))
+    }
+
+    fun testQualifiedViewAndSchemaNamesExposePlatformReferenceChains() {
+        val viewFile = createPsiFile("SHOW CREATE VIEW ads.v_ads_xxx;")
+        val viewReference = elementsOfType(viewFile, SqlCompositeElementTypes.SQL_VIEW_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertEquals("v_ads_xxx", viewReference.name)
+        assertEquals("ads", viewReference.qualifierExpression?.text)
+        assertEquals(ObjectKind.VIEW, viewReference.kind)
+
+        val schemaFile = createPsiFile("SHOW TABLE STATUS FROM external_catalog.ads;")
+        val schemaReference = elementsOfType(schemaFile, SqlCompositeElementTypes.SQL_SCHEMA_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single()
+        assertEquals("ads", schemaReference.name)
+        assertEquals("external_catalog", schemaReference.qualifierExpression?.text)
+        assertEquals(ObjectKind.SCHEMA, schemaReference.kind)
+    }
+
     fun testStarRocksReferencePsiMatchesPlatformShape() {
         val sql = "SELECT DATE_FORMAT(t.biz_date, '%Y-%m') FROM dws.sales AS t GROUP BY t.biz_date;"
         val starRocks = createPsiFile(sql)
@@ -1026,6 +1059,14 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertEquals(
             MysqlDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.TABLE),
             StarRocksDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.TABLE)
+        )
+        assertTrue(
+            "Materialized views must resolve their qualifier as a schema.",
+            ObjectKind.SCHEMA in StarRocksDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.MAT_VIEW)
+        )
+        assertTrue(
+            "Qualified schemas must resolve their qualifier as a catalog/database.",
+            ObjectKind.DATABASE in StarRocksDialect.INSTANCE.getParentDbTypes(mutableSetOf(), ObjectKind.SCHEMA)
         )
     }
 
@@ -1209,10 +1250,22 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertSame("SHOW PARTITIONS table must resolve.", tablePsi, showPartitionsTable.resolve())
 
         val showStatusFile = createPsiFile("SHOW TABLE STATUS FROM dws LIKE 'sales';")
-        val showStatusSchema = elementsOfType(showStatusFile, StarRocksElementTypes.SQL_SCHEMA_REFERENCE)
+        val showStatusSchema = elementsOfType(showStatusFile, SqlCompositeElementTypes.SQL_SCHEMA_REFERENCE)
             .filterIsInstance<SqlReferenceExpression>()
             .single()
         assertSame("SHOW TABLE STATUS schema must resolve.", schemaPsi, showStatusSchema.resolve())
+
+        val showCreateMaterializedViewFile = createPsiFile("SHOW CREATE MATERIALIZED VIEW dws.mv_ads_xxx;")
+        val materializedViewReference = elementsOfType(
+            showCreateMaterializedViewFile,
+            SqlCompositeElementTypes.SQL_MATERIALIZED_VIEW_REFERENCE
+        ).filterIsInstance<SqlReferenceExpression>().single()
+        val materializedViewSchema = materializedViewReference.qualifierExpression as? SqlReferenceExpression
+        assertSame(
+            "Qualified materialized-view schema must resolve through the connected data source.",
+            schemaPsi,
+            materializedViewSchema?.resolve()
+        )
 
         val connectedUnnestFile = createPsiFile(
             "SELECT CAST(unnest AS INT) FROM (SELECT [0, 1] AS date_list) a, UNNEST(date_list);"

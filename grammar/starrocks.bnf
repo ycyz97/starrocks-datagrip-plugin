@@ -1069,27 +1069,12 @@ table_reference_prefix ::= identifier_reference "." identifier_reference &"." | 
   elementType="SQL_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-view_reference ::= qualified_identifier {
-  elementType="SQL_VIEW_REFERENCE"
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
-materialized_view_reference ::= qualified_identifier {
-  elementType="SQL_MATERIALIZED_VIEW_REFERENCE"
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
-schema_reference ::= qualified_identifier {
-  elementType="SQL_SCHEMA_REFERENCE"
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
-catalog_reference ::= qualified_identifier {
-  elementType="SQL_CATALOG_REFERENCE"
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
+private view_reference ::= <<parseViewReference>>
+private materialized_view_reference ::= <<parseMaterializedViewReference>>
+private schema_reference ::= <<parseSchemaReference>>
+private catalog_reference ::= <<parseCatalogReference>>
 resource_reference ::= qualified_identifier
-index_reference ::= qualified_identifier {
-  elementType="SQL_INDEX_REFERENCE"
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
+private index_reference ::= <<parseIndexReference>>
 
 private literal ::= string_literal | numeric_literal | parameter_literal | keyword_literal
 string_literal ::= SQL_STRING_TOKEN {
