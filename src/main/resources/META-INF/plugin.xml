@@ -7,8 +7,28 @@
     <depends>com.intellij.database</depends>
 
     <description><![CDATA[
-        StarRocks Support provides StarRocks SQL parsing, syntax highlighting, completion, formatting, and database integration for JetBrains IDEs.<br>
+        <p>StarRocks Support provides a dedicated StarRocks SQL dialect and database integration for DataGrip and other JetBrains IDEs with Database Tools.</p>
+
+        <h2>Features</h2>
+        <ul>
+            <li>StarRocks SQL parsing and syntax highlighting.</li>
+            <li>Code completion for StarRocks keywords, types, functions, snippets, and table properties.</li>
+            <li>SQL formatting for StarRocks DDL and materialized view clauses.</li>
+            <li>Dedicated StarRocks DBMS and data source integration.</li>
+            <li>JDBC metadata, StarRocks type system, object resolution, and native <code>SHOW CREATE</code> support.</li>
+            <li>Syntax coverage aligned with the StarRocks 4.1 documentation baseline.</li>
+        </ul>
     ]]></description>
+
+    <change-notes><![CDATA[
+        <ul>
+            <li>Migrated SQL parsing to a generated JFlex and Grammar-Kit architecture.</li>
+            <li>Expanded StarRocks DDL, materialized view, partitioning, indexing, and table property support.</li>
+            <li>Improved SQL formatting, PSI integration, inspections, completion, and qualified database object resolution.</li>
+            <li>Aligned the plugin with DataGrip 2026.1 and IntelliJ Platform build 261.</li>
+            <li>Updated the plugin icon with a database-specific badge.</li>
+        </ul>
+    ]]></change-notes>
 
     <extensions defaultExtensionNs="com.intellij">
         <sql.dialect dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect"/>
