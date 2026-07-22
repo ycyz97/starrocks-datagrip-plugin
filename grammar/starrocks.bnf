@@ -282,19 +282,81 @@ private alter_schema_guarded ::= &("ALTER" ("DATABASE" | "SCHEMA")) alter_schema
 private alter_principal_guarded ::= &("ALTER" ("USER" | "ROLE")) alter_principal_statement
 private alter_routine_load_guarded ::= &("ALTER" "ROUTINE" "LOAD") alter_routine_load_statement
 
-alter_table_statement ::= "ALTER" "TABLE" if_exists? table_reference alter_table_action {
+alter_table_statement ::= "ALTER" "TABLE" if_exists? table_reference alter_table_action ("," alter_table_action)* {
   elementType="SQL_ALTER_TABLE_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
 }
-alter_table_action ::= add_column_action | modify_column_action | drop_column_action | rename_action | swap_table_action | set_properties_action
-add_column_action ::= "ADD" "COLUMN"? column_definition
-modify_column_action ::= ("MODIFY" | "CHANGE" | "ALTER") "COLUMN"? column_definition
-drop_column_action ::= "DROP" "COLUMN"? column_reference
-rename_action ::= "RENAME" ("TO" identifier_reference)?
+alter_table_action ::= rename_action
+  | alter_table_comment_action
+  | add_partition_action
+  | drop_partition_action
+  | replace_partition_action
+  | modify_partition_action
+  | alter_distribution_action
+  | add_rollup_action
+  | drop_rollup_action
+  | add_index_action
+  | drop_persistent_index_action
+  | drop_index_action
+  | add_column_action
+  | modify_column_action
+  | drop_column_action
+  | reorder_columns_action
+  | set_properties_action
+  | swap_table_action
+  | compaction_action
+
+rename_action ::= "RENAME" ("ROLLUP" identifier_reference identifier_reference
+  | "PARTITION" partition_reference identifier_reference
+  | "COLUMN" column_reference "TO"? identifier_reference
+  | "TO"? identifier_reference)
+alter_table_comment_action ::= "COMMENT" "="? string_literal
+
+add_partition_action ::= "ADD" ("TEMPORARY"? "PARTITION" if_not_exists? partition_reference "VALUES" partition_values
+  | "PARTITIONS" range_partition_bounds) alter_partition_distribution_clause? property_list?
+private alter_partition_distribution_clause ::= "DISTRIBUTED" "BY" distribution_expression ("BUCKETS" numeric_literal?)?
+drop_partition_action ::= "DROP" ("PARTITIONS" "WHERE" value_expression
+  | "TEMPORARY"? "PARTITION" if_exists? partition_reference "FORCE"?)
+replace_partition_action ::= "REPLACE" "PARTITION" alter_partition_name_list "WITH" "TEMPORARY" "PARTITION" alter_partition_name_list optional_properties_clause?
+modify_partition_action ::= "MODIFY" "PARTITION" alter_partition_selection "SET" property_list
+private alter_partition_selection ::= partition_reference | alter_partition_name_list | "(" "*" ")"
+private alter_partition_name_list ::= "(" partition_reference ("," partition_reference)* ")"
+
+alter_distribution_action ::= alter_distribution_scope? "DISTRIBUTED" "BY" distribution_expression ("DEFAULT"? "BUCKETS" numeric_literal?)?
+private alter_distribution_scope ::= "PARTITIONS" parenthesized_identifier_list
+
+add_column_action ::= add_column_action_item ("," &("ADD" "COLUMN") add_column_action_item)*
+private add_column_action_item ::= "ADD" "COLUMN"? add_column_spec optional_alter_column_to_clause? optional_properties_clause?
+private add_column_spec ::= column_definition optional_column_position_clause? | "(" column_definition ("," column_definition)* ")"
+modify_column_action ::= ("MODIFY" | "CHANGE" | "ALTER") "COLUMN"? (modify_struct_field_action
+  | column_definition optional_column_position_clause? optional_alter_column_from_clause? optional_properties_clause?
+  | column_reference column_attribute+ optional_column_position_clause? optional_alter_column_from_clause? optional_properties_clause?)
+private modify_struct_field_action ::= column_reference ("ADD" "FIELD" struct_field_path type_element optional_column_position_clause?
+  | "DROP" "FIELD" struct_field_path)
+private struct_field_path ::= identifier_reference (("." identifier_reference) | ("." "[" "*" "]"))*
+private column_position_clause ::= "FIRST" | "AFTER" column_reference
+private optional_column_position_clause ::= &("FIRST" | "AFTER") column_position_clause
+private alter_column_to_clause ::= "TO" identifier_reference
+private optional_alter_column_to_clause ::= &"TO" alter_column_to_clause
+private alter_column_from_clause ::= "FROM" identifier_reference
+private optional_alter_column_from_clause ::= &"FROM" alter_column_from_clause
+private optional_properties_clause ::= &"PROPERTIES" properties_clause
+drop_column_action ::= "DROP" "COLUMN"? column_reference optional_alter_column_from_clause?
+reorder_columns_action ::= table_order_by_clause optional_alter_column_from_clause? optional_properties_clause?
+
+add_rollup_action ::= "ADD" "ROLLUP" rollup_definition ("," rollup_definition)*
+drop_rollup_action ::= "DROP" "ROLLUP" drop_rollup_item ("," drop_rollup_item)*
+private drop_rollup_item ::= identifier_reference optional_properties_clause?
+add_index_action ::= "ADD" index_definition
+drop_index_action ::= "DROP" "INDEX" index_reference
+drop_persistent_index_action ::= "DROP" "PERSISTENT" "INDEX" "ON" "TABLETS" "(" numeric_literal ("," numeric_literal)* ")"
+
 swap_table_action ::= "SWAP" "WITH" table_reference
-set_properties_action ::= "SET" properties_clause
+set_properties_action ::= "SET" "PROPERTIES"? property_list
+compaction_action ::= ("BASE" | "CUMULATIVE")? "COMPACT" compaction_partition_target?
+private compaction_partition_target ::= partition_reference | alter_partition_name_list
 
 alter_view_statement ::= "ALTER" "VIEW" view_reference as_select_clause {
   elementType="SQL_ALTER_VIEW_STATEMENT"
@@ -546,16 +608,20 @@ select_clause ::= "SELECT" select_modifier* select_item ("," select_item)* {
 }
 private select_modifier ::= "ALL" | "DISTINCT"
 private select_recover ::= !(";" | ")" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS")
-private select_item ::= select_all | select_as_expression | value_expression
+private select_item ::= select_all | select_target
+private select_target ::= value_expression select_alias_definition?
 select_all ::= (qualified_column_prefix ".")? "*" {
   elementType="SQL_COLUMN_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-select_as_expression ::= value_expression select_alias_clause {
+left select_alias_definition ::= explicit_select_alias | implicit_select_alias {
   elementType="SQL_AS_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private select_alias_clause ::= "AS" (identifier_reference | string_literal) | !select_alias_boundary (identifier_reference | string_literal)
+private explicit_select_alias ::= "AS" (identifier_reference | string_literal) {
+  pin=1
+}
+private implicit_select_alias ::= !select_alias_boundary (identifier_reference | string_literal)
 private select_alias_boundary ::= "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS"
 
 from_clause ::= "FROM" table_source {
@@ -866,7 +932,7 @@ use_statement ::= "USE" use_target {
 use_target ::= schema_reference {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-explain_statement ::= "EXPLAIN" ("ANALYZE" | "VERBOSE" | "LOGICAL" | "COSTS")* query_expression {
+explain_statement ::= "EXPLAIN" ("ANALYZE" | "VERBOSE" | "LOGICAL" | "COSTS")* select_statement {
   elementType="SQL_EXPLAIN_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
@@ -981,7 +1047,10 @@ function_argument_list ::= ("DISTINCT" | "ALL")? value_expression ("," value_exp
 private function_order_by_clause ::= "ORDER" "BY" ordering_item ("," ordering_item)*
 private function_null_treatment_clause ::= ("IGNORE" | "RESPECT") "NULLS"
 private function_separator_clause ::= "SEPARATOR" string_literal
-parenthesized_value_expression ::= "(" value_expression ("," value_expression)* ")"
+parenthesized_value_expression ::= "(" value_expression ("," value_expression)* ")" {
+  elementType="SQL_PARENTHESIZED_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 in_list_or_subquery ::= "(" (in_subquery_guarded | value_expression ("," value_expression)*)? ")"
 private in_subquery_guarded ::= &("SELECT" | "WITH" | "VALUES") query_expression
 private analytic_clause_guarded ::= &"OVER" analytic_clause
@@ -1003,7 +1072,7 @@ cast_type ::= type_element {
   pin=1
   recoverWhile=type_recover
 }
-private type_recover ::= !("," | ")" | ">" | "NULL" | "NOT" | "DEFAULT" | "COMMENT" | "AUTO_INCREMENT" | "AS" | "SUM" | "MAX" | "MIN" | "REPLACE" | "HLL_UNION" | "BITMAP_UNION" | "PERCENTILE_UNION" | "REPLACE_IF_NOT_NULL")
+private type_recover ::= !("," | ")" | ">" | "KEY" | "NULL" | "NOT" | "DEFAULT" | "COMMENT" | "AUTO_INCREMENT" | "AS" | "AFTER" | "FIRST" | "TO" | "FROM" | "PROPERTIES" | "SUM" | "MAX" | "MIN" | "REPLACE" | "HLL_UNION" | "BITMAP_UNION" | "PERCENTILE_UNION" | "REPLACE_IF_NOT_NULL")
 scalar_type ::= "BOOLEAN" | "BOOL" | "TINYINT" | "SMALLINT" | "INT" | "INTEGER" | "BIGINT" | "LARGEINT" | "FLOAT" | "DOUBLE" | "DECIMAL" | "DECIMALV2" | "DECIMAL32" | "DECIMAL64" | "DECIMAL128" | "NUMERIC" | "CHAR" | "VARCHAR" | "VARCHAR2" | "STRING" | "TEXT" | "BINARY" | "VARBINARY" | "DATE" | "DATETIME" | "TIME" | "TIMESTAMP" | "JSON" | "VARIANT" | "BITMAP" | "HLL" | "PERCENTILE"
 type_parameters ::= "(" numeric_literal ("," numeric_literal)* ")" {
   elementType="SQL_TYPE_PARAMETER_LIST"
@@ -1027,19 +1096,20 @@ column_definition ::= identifier_reference type_element column_attribute* {
   elementType="SQL_COLUMN_DEFINITION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-column_attribute ::= aggregation_type | "NOT" "NULL" | "NULL" | "DEFAULT" value_expression | "COMMENT" string_literal | key_model "KEY" | "AUTO_INCREMENT" | column_generated_clause
+column_attribute ::= aggregation_type | "KEY" | "NOT" "NULL" | "NULL" | "DEFAULT" value_expression | "COMMENT" string_literal | key_model "KEY" | "AUTO_INCREMENT" | column_generated_clause
 private aggregation_type ::= "SUM" | "MAX" | "MIN" | "REPLACE" | "HLL_UNION" | "BITMAP_UNION" | "PERCENTILE_UNION" | "REPLACE_IF_NOT_NULL"
 column_generated_clause ::= "AS" value_expression {
   elementType="SQL_COLUMN_GENERATED_CLAUSE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
 }
-index_definition ::= "INDEX" identifier_reference key_column_list ("USING" "BITMAP")? index_comment_clause? {
+index_definition ::= "INDEX" index_reference key_column_list ("USING" index_type)? index_comment_clause? {
   elementType="SQL_INDEX_DEFINITION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=table_column_recover
 }
+private index_type ::= "BITMAP" | "NGRAMBF" | "GIN" | "VECTOR"
 private index_comment_clause ::= "COMMENT" string_literal
 table_constraint ::= ("PRIMARY" | "UNIQUE" | "DUPLICATE" | "AGGREGATE") "KEY" key_column_list
 key_column_list ::= "(" key_column ("," key_column)* ","? ")"
@@ -1059,7 +1129,7 @@ qualified_column_prefix ::= identifier_reference "." identifier_reference &"." |
   elementType="SQL_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private column_reference_name ::= identifier_reference | "COMMENT"
+private column_reference_name ::= identifier_reference | "COMMENT" | "CONFIG"
 table_reference ::= table_reference_name {
   elementType="SQL_TABLE_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"

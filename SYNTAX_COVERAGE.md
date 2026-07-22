@@ -52,7 +52,7 @@ statements.
 | Area | Current assessment | Main evidence or limitation |
 | --- | --- | --- |
 | SELECT and expressions | Partial, high coverage | CTE, joins, subqueries, set operations, windows, `QUALIFY`, and grouping sets have regression coverage. `OFFSET`, `PIVOT`, and `SELECT * EXCLUDE` need review or implementation. |
-| Table DDL | Partial, high coverage | CREATE, DROP, TRUNCATE, CTAS, LIKE, partitioning, distribution, indexes, and common table properties are modeled. `ALTER TABLE` covers only a limited action set. |
+| Table DDL | Partial, high coverage | CREATE, DROP, TRUNCATE, CTAS, LIKE, partitioning, distribution, indexes, common table properties, and the documented `ALTER TABLE` action families are modeled. |
 | DML | Partial, high coverage | INSERT, UPDATE, DELETE, and MERGE have structured entries and scenarios; documented variants still require branch-by-branch comparison. |
 | Views | Partial | CREATE, ALTER, DROP, and SHOW CREATE are represented; official optional clauses require verification. |
 | Materialized views | Partial | CREATE, ALTER, DROP, REFRESH, and SHOW forms are partly covered; cancellation and status-management variants remain. |
@@ -92,7 +92,7 @@ statements.
 - [x] Partial — key models, partitions, distribution, buckets, rollups, indexes, generated columns, and properties.
 - [x] Partial — DROP TABLE, TRUNCATE TABLE, CREATE INDEX, and DROP INDEX.
 - [x] Partial — INSERT, INSERT OVERWRITE, UPDATE, DELETE, and MERGE.
-- [ ] Partial — ALTER TABLE. Current actions are ADD/MODIFY/DROP COLUMN, RENAME, SWAP WITH, and SET PROPERTIES only.
+- [x] Substantial — ALTER TABLE. Covers comma-separated actions; rename and comments; partition and bucket operations; column, STRUCT field, Rollup, and index changes; table properties; SWAP; compaction; and persistent-index removal.
 - [ ] Missing/review — CANCEL ALTER TABLE.
 - [ ] Missing/review — REFRESH EXTERNAL TABLE.
 - [ ] Missing/review — SHOW ALTER, SHOW DELETE, SHOW DYNAMIC PARTITION TABLES, SHOW FULL COLUMNS, SHOW INDEX, and SHOW TABLET.

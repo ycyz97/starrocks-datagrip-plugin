@@ -9,7 +9,7 @@
     <description><![CDATA[
         <p>StarRocks Support provides a dedicated StarRocks SQL dialect and database integration for DataGrip and other JetBrains IDEs with Database Tools.</p>
 
-        <h2>Features</h2>
+        <h3>Features</h3>
         <ul>
             <li>StarRocks SQL parsing and syntax highlighting.</li>
             <li>Code completion for StarRocks keywords, types, functions, snippets, and table properties.</li>
@@ -22,11 +22,11 @@
 
     <change-notes><![CDATA[
         <ul>
-            <li>Migrated SQL parsing to a generated JFlex and Grammar-Kit architecture.</li>
-            <li>Expanded StarRocks DDL, materialized view, partitioning, indexing, and table property support.</li>
-            <li>Improved SQL formatting, PSI integration, inspections, completion, and qualified database object resolution.</li>
-            <li>Aligned the plugin with DataGrip 2026.1 and IntelliJ Platform build 261.</li>
-            <li>Updated the plugin icon with a database-specific badge.</li>
+            <li>Expanded <code>ALTER TABLE</code> support for rename, comments, partitions, distribution, rollups, indexes, columns, properties, atomic swaps, and compaction.</li>
+            <li>Fixed inline index definitions so index names resolve correctly, with support for BITMAP, NGRAMBF, GIN, and VECTOR index types.</li>
+            <li>Fixed parsing for <code>CONFIG</code> column references and <code>AFTER</code>/<code>FIRST</code> column positions.</li>
+            <li>Aligned <code>EXPLAIN</code> formatting with the platform SQL formatter.</li>
+            <li>Stabilized incremental SELECT alias parsing and parenthesized comparisons that could abort formatting for an entire SQL file.</li>
         </ul>
     ]]></change-notes>
 

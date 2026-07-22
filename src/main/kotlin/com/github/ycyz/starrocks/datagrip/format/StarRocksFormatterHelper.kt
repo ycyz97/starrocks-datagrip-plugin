@@ -5,6 +5,7 @@ import com.intellij.psi.tree.IElementType
 import com.intellij.sql.formatter.SqlFormatterHelper
 import com.intellij.sql.formatter.model.SqlBlock
 import com.intellij.sql.formatter.model.SqlCreateTableBlock
+import com.intellij.sql.formatter.model.SqlExplainPlanBlock
 import com.intellij.sql.formatter.model.SqlFunctionCallBlock
 import com.intellij.sql.formatter.model.SqlMergeBlock
 import com.intellij.sql.formatter.model.SqlParenthesizedSubqueryBlock
@@ -26,6 +27,7 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.SQL_UPDATE_STATEMENT to ::SqlQueryBlock,
             StarRocksElementTypes.SQL_DELETE_STATEMENT to ::SqlQueryBlock,
             StarRocksElementTypes.SQL_MERGE_STATEMENT to ::SqlMergeBlock,
+            StarRocksElementTypes.SQL_EXPLAIN_STATEMENT to ::SqlExplainPlanBlock,
             StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION to ::SqlParenthesizedSubqueryBlock,
             StarRocksElementTypes.SQL_CREATE_TABLE_STATEMENT to ::SqlCreateTableBlock,
             StarRocksElementTypes.SQL_CREATE_CATALOG_STATEMENT to ::SqlStatementBlock,

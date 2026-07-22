@@ -53,6 +53,7 @@ internal object StarRocksPlatformElementSets {
             StarRocksElementTypes.SQL_USE_SCHEMA_STATEMENT,
             SqlCompositeElementTypes.SQL_USE_CATALOG_STATEMENT,
             SqlCompositeElementTypes.SQL_USE_NAMESPACE_STATEMENT,
+            SqlCompositeElementTypes.SQL_INDEX_DEFINITION,
             SqlCompositeElementTypes.SQL_PARTITION_DEFINITION,
             StarRocksElementTypes.SQL_CALL_STATEMENT
         )

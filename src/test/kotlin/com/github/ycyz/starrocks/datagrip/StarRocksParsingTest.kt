@@ -10,6 +10,7 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokenInitializer
 import com.intellij.application.options.CodeStyle
 import com.intellij.lang.LanguageParserDefinitions
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFileFactory
@@ -26,6 +27,7 @@ import com.intellij.sql.psi.SqlDefinition
 import com.intellij.sql.psi.SqlFunctionCallExpression
 import com.intellij.sql.psi.SqlExpression
 import com.intellij.sql.psi.SqlLiteralExpression
+import com.intellij.sql.psi.SqlParenthesizedExpression
 import com.intellij.sql.psi.SqlReferenceExpression
 import com.intellij.sql.psi.SqlUnionExpression
 import com.intellij.sql.dialects.mysql.MysqlDialect
@@ -78,6 +80,76 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 WHERE tag = 'active';
             """.trimIndent()
         )
+    }
+
+    fun testConfigColumnAndAlterColumnPositionParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors(
+            "SELECT * FROM ods.ods_bi_quandata_data_source_da WHERE CONFIG LIKE '%ads.mv_ads_sale%';"
+        )
+        assertParsesWithoutPsiErrors(
+            """
+                ALTER TABLE dwm.dwm_trade_sale_ri
+                    ADD COLUMN co_cost_amt DECIMAL(18, 3) COMMENT 'purchase cost' AFTER cost_amt;
+                ALTER TABLE dws.dws_trade_sale_by_order_ri
+                    ADD COLUMN co_cost_amt DECIMAL(18, 3) COMMENT 'purchase cost' AFTER cost_amt;
+                ALTER TABLE dws.dws_trade_sale_by_store_day_ri
+                    MODIFY COLUMN co_cost_amt DECIMAL(18, 3) FIRST;
+            """.trimIndent()
+        )
+    }
+
+    fun testOfficialAlterTableActionsParseWithoutPsiErrors() {
+        listOf(
+            "ALTER TABLE sales RENAME sales_v2;",
+            "ALTER TABLE sales RENAME ROLLUP r1 r2;",
+            "ALTER TABLE sales RENAME PARTITION p1 p2;",
+            "ALTER TABLE sales RENAME COLUMN old_name TO new_name;",
+            "ALTER TABLE sales COMMENT = 'sales fact';",
+            "ALTER TABLE sales ADD PARTITION p1 VALUES LESS THAN ('2026-01-01');",
+            "ALTER TABLE sales ADD PARTITION p2 VALUES [('2026-01-01'), ('2026-02-01'));",
+            "ALTER TABLE sales ADD PARTITIONS START ('2026-01-01') END ('2026-01-10') EVERY (INTERVAL 1 DAY);",
+            "ALTER TABLE sales ADD PARTITION p_cn VALUES IN ('beijing', 'shanghai') ('replication_num' = '1');",
+            "ALTER TABLE sales ADD PARTITION p3 VALUES LESS THAN ('2027-01-01') DISTRIBUTED BY HASH(store_id) BUCKETS 8 ('replication_num' = '1');",
+            "ALTER TABLE sales ADD TEMPORARY PARTITION tp1 VALUES LESS THAN ('2027-01-01');",
+            "ALTER TABLE sales DROP PARTITION IF EXISTS p1 FORCE;",
+            "ALTER TABLE sales DROP TEMPORARY PARTITION tp1;",
+            "ALTER TABLE sales DROP PARTITIONS WHERE biz_date < CURRENT_DATE() - INTERVAL 3 MONTH;",
+            "ALTER TABLE sales MODIFY PARTITION p1 SET ('replication_num' = '1');",
+            "ALTER TABLE sales MODIFY PARTITION (p1, p2) SET ('storage_medium' = 'SSD');",
+            "ALTER TABLE sales MODIFY PARTITION (*) SET ('storage_medium' = 'HDD');",
+            "ALTER TABLE sales REPLACE PARTITION (p1, p2) WITH TEMPORARY PARTITION (tp1) PROPERTIES ('strict_range' = 'false');",
+            "ALTER TABLE sales DISTRIBUTED BY HASH(store_id) BUCKETS 10;",
+            "ALTER TABLE sales DISTRIBUTED BY HASH(store_id) DEFAULT BUCKETS 10;",
+            "ALTER TABLE sales PARTITIONS (p1, p2) DISTRIBUTED BY HASH(store_id) BUCKETS 15;",
+            "ALTER TABLE sales ADD COLUMN region VARCHAR(64) KEY DEFAULT 'unknown' AFTER store_id TO rollup_sales PROPERTIES ('timeout' = '3600');",
+            "ALTER TABLE sales ADD COLUMN (region VARCHAR(64), channel VARCHAR(32));",
+            "ALTER TABLE sales ADD COLUMN total DECIMAL(18, 2) AS amount * quantity COMMENT 'generated';",
+            "ALTER TABLE sales ADD COLUMN c1 INT AFTER id, ADD COLUMN c2 VARCHAR(20) AFTER c1;",
+            "ALTER TABLE sales DROP COLUMN region FROM rollup_sales;",
+            "ALTER TABLE sales MODIFY COLUMN amount DECIMAL(20, 4) NOT NULL DEFAULT '0' COMMENT 'amount' AFTER id FROM rollup_sales PROPERTIES ('timeout' = '3600');",
+            "ALTER TABLE sales MODIFY COLUMN amount COMMENT 'new amount comment';",
+            "ALTER TABLE sales ORDER BY (biz_date, store_id) FROM rollup_sales PROPERTIES ('timeout' = '3600');",
+            "ALTER TABLE sales MODIFY COLUMN profile ADD FIELD address.city VARCHAR(64) AFTER zip;",
+            "ALTER TABLE sales MODIFY COLUMN items ADD FIELD detail.[*].discount DECIMAL(10, 2) FIRST;",
+            "ALTER TABLE sales MODIFY COLUMN profile DROP FIELD address.city;",
+            "ALTER TABLE sales ADD ROLLUP r1 (store_id, amount) FROM base_index PROPERTIES ('timeout' = '3600');",
+            "ALTER TABLE sales ADD ROLLUP r1 (store_id), r2 (amount) FROM base_index;",
+            "ALTER TABLE sales DROP ROLLUP r1, r2 PROPERTIES ('timeout' = '3600');",
+            "ALTER TABLE sales ADD INDEX idx_bitmap (store_id) USING BITMAP COMMENT 'bitmap';",
+            "ALTER TABLE sales ADD INDEX idx_ngram (description) USING NGRAMBF;",
+            "ALTER TABLE sales ADD INDEX idx_gin (description) USING GIN;",
+            "ALTER TABLE sales ADD INDEX idx_vector (embedding) USING VECTOR;",
+            "ALTER TABLE sales DROP INDEX idx_bitmap;",
+            "ALTER TABLE sales SET ('default.replication_num' = '2');",
+            "ALTER TABLE sales SET PROPERTIES ('replication_num' = '3');",
+            "ALTER TABLE sales COMMENT = 'sales fact', SET ('replication_num' = '3');",
+            "ALTER TABLE sales SWAP WITH replacement_sales;",
+            "ALTER TABLE sales COMPACT;",
+            "ALTER TABLE sales COMPACT p1;",
+            "ALTER TABLE sales CUMULATIVE COMPACT (p1, p2);",
+            "ALTER TABLE sales BASE COMPACT (p1, p2);",
+            "ALTER TABLE sales DROP PERSISTENT INDEX ON TABLETS (100, 101);"
+        ).forEach { sql -> assertParsesWithoutPsiErrors(sql) }
     }
 
     fun testNaturalJoinParsesWithoutPsiErrors() {
@@ -175,6 +247,42 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertTrue(
             "WHERE comparisons must be typed as BOOLEAN: $booleanWarnings; comparisons=$comparisonDiagnostics\n${psiSummary(myFixture.file)}",
             booleanWarnings.isEmpty()
+        )
+    }
+
+    fun testParenthesizedComparisonUsesPlatformPsiAndFormatsWithoutFailure() {
+        val file = createPsiFile(
+            "SELECT 1;\n" +
+                "    SELECT * FROM orders WHERE (order_id) = (order_id);\n" +
+                "        SELECT 2;"
+        )
+        val parenthesizedExpressions = elementsOfType(
+            file,
+            SqlCompositeElementTypes.SQL_PARENTHESIZED_EXPRESSION
+        ).filterIsInstance<SqlParenthesizedExpression>()
+
+        assertEquals(
+            "Both comparison operands must use the platform parenthesized-expression PSI.\n${psiSummary(file)}",
+            2,
+            parenthesizedExpressions.size
+        )
+        assertTrue(
+            "Parenthesized operands must expose their nested expressions.",
+            parenthesizedExpressions.all { it.expression?.text == "order_id" }
+        )
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Formatted parenthesized comparison must remain parseable: $errors\n${file.text}", errors.isEmpty())
+        val selectLines = file.text.lineSequence()
+            .filter { it.trimStart().startsWith("SELECT", ignoreCase = true) }
+            .toList()
+        assertTrue(
+            "A parenthesized comparison must not prevent neighboring statements from formatting.\n${file.text}",
+            selectLines.size == 3 && selectLines.all { it.startsWith("SELECT", ignoreCase = true) }
         )
     }
 
@@ -463,6 +571,44 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 ORDER BY (id, name)
                 PROPERTIES ("replication_num" = "3");
             """.trimIndent()
+        )
+    }
+
+    fun testInlineIndexNamesAreDefinitionsWithoutResolveWarnings() {
+        val sql = """
+            CREATE TABLE middle_store_item_cost_price (
+                store_id VARCHAR(36) NOT NULL,
+                item_id VARCHAR(36) NOT NULL,
+                INDEX idx_store_id (store_id) USING BITMAP,
+                INDEX idx_item_id (item_id) USING BITMAP
+            ) ENGINE = OLAP
+            PRIMARY KEY (store_id, item_id)
+            DISTRIBUTED BY HASH(store_id, item_id);
+        """.trimIndent()
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("inline-index.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val file = createPsiFile(sql)
+        val indexNodes = elementsOfType(file, SqlCompositeElementTypes.SQL_INDEX_DEFINITION)
+        assertEquals("Inline indexes must produce index-definition nodes.\n${psiSummary(file)}", 2, indexNodes.size)
+        val indexes = indexNodes.filterIsInstance<SqlDefinition>()
+        assertEquals(
+            "Inline index nodes must use the platform definition PSI: ${indexNodes.map { it.javaClass.name }}",
+            2,
+            indexes.size
+        )
+        assertEquals(listOf("idx_store_id", "idx_item_id"), indexes.map { it.name })
+        assertTrue("Inline index definitions must expose name elements.", indexes.all { it.nameElement != null })
+
+        val unresolved = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { it.contains("Unable to resolve symbol", ignoreCase = true) }
+        assertTrue(
+            "Inline indexes must not produce resolve warnings: $unresolved\n${psiSummary(myFixture.file)}",
+            unresolved.isEmpty()
         )
     }
 
@@ -845,6 +991,28 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             .filterIsInstance<SqlReferenceExpression>()
             .single { it.text == "order_key" }
         assertSame("ORDER BY aliases must resolve through the platform alias PSI.", selectAlias, orderByAlias.resolve())
+    }
+
+    fun testAddingSelectAliasIncrementallyDoesNotLeavePsiError() {
+        val initialSql = "SELECT order_id AS order_key\nFROM orders;"
+        myFixture.configureByText("incremental-alias.sql", initialSql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        listOf(", amount", " AS", " amount_value").forEach { fragment ->
+            WriteCommandAction.runWriteCommandAction(project) {
+                val document = myFixture.editor.document
+                document.insertString(document.text.indexOf('\n'), fragment)
+            }
+            PsiDocumentManager.getInstance(project).commitDocument(myFixture.editor.document)
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(myFixture.file, PsiErrorElement::class.java)
+        assertTrue("Adding a SELECT alias incrementally must remain parseable: $errors\n${psiSummary(myFixture.file)}", errors.isEmpty())
+        val aliases = elementsOfType(myFixture.file, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+        assertEquals(listOf("order_key", "amount_value"), aliases.map { it.name })
     }
 
     fun testGroupByAliasAndDerivedTableAliasesResolveLocally() {
@@ -1528,6 +1696,28 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
         assertTrue("Reformatted StarRocks PSI must remain parseable: $errors", errors.isEmpty())
         assertTrue(file.text.contains("SELECT", ignoreCase = true))
+    }
+
+    fun testPlatformFormatterPlacesExplainedQueryOnNextLine() {
+        listOf(
+            "EXPLAIN SELECT order_id FROM orders WHERE order_id=1;" to "SELECT",
+            "EXPLAIN ANALYZE VERBOSE SELECT order_id FROM orders WHERE order_id=1;" to "SELECT",
+            "EXPLAIN WITH base AS (SELECT 1 AS id) SELECT id FROM base;" to "WITH"
+        ).forEach { (sql, bodyKeyword) ->
+            val file = createPsiFile(sql)
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+
+            val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+            assertTrue("Formatted EXPLAIN must remain parseable: $errors\n${file.text}", errors.isEmpty())
+            val lines = file.text.lineSequence().filter(String::isNotBlank).toList()
+            assertTrue("EXPLAIN and its query body must occupy separate lines.\n${file.text}", lines.size > 1)
+            assertTrue(
+                "The explained query must start on its own unindented line.\n${file.text}",
+                lines[1].startsWith(bodyKeyword, ignoreCase = true)
+            )
+        }
     }
 
     fun testPlatformFormatterKeepsEveryTopLevelStatementAtColumnZero() {

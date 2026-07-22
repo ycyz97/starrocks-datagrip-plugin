@@ -42,7 +42,7 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 | 领域 | 当前评估 | 主要依据或限制 |
 | --- | --- | --- |
 | SELECT 与表达式 | 部分，覆盖较高 | 已覆盖 CTE、JOIN、子查询、集合运算、窗口、`QUALIFY` 和 grouping sets；`OFFSET`、`PIVOT`、`SELECT * EXCLUDE` 尚待核对或实现。 |
-| 表 DDL | 部分，覆盖较高 | 已建模 CREATE、DROP、TRUNCATE、CTAS、LIKE、分区、分桶、索引和常用属性；`ALTER TABLE` 仅支持有限动作。 |
+| 表 DDL | 部分，覆盖较高 | 已建模 CREATE、DROP、TRUNCATE、CTAS、LIKE、分区、分桶、索引、常用属性及官方文档中的 `ALTER TABLE` 动作类别。 |
 | DML | 部分，覆盖较高 | INSERT、UPDATE、DELETE、MERGE 已有结构化入口和场景；仍需逐分支对照官方变体。 |
 | View | 部分 | 已有 CREATE、ALTER、DROP、SHOW CREATE；官方可选子句仍需核对。 |
 | Materialized View | 部分 | 已部分覆盖 CREATE、ALTER、DROP、REFRESH 和 SHOW；缺少取消刷新等管理变体。 |
@@ -82,7 +82,7 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 - [x] 部分 — Key 模型、分区、分布、桶、Rollup、索引、生成列和属性。
 - [x] 部分 — DROP TABLE、TRUNCATE TABLE、CREATE INDEX、DROP INDEX。
 - [x] 部分 — INSERT、INSERT OVERWRITE、UPDATE、DELETE、MERGE。
-- [ ] 部分 — ALTER TABLE。目前仅支持 ADD/MODIFY/DROP COLUMN、RENAME、SWAP WITH、SET PROPERTIES。
+- [x] 覆盖较高 — ALTER TABLE。支持逗号分隔动作、重命名与注释、分区与分桶、列与 STRUCT 字段、Rollup、索引、表属性、SWAP、Compaction 和持久化索引删除。
 - [ ] 缺失/待核对 — CANCEL ALTER TABLE。
 - [ ] 缺失/待核对 — REFRESH EXTERNAL TABLE。
 - [ ] 缺失/待核对 — SHOW ALTER、SHOW DELETE、SHOW DYNAMIC PARTITION TABLES、SHOW FULL COLUMNS、SHOW INDEX、SHOW TABLET。

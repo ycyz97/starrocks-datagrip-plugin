@@ -27,6 +27,7 @@ import com.intellij.sql.psi.impl.SqlFunctionCallExpressionImpl
 import com.intellij.sql.psi.impl.SqlFunctionCallTableExpressionImpl
 import com.intellij.sql.psi.impl.SqlGrantStatementImpl
 import com.intellij.sql.psi.impl.SqlInsertStatementImpl
+import com.intellij.sql.psi.impl.SqlIndexDefinitionImpl
 import com.intellij.sql.psi.impl.SqlJoinConditionClauseImpl
 import com.intellij.sql.psi.impl.SqlJoinExpressionImpl
 import com.intellij.sql.psi.impl.SqlLiteralExpressionImpl
@@ -117,6 +118,11 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
                 info,
                 SqlCompositeElementTypes.SQL_COLUMN_DEFINITION,
                 SqlColumnDefinitionImpl::class.java
+            )
+            registerImplementation(
+                info,
+                SqlCompositeElementTypes.SQL_INDEX_DEFINITION,
+                SqlIndexDefinitionImpl::class.java
             )
             registerImplementation(
                 info,
