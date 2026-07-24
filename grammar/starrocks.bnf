@@ -767,8 +767,8 @@ insert_table_columns_list ::= table_reference insert_partition_clause? insert_re
   elementType="SQL_TABLE_COLUMNS_LIST"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private insert_partition_clause ::= "PARTITION" "(" insert_partition_item ("," insert_partition_item)* ")"
-private insert_partition_item ::= identifier_reference ("=" value_expression)?
+private insert_partition_clause ::= "PARTITION" "(" insert_partition_name ("," insert_partition_name)* ")"
+private insert_partition_name ::= identifier | delimited_identifier | quoted_identifier
 insert_reference_list ::= "(" column_reference ("," column_reference)* ")" {
   elementType="SQL_REFERENCE_LIST"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"

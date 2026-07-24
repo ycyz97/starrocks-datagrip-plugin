@@ -365,7 +365,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             "INSERT OVERWRITE sales PARTITION (p${ '$' }[yyyyMMdd-1]) WITH base AS (SELECT 1 AS id) SELECT * FROM base;"
         )
         assertParsesWithoutPsiErrors(
-            "INSERT OVERWRITE TABLE sales PARTITION (biz_date = '${ '$' }[yyyy-MM-dd-1]') SELECT * FROM source_sales;"
+            "INSERT OVERWRITE TABLE sales PARTITION (p20240101) SELECT * FROM source_sales;"
         )
     }
 
@@ -697,6 +697,43 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         val unresolved = myFixture.doHighlighting()
             .filter { it.description?.contains("Unable to resolve symbol", ignoreCase = true) == true }
         assertTrue("RANGE/LIST methods and partition names must not be unresolved: $unresolved", unresolved.isEmpty())
+    }
+
+    fun testInsertPartitionNameIsNeutralIdentifier() {
+        val sql = """
+            CREATE DATABASE tmp;
+            CREATE TABLE tmp.aa (k1 DATE, id BIGINT)
+            PARTITION BY RANGE(k1) (
+                PARTITION p1234 VALUES LESS THAN ('2024-02-01')
+            );
+
+            INSERT OVERWRITE tmp.aa PARTITION (p1234)
+            SELECT '2024-01-01', 1;
+        """.trimIndent()
+        StarRocksTokenInitializer.ensureInitialized()
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("insert-partition-reference.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val file = myFixture.file
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Partitioned INSERT must parse without PSI errors: $errors\n${psiSummary(file)}", errors.isEmpty())
+
+        val insertPartitionOffset = sql.lastIndexOf("p1234")
+        assertTrue("INSERT partition name is missing from the test SQL.", insertPartitionOffset >= 0)
+        val insertPartitionReferences = elementsOfType(file, SqlCompositeElementTypes.SQL_PARTITION_REFERENCE)
+            .filter { it.textRange.containsOffset(insertPartitionOffset) }
+        assertTrue(
+            "INSERT partition names must remain neutral identifiers when partition metadata is unavailable: $insertPartitionReferences",
+            insertPartitionReferences.isEmpty()
+        )
+
+        val unresolvedPartitions = myFixture.doHighlighting()
+            .filter { it.description?.contains("Unable to resolve", ignoreCase = true) == true }
+            .filter { it.startOffset <= insertPartitionOffset && it.endOffset >= insertPartitionOffset + "p1234".length }
+        assertTrue("INSERT partition must not be reported as unresolved: $unresolvedPartitions", unresolvedPartitions.isEmpty())
     }
 
     fun testSessionSetStatementParsesWithoutPsiErrors() {
