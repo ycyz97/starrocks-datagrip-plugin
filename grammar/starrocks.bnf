@@ -696,7 +696,7 @@ group_by_clause ::= "GROUP" "BY" grouping_item ("," grouping_item)* {
   pin=2
   recoverWhile=query_recover
 }
-grouping_item ::= grouping_sets_clause | value_expression
+private grouping_item ::= grouping_sets_clause | value_expression
 grouping_sets_clause ::= ("GROUPING" "SETS" | "ROLLUP" | "CUBE") "(" grouping_set ("," grouping_set)* ")"
 grouping_set ::= "(" (value_expression ("," value_expression)*)? ")" | value_expression
 having_clause ::= "HAVING" value_expression {
@@ -995,9 +995,21 @@ binary_comparison_expression ::= bitwise_expression (comparison_operator bitwise
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 private comparison_operator ::= "=" | "<" | ">" | "<=" | ">=" | "<>" | "!=" | "<=>" | "LIKE" | "REGEXP" | "RLIKE" | "IS" "NOT"?
-private bitwise_expression ::= additive_expression (("|" | "&" | "<<" | ">>") additive_expression)*
-private additive_expression ::= multiplicative_expression (("+" | "-" | "||") multiplicative_expression)*
-private multiplicative_expression ::= unary_expression (("*" | "/" | "%" | "DIV" | "MOD") unary_expression)*
+private bitwise_expression ::= additive_expression bitwise_operation*
+left bitwise_operation ::= ("|" | "&" | "<<" | ">>") additive_expression {
+  elementType="SQL_BINARY_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+private additive_expression ::= multiplicative_expression additive_operation*
+left additive_operation ::= ("+" | "-" | "||") multiplicative_expression {
+  elementType="SQL_BINARY_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+private multiplicative_expression ::= unary_expression multiplicative_operation*
+left multiplicative_operation ::= ("*" | "/" | "%" | "DIV" | "MOD") unary_expression {
+  elementType="SQL_BINARY_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 private unary_expression ::= ("+" | "-" | "!" | "~" | "BINARY")* postfix_expression
 private postfix_expression ::= (cast_expression_guarded | case_expression_guarded | exists_expression_guarded | interval_expression_guarded | scalar_subquery_guarded | array_literal | function_call | literal | parenthesized_value_expression | variable_reference | column_reference | typed_literal_expression) function_null_treatment_clause? analytic_clause_guarded? array_access_tail* field_access_tail*
 array_literal ::= "[" (value_expression ("," value_expression)*)? "]" {
@@ -1012,6 +1024,8 @@ private exists_expression_guarded ::= &"EXISTS" exists_expression
 private interval_expression_guarded ::= &"INTERVAL" interval_expression
 private scalar_subquery_guarded ::= &parenthesized_query_start parenthesized_query_expression
 cast_expression ::= "CAST" "(" value_expression "AS" cast_type ")" {
+  elementType="SQL_TYPE_CAST_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=3
   recoverWhile=expression_recover
 }
@@ -1078,11 +1092,26 @@ type_parameters ::= "(" numeric_literal ("," numeric_literal)* ")" {
   elementType="SQL_TYPE_PARAMETER_LIST"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-complex_type ::= array_type | map_type | struct_type
-array_type ::= "ARRAY" "<" type_element ">"
-map_type ::= "MAP" "<" type_element "," type_element ">"
-struct_type ::= "STRUCT" "<" struct_field ("," struct_field)* ">"
-struct_field ::= identifier_reference ":"? type_element
+private complex_type ::= array_type | map_type | struct_type
+private array_type ::= "ARRAY" array_type_parameters
+private map_type ::= "MAP" map_type_parameters
+private struct_type ::= "STRUCT" struct_type_parameters
+array_type_parameters ::= "<" type_element ">" {
+  elementType="SQL_TYPE_PARAMETER_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+map_type_parameters ::= "<" type_element "," type_element ">" {
+  elementType="SQL_TYPE_PARAMETER_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+struct_type_parameters ::= "<" struct_field ("," struct_field)* ">" {
+  elementType="SQL_TYPE_PARAMETER_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+struct_field ::= identifier_reference ":"? type_element {
+  elementType="SQL_COLUMN_DEFINITION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 
 table_column_list ::= "(" table_column_item ("," table_column_item)* ","? ")" {
   elementType="SQL_TABLE_ELEMENT_LIST"

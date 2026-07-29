@@ -144,6 +144,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_TABLE_REFERENCE" -> SqlCompositeElementTypes.SQL_TABLE_REFERENCE
         "SQL_TRUNCATE_TABLE_STATEMENT" -> SqlCompositeElementTypes.SQL_TRUNCATE_TABLE_STATEMENT
         "SQL_TYPE_ELEMENT" -> SqlCompositeElementTypes.SQL_TYPE_ELEMENT
+        "SQL_TYPE_CAST_EXPRESSION" -> SqlCompositeElementTypes.SQL_TYPE_CAST_EXPRESSION
         "SQL_TYPE_PARAMETER_LIST" -> SqlCompositeElementTypes.SQL_TYPE_PARAMETER_LIST
         "SQL_UNION_EXPRESSION" -> SqlCompositeElementTypes.SQL_UNION_EXPRESSION
         "SQL_UPDATE_STATEMENT" -> SqlCompositeElementTypes.SQL_UPDATE_STATEMENT

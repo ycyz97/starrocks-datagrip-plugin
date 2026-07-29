@@ -23,12 +23,14 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlAsExpression
 import com.intellij.sql.psi.SqlColumnDefinition
+import com.intellij.sql.psi.SqlCreateTableStatement
 import com.intellij.sql.psi.SqlDefinition
 import com.intellij.sql.psi.SqlFunctionCallExpression
 import com.intellij.sql.psi.SqlExpression
 import com.intellij.sql.psi.SqlLiteralExpression
 import com.intellij.sql.psi.SqlParenthesizedExpression
 import com.intellij.sql.psi.SqlReferenceExpression
+import com.intellij.sql.psi.SqlTypeCastExpression
 import com.intellij.sql.psi.SqlUnionExpression
 import com.intellij.sql.dialects.mysql.MysqlDialect
 import com.intellij.database.model.ObjectKind
@@ -52,6 +54,7 @@ import com.intellij.sql.dialects.SqlDataSourceMappings
 import com.intellij.sql.inspections.SqlSignatureInspection
 import com.intellij.sql.inspections.SqlResolveInspection
 import com.intellij.sql.inspections.SqlTypeInspection
+import com.intellij.sql.psi.impl.SqlTableElementListImpl
 import java.io.File
 
 class StarRocksParsingTest : BasePlatformTestCase() {
@@ -1004,6 +1007,90 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertEquals("Column definitions must expose their platform name element.", "order_id", definition.nameElement?.name)
     }
 
+    fun testQuotedLocalCreateTableResolvesInFollowingSelect() {
+        val mysql = PsiFileFactory.getInstance(project).createFileFromText(
+            "mysql-local-ddl.sql",
+            MysqlDialect.INSTANCE,
+            "CREATE TABLE test (biz_date DATE); SELECT t.biz_date FROM test t;"
+        )
+        val mysqlCreateTable = elementsOfType(mysql, SqlCompositeElementTypes.SQL_CREATE_TABLE_STATEMENT)
+            .filterIsInstance<SqlCreateTableStatement>()
+            .single()
+        val mysqlElementList = elementsOfType(mysql, SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST).single()
+        assertTrue(mysqlElementList is SqlTableElementListImpl)
+        assertEquals(listOf("biz_date"), mysqlCreateTable.declaredColumns.map { it.name })
+        val mysqlFromTable = elementsOfType(mysql, SqlCompositeElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .single { it.text == "test" && it.parent !is SqlCreateTableStatement }
+        assertSame(
+            "MySQL reference PSI establishes the expected platform local-DDL behavior.",
+            mysqlCreateTable,
+            mysqlFromTable.resolve()
+        )
+
+        val file = createPsiFile(
+            """
+                CREATE TABLE `test` (
+                    `biz_date` DATE NOT NULL COMMENT "业务日期",
+                    `store_id` VARCHAR(65533) NOT NULL COMMENT "门店ID",
+                    `item_id` VARCHAR(65533) NOT NULL COMMENT "商品ID",
+                    `etl_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "etl时间"
+                ) ENGINE = OLAP;
+                SELECT
+                    a1.biz_date,
+                    a1.store_id,
+                    a1.item_id
+                FROM test a1;
+            """.trimIndent()
+        )
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Local CREATE TABLE fixture must parse: $errors\n${psiSummary(file)}", errors.isEmpty())
+
+        val createTable = elementsOfType(file, StarRocksElementTypes.SQL_CREATE_TABLE_STATEMENT)
+            .filterIsInstance<SqlCreateTableStatement>()
+            .single()
+        val tableElementList = elementsOfType(file, SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST).single()
+        assertTrue(
+            "CREATE TABLE columns must be wrapped by SqlTableElementListImpl, but was " +
+                tableElementList.javaClass.name,
+            tableElementList is SqlTableElementListImpl
+        )
+        val definitions = createTable.declaredColumns.associateBy { it.name }
+        assertEquals(setOf("biz_date", "store_id", "item_id", "etl_time"), definitions.keys)
+
+        val tableReferences = elementsOfType(file, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        val createdTableReference = tableReferences.single { it.text == "`test`" }
+        val selectedTableReference = tableReferences.single { it.text == "test" }
+        assertSame(
+            "FROM test must resolve to the preceding local CREATE TABLE.\n${psiSummary(file)}",
+            createTable,
+            selectedTableReference.resolve()
+        )
+
+        val tableAlias = elementsOfType(file, StarRocksElementTypes.SQL_AS_EXPRESSION)
+            .filterIsInstance<SqlAsExpression>()
+            .single { it.name == "a1" }
+        val selectedColumns = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.text.startsWith("a1.") }
+        assertEquals(3, selectedColumns.size)
+        selectedColumns.forEach { reference ->
+            assertSame(
+                "${reference.text} must resolve to the preceding CREATE TABLE column. " +
+                    "qualifier=${(reference.qualifierExpression as? SqlReferenceExpression)?.resolve()}\n${psiSummary(file)}",
+                definitions[reference.name],
+                reference.resolve()
+            )
+            assertSame(
+                "${reference.text} qualifier must resolve to the local table alias.",
+                tableAlias,
+                (reference.qualifierExpression as? SqlReferenceExpression)?.resolve()
+            )
+        }
+        assertSame(createTable, createdTableReference.parent)
+    }
+
     fun testAliasesUsePlatformSqlPsiAndResolveLocally() {
         val file = createPsiFile(
             "SELECT o.order_id AS order_key FROM orders AS o ORDER BY order_key;"
@@ -1097,7 +1184,16 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             "StarRocks built-in functions must be loaded through the platform function catalog.",
             StarRocksDialect.INSTANCE.supportedFunctions.contains("ABS")
         )
-        listOf("COUNT", "DATE_FORMAT").forEach { function ->
+        listOf(
+            "COUNT",
+            "DATE_FORMAT",
+            "REGEXP_COUNT",
+            "REGEXP_EXTRACT_ALL",
+            "REGEXP_SPLIT",
+            "ARRAY_REPEAT",
+            "CHARACTER_LENGTH",
+            "URL_ENCODE"
+        ).forEach { function ->
             assertTrue(
                 "StarRocks built-in function $function must be loaded through the platform function catalog.",
                 StarRocksDialect.INSTANCE.supportedFunctions.contains(function)
@@ -1106,19 +1202,21 @@ class StarRocksParsingTest : BasePlatformTestCase() {
     }
 
     fun testBuiltinFunctionCallsResolveThroughPlatformPsi() {
-        val file = createPsiFile("SELECT DATE_FORMAT(biz_date, '%Y-%m'), COUNT(*) FROM sales;")
+        val file = createPsiFile(
+            "SELECT DATE_FORMAT(biz_date, '%Y-%m'), COUNT(*), " +
+                "REGEXP_COUNT(code, '[0-9]'), REGEXP_EXTRACT_ALL(code, '[0-9]', 0), " +
+                "REGEXP_SPLIT(code, '[0-9]') FROM sales;"
+        )
         val calls = elementsOfType(file, StarRocksElementTypes.SQL_FUNCTION_CALL)
-        assertEquals(2, calls.size)
+        assertEquals(5, calls.size)
         val functionCalls = calls.filterIsInstance<SqlFunctionCallExpression>()
-        assertEquals(2, functionCalls.size)
+        assertEquals(5, functionCalls.size)
         functionCalls.forEach { call ->
             val nameElement = call.nameElement
             assertNotNull("Built-in function ${call.text} must expose a platform name element.", nameElement)
             val nameReference = nameElement?.reference
             assertNotNull("Built-in function ${call.text} must expose a platform name reference.", nameReference)
-            if (call.text.startsWith("DATE_FORMAT")) {
-                assertNotNull("DATE_FORMAT must resolve through the dialect catalog.", nameReference?.resolve())
-            }
+            assertNotNull("${call.name} must resolve through the dialect catalog.", nameReference?.resolve())
         }
     }
 
@@ -1733,6 +1831,169 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
         assertTrue("Reformatted StarRocks PSI must remain parseable: $errors", errors.isEmpty())
         assertTrue(file.text.contains("SELECT", ignoreCase = true))
+    }
+
+    fun testPlatformFormatterAlignsSelectAliasesAfterArithmeticExpressions() {
+        val file = createPsiFile(
+            """
+                SELECT
+                    IFNULL(cost.logistics_cost, 0)
+                        + IFNULL(cost.rent_cost, 0)
+                        + IFNULL(cost.water_cost, 0) AS total_cost,
+                    sale_amt AS sale_amount,
+                    cost_amt AS cost_amount,
+                    gp_amt - IFNULL(co_cost_amt, 0) AS backend_gross_profit,
+                    member_gp_amt AS member_gross_profit
+                FROM store_cost cost;
+            """.trimIndent()
+        )
+        val style = CodeStyle.getSettings(file).getCustomSettings(StarRocksCodeStyleSettings::class.java)
+        val previousAlignAs = style.SELECT_ALIGN_AS
+        try {
+            style.SELECT_ALIGN_AS = true
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+
+            val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+            assertTrue("Formatted arithmetic aliases must remain parseable: $errors\n${file.text}", errors.isEmpty())
+            val aliasColumns = file.text.lineSequence()
+                .filter { Regex("\\bAS\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) }
+                .map { Regex("\\bAS\\b", RegexOption.IGNORE_CASE).find(it)!!.range.first }
+                .toList()
+            assertEquals("Every SELECT alias must align, including arithmetic expressions.\n${file.text}", 1, aliasColumns.distinct().size)
+        } finally {
+            style.SELECT_ALIGN_AS = previousAlignAs
+        }
+    }
+
+    fun testPlatformFormatterAlignsGroupByItems() {
+        val file = createPsiFile(
+            """
+                SELECT
+                    a1.biz_date,
+                    a1.store_id,
+                    a1.item_id
+                FROM test a1
+                GROUP BY a1.biz_date,
+                    a1.store_id,
+                    a1.item_id
+                ;
+            """.trimIndent()
+        )
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Formatted GROUP BY must remain parseable: $errors\n${file.text}", errors.isEmpty())
+        val groupByLines = file.text.lineSequence()
+            .dropWhile { !it.contains("GROUP BY", ignoreCase = true) }
+            .take(3)
+            .toList()
+        assertEquals("The fixture must contain three GROUP BY items.\n${file.text}", 3, groupByLines.size)
+        val itemColumns = groupByLines.map { it.indexOf("a1.") }
+        assertEquals(
+            "Every GROUP BY item must align with the first item after GROUP BY.\n${file.text}",
+            1,
+            itemColumns.distinct().size
+        )
+
+        listOf(
+            "SELECT store_id, biz_date FROM sales GROUP BY GROUPING SETS ((store_id), (biz_date));",
+            "SELECT store_id, biz_date FROM sales GROUP BY ROLLUP(store_id, biz_date);",
+            "SELECT store_id, biz_date FROM sales GROUP BY CUBE(store_id, biz_date);"
+        ).forEach { sql ->
+            val advancedFile = createPsiFile(sql)
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(advancedFile)
+            }
+            val advancedErrors = PsiTreeUtil.findChildrenOfType(advancedFile, PsiErrorElement::class.java)
+            assertTrue(
+                "Advanced GROUP BY syntax must remain parseable after removing the transparent item wrapper: " +
+                    "$advancedErrors\n${advancedFile.text}",
+                advancedErrors.isEmpty()
+            )
+        }
+    }
+
+    fun testPlatformFormatterDoesNotSeparateCastAndComplexTypeDelimiters() {
+        val file = createPsiFile(
+            """
+                SELECT
+                    CAST(a1.etl_time AS DATETIME),
+                    CAST(a1.ids AS ARRAY<INT>),
+                    CAST(a1.attrs AS MAP<INT, INT>),
+                    CAST(a1.row_value AS STRUCT<id INT, name STRING>)
+                FROM test a1;
+                CREATE TABLE typed_values (
+                    ids ARRAY<INT>,
+                    attrs MAP<INT, INT>,
+                    row_value STRUCT<id INT, name STRING>
+                );
+            """.trimIndent()
+        )
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Formatted CAST and complex types must remain parseable: $errors\n${file.text}", errors.isEmpty())
+        assertEquals(
+            "CAST expressions must use the platform PSI type so platform formatting rules apply.",
+            4,
+            elementsOfType(file, SqlCompositeElementTypes.SQL_TYPE_CAST_EXPRESSION)
+                .filterIsInstance<SqlTypeCastExpression>()
+                .size
+        )
+        assertEquals(
+            "Complex type delimiters must use the platform type-parameter-list PSI.",
+            6,
+            elementsOfType(file, SqlCompositeElementTypes.SQL_TYPE_PARAMETER_LIST).size
+        )
+        listOf("CAST (", "ARRAY <", "MAP <", "STRUCT <").forEach { separatedDelimiter ->
+            assertFalse(
+                "The formatter must not insert whitespace in `$separatedDelimiter`.\n${file.text}",
+                file.text.contains(separatedDelimiter, ignoreCase = true)
+            )
+        }
+    }
+
+    fun testStructFieldsAreDefinitionsWithoutResolveWarningsAndPreserveCase() {
+        val sql = "CREATE TABLE typed_values (row_value STRUCT<a STRING, b INT>);"
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("struct-fields.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val errors = PsiTreeUtil.findChildrenOfType(myFixture.file, PsiErrorElement::class.java)
+        assertTrue("Named STRUCT fields must parse: $errors\n${psiSummary(myFixture.file)}", errors.isEmpty())
+        val definitions = elementsOfType(myFixture.file, SqlCompositeElementTypes.SQL_COLUMN_DEFINITION)
+            .filterIsInstance<SqlColumnDefinition>()
+        assertEquals(
+            "The table column and both named STRUCT fields must use platform definition PSI.",
+            listOf("row_value", "a", "b"),
+            definitions.map { it.name }
+        )
+
+        val unresolved = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { it.contains("Unable to resolve symbol", ignoreCase = true) }
+        assertTrue(
+            "STRUCT field declarations must not be inspected as unresolved references: $unresolved",
+            unresolved.isEmpty()
+        )
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(myFixture.file)
+        }
+        assertTrue(
+            "Formatter must preserve STRUCT field identifier case.\n${myFixture.file.text}",
+            myFixture.file.text.contains("STRUCT<a STRING, b INT>")
+        )
     }
 
     fun testPlatformFormatterPlacesExplainedQueryOnNextLine() {

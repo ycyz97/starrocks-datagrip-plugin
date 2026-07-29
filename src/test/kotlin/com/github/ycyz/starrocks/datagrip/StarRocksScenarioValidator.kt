@@ -747,7 +747,6 @@ object StarRocksScenarioValidator {
             StarRocksElementTypes.SQL_PARENTHESIZED_QUERY_EXPRESSION,
             StarRocksElementTypes.SQL_WHERE_CLAUSE,
             StarRocksElementTypes.SQL_GROUP_BY_CLAUSE,
-            StarRocksElementTypes.GROUPING_ITEM,
             StarRocksElementTypes.SQL_HAVING_CLAUSE,
             StarRocksElementTypes.SQL_ORDER_BY_CLAUSE,
             StarRocksElementTypes.ORDERING_ITEM,
@@ -1005,8 +1004,20 @@ object StarRocksScenarioValidator {
         val functionsXml = projectDir.resolve(
             "src/main/resources/com/github/ycyz/starrocks/datagrip/dialect/functions.xml"
         ).readText()
-        check(Regex("<function>").findAll(functionsXml).count() >= 450) {
+        check(Regex("<function(?:\\s[^>]*)?>").findAll(functionsXml).count() >= 525) {
             "The platform function catalog must contain the StarRocks server function set."
+        }
+        listOf(
+            "REGEXP_COUNT",
+            "REGEXP_EXTRACT_ALL",
+            "REGEXP_SPLIT",
+            "ARRAY_REPEAT",
+            "CHARACTER_LENGTH",
+            "URL_ENCODE"
+        ).forEach { function ->
+            check("<name>$function</name>" in functionsXml) {
+                "The platform function catalog must contain current public StarRocks function $function."
+            }
         }
         check(
             Regex(

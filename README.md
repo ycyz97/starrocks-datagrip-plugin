@@ -27,8 +27,7 @@ completion are scoped to the StarRocks language.
 - Provides supplementary completion for StarRocks-specific snippets and
   properties while leaving ordinary table, column, type, and function
   completion to the platform SQL completion system.
-- Extends platform SQL formatting for StarRocks DDL and materialized-view
-  clauses.
+- Extends the platform SQL formatter with StarRocks SQL support.
 - Integrates JDBC metadata, the StarRocks type system, and native `SHOW CREATE`
   statements with the Database Tools platform.
 

@@ -17,7 +17,7 @@ StarRocks Support 是一款面向 JetBrains DataGrip/IntelliJ 的插件，提供
 - 高亮 StarRocks 关键字、标识符、字面量、注释、参数和运算符。
 - 向 SQL 平台发布 StarRocks 关键字、标量类型、复杂类型和较完整的内置函数目录。
 - 为 StarRocks 专属片段和属性提供补充补全；普通表、列、类型和函数补全仍由平台 SQL 补全系统负责。
-- 扩展平台 SQL 格式化，支持 StarRocks DDL 和物化视图专属子句。
+- 基于平台 SQL 格式化器提供 StarRocks SQL 格式化支持。
 - 将 JDBC 元数据、StarRocks 类型系统和原生 `SHOW CREATE` 语句接入 Database Tools 平台。
 
 项目通过结构化清单记录语法支持，不声明已经完全兼容 StarRocks。当前目标基准为 StarRocks 4.1 文档。已实现、部分实现、缺失和待核对内容见[语法覆盖清单](SYNTAX_COVERAGE.zh-CN.md)。

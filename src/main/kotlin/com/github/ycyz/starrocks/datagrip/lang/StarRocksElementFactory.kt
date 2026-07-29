@@ -40,6 +40,7 @@ import com.intellij.sql.psi.impl.SqlSpecialLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlStatementImpl
 import com.intellij.sql.psi.impl.SqlStringLiteralExpressionImpl
 import com.intellij.sql.psi.impl.SqlTableExpressionImpl
+import com.intellij.sql.psi.impl.SqlTableElementListImpl
 import com.intellij.sql.psi.impl.SqlTruncateTableStatementImpl
 import com.intellij.sql.psi.impl.SqlUpdateStatementImpl
 import com.intellij.sql.psi.impl.SqlUseDatabaseStatementImpl
@@ -50,6 +51,9 @@ class StarRocksElementFactory : SqlElementFactory(), StarRocksTokens {
     override fun getStaticInfo(): Info = INFO
 
     override fun createElementNode(type: IElementType): CompositeElement {
+        if (type == SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST) {
+            return SqlTableElementListImpl(type, null)
+        }
         if (type == StarRocksElementTypes.STARROCKS_COLUMN_ALIAS_DEFINITION) {
             return StarRocksColumnAliasDefinition(type)
         }

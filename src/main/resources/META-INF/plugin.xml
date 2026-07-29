@@ -13,7 +13,7 @@
         <ul>
             <li>StarRocks SQL parsing and syntax highlighting.</li>
             <li>Code completion for StarRocks keywords, types, functions, snippets, and table properties.</li>
-            <li>SQL formatting for StarRocks DDL and materialized view clauses.</li>
+            <li>Platform-based SQL formatting for the StarRocks dialect.</li>
             <li>Dedicated StarRocks DBMS and data source integration.</li>
             <li>JDBC metadata, StarRocks type system, object resolution, and native <code>SHOW CREATE</code> support.</li>
             <li>Syntax coverage aligned with the StarRocks 4.1 documentation baseline.</li>
@@ -22,11 +22,12 @@
 
     <change-notes><![CDATA[
         <ul>
-            <li>Expanded <code>ALTER TABLE</code> support for rename, comments, partitions, distribution, rollups, indexes, columns, properties, atomic swaps, and compaction.</li>
-            <li>Fixed inline index definitions so index names resolve correctly, with support for BITMAP, NGRAMBF, GIN, and VECTOR index types.</li>
-            <li>Fixed parsing for <code>CONFIG</code> column references and <code>AFTER</code>/<code>FIRST</code> column positions.</li>
-            <li>Aligned <code>EXPLAIN</code> formatting with the platform SQL formatter.</li>
-            <li>Stabilized incremental SELECT alias parsing and parenthesized comparisons that could abort formatting for an entire SQL file.</li>
+            <li>Fixed false unresolved-symbol warnings for partition names in <code>INSERT OVERWRITE ... PARTITION (...)</code>.</li>
+            <li>Resolved tables and columns declared by an earlier <code>CREATE TABLE</code> statement in the same SQL file, including quoted identifiers.</li>
+            <li>Added 52 documented StarRocks built-in functions to platform completion and symbol resolution, including <code>REGEXP_EXTRACT_ALL</code>, <code>REGEXP_COUNT</code>, and <code>REGEXP_SPLIT</code>.</li>
+            <li>Fixed formatter alignment for SELECT aliases following arithmetic expressions and for multiline <code>GROUP BY</code> fields.</li>
+            <li>Fixed unwanted spaces in <code>CAST(...)</code>, <code>ARRAY&lt;...&gt;</code>, <code>MAP&lt;...&gt;</code>, and <code>STRUCT&lt;...&gt;</code> by using the platform SQL PSI and formatter blocks.</li>
+            <li>Recognized named <code>STRUCT</code> members as field definitions, preventing unresolved-symbol warnings and preserving identifier case during formatting.</li>
         </ul>
     ]]></change-notes>
 

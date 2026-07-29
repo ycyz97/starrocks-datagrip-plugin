@@ -3,6 +3,7 @@ package com.github.ycyz.starrocks.datagrip.dialect
 import com.github.ycyz.starrocks.datagrip.StarRocksIcons
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDataType
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDbms
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokens
 import com.intellij.database.Dbms
 import com.intellij.database.model.ObjectKind
@@ -11,6 +12,7 @@ import com.intellij.database.psi.DbDataSource
 import com.intellij.database.util.TreePattern
 import com.intellij.database.util.TreePatternNode
 import com.intellij.psi.PsiReference
+import com.intellij.psi.PsiElement
 import com.intellij.psi.ResolveState
 import com.intellij.sql.dialects.BuiltinFunction
 import com.intellij.sql.dialects.base.SqlLanguageDialectBase
@@ -37,6 +39,10 @@ class StarRocksDialect private constructor() : SqlLanguageDialectBase("StarRocks
     }
     override fun isOperatorSupported(token: IElementType?): Boolean = true
     override fun getSystemVariables(): Set<String> = emptySet()
+
+    override fun canContainDdl(element: PsiElement): Boolean {
+        return element.node.elementType in DDL_CONTAINER_TYPES || super.canContainDdl(element)
+    }
 
     override fun <T : MutableCollection<ObjectKind>> getParentDbTypes(result: T, type: ObjectKind): T {
         super.getParentDbTypes(result, type)
@@ -77,6 +83,14 @@ class StarRocksDialect private constructor() : SqlLanguageDialectBase("StarRocks
     }
 
     companion object {
+        private val DDL_CONTAINER_TYPES = setOf(
+            StarRocksElementTypes.STATEMENT,
+            StarRocksElementTypes.DDL_STATEMENT,
+            StarRocksElementTypes.CREATE_STATEMENT,
+            StarRocksElementTypes.ALTER_STATEMENT,
+            StarRocksElementTypes.DROP_STATEMENT
+        )
+
         @JvmField
         val INSTANCE: StarRocksDialect = StarRocksDialect()
     }
