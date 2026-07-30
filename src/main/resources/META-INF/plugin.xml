@@ -22,12 +22,7 @@
 
     <change-notes><![CDATA[
         <ul>
-            <li>Fixed false unresolved-symbol warnings for partition names in <code>INSERT OVERWRITE ... PARTITION (...)</code>.</li>
-            <li>Resolved tables and columns declared by an earlier <code>CREATE TABLE</code> statement in the same SQL file, including quoted identifiers.</li>
-            <li>Added 52 documented StarRocks built-in functions to platform completion and symbol resolution, including <code>REGEXP_EXTRACT_ALL</code>, <code>REGEXP_COUNT</code>, and <code>REGEXP_SPLIT</code>.</li>
-            <li>Fixed formatter alignment for SELECT aliases following arithmetic expressions and for multiline <code>GROUP BY</code> fields.</li>
-            <li>Fixed unwanted spaces in <code>CAST(...)</code>, <code>ARRAY&lt;...&gt;</code>, <code>MAP&lt;...&gt;</code>, and <code>STRUCT&lt;...&gt;</code> by using the platform SQL PSI and formatter blocks.</li>
-            <li>Recognized named <code>STRUCT</code> members as field definitions, preventing unresolved-symbol warnings and preserving identifier case during formatting.</li>
+            <li>Fixed catalog, schema, table, and function resolution becoming unavailable in an SQL file after executing a query.</li>
         </ul>
     ]]></change-notes>
 
@@ -42,7 +37,7 @@
 
     <extensions defaultExtensionNs="com.intellij.database">
         <dbms id="STARROCKS" instance="com.github.ycyz.starrocks.datagrip.database.StarRocksDbms.INSTANCE"/>
-        <dialect dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.GenericDialect"/>
+        <dialect dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksDatabaseDialect"/>
         <modelFacade dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.model.GenericModelFacade"/>
         <introspector dbms="STARROCKS" implementationClass="com.intellij.database.dialects.base.introspector.jdbc.JdbcIntrospector$Factory"/>
         <jdbcMetadataWrapper dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.introspector.jdbc.GenericMetadataWrapper$Factory"/>
