@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.github.ycyz.starrocks.datagrip"
-version = "2.0.3"
+version = "2.0.4"
 
 val grammarKitGeneratedRoot = layout.buildDirectory.dir("generated/src/main/java")
 val generatedParserGrammar = layout.buildDirectory.file("generated/grammar/starrocks.bnf")

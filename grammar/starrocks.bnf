@@ -1038,29 +1038,20 @@ case_else_clause ::= "ELSE" value_expression
 exists_expression ::= "EXISTS" "(" query_expression ")"
 interval_expression ::= "INTERVAL" value_expression interval_unit
 typed_literal_expression ::= typed_literal_prefix literal
-function_call ::= function_name ("." function_name)* function_call_arguments
+function_call ::= function_name ("." function_name)* <<parseFunctionCallTail>>
   {
     elementType="SQL_FUNCTION_CALL"
     elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   }
-private function_call_arguments ::= known_function_argument_list | generic_function_argument_list
-known_function_argument_list ::= <<parseKnownFunctionArgumentList>> {
-  elementType="SQL_ARGUMENT_LIST"
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-}
-private generic_function_argument_list ::= "(" function_argument_list? ")"
 function_name ::= identifier_reference | function_keyword {
   elementType="SQL_REFERENCE"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-function_keyword ::= <<parseFunctionKeyword>>
-function_argument_list ::= ("DISTINCT" | "ALL")? value_expression ("," value_expression)* function_order_by_clause? function_null_treatment_clause? function_separator_clause? | "*" {
-  elementType="SQL_EXPRESSION_LIST"
+function_keyword ::= <<parseFunctionKeyword>> {
+  elementType="SQL_IDENTIFIER"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private function_order_by_clause ::= "ORDER" "BY" ordering_item ("," ordering_item)*
 private function_null_treatment_clause ::= ("IGNORE" | "RESPECT") "NULLS"
-private function_separator_clause ::= "SEPARATOR" string_literal
 parenthesized_value_expression ::= "(" value_expression ("," value_expression)* ")" {
   elementType="SQL_PARENTHESIZED_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"

@@ -16,6 +16,10 @@ public class StarRocksParserUtil extends SqlGeneratedParserUtil {
         "THEN", "UNION", "WHEN", "WHERE", "WINDOW", "WITH"
     );
 
+    public static boolean parseFunctionCallTail(PsiBuilder builder, int level) {
+        return PARSE_FUNCTION_CALL_TAIL.parse(builder, level);
+    }
+
     public static boolean parseFunctionKeyword(PsiBuilder builder, int level) {
         if (builder.getTokenType() == null || builder.getTokenType() == SqlTokens.SQL_IDENT ||
             builder.getTokenType() == SqlTokens.SQL_IDENT_DELIMITED) {

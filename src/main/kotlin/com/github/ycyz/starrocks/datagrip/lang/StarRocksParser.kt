@@ -9,7 +9,9 @@ import com.intellij.sql.dialects.base.SqlGeneratedParserUtil
 import com.intellij.sql.dialects.base.SqlParser
 import com.intellij.sql.dialects.base.SqlParserUtil
 import com.intellij.sql.injection.SqlSuggestedInjection
+import com.intellij.sql.psi.SqlCompositeElementTypes
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT_DELIMITED
+import com.intellij.sql.psi.SqlTokens.SQL_ASTERISK
 import com.intellij.database.DatabaseBundle
 
 class StarRocksParser : SqlParser(StarRocksDialect.INSTANCE) {
@@ -44,6 +46,12 @@ class StarRocksParser : SqlParser(StarRocksDialect.INSTANCE) {
     }
 
     override fun parseValueExpression(builder: PsiBuilder, level: Int, immediate: Boolean, strict: Boolean): Boolean {
+        if (builder.tokenType == SQL_ASTERISK) {
+            val marker = builder.mark()
+            builder.advanceLexer()
+            marker.done(SqlCompositeElementTypes.SQL_COLUMN_REFERENCE)
+            return true
+        }
         val parsed = StarRocksGeneratedParser.value_expression(builder, level)
         if (!parsed && !immediate) {
             builder.error(DatabaseBundle.message("parsing.error.expression.expected"))

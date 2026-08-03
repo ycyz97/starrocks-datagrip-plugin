@@ -22,7 +22,8 @@
 
     <change-notes><![CDATA[
         <ul>
-            <li>Fixed catalog, schema, table, and function resolution becoming unavailable in an SQL file after executing a query.</li>
+            <li>Fixed excessive indentation when formatting select lists whose first item is a long function expression.</li>
+            <li>Aligned function-call argument PSI with the platform SQL parser, including correct <code>COUNT(*)</code> handling.</li>
         </ul>
     ]]></change-notes>
 

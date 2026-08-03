@@ -1220,6 +1220,51 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         }
     }
 
+    fun testCountAsteriskPsiMatchesMysql() {
+        val starRocks = createPsiFile("SELECT COUNT(*);")
+        val mysql = PsiFileFactory.getInstance(project)
+            .createFileFromText("mysql.sql", MysqlDialect.INSTANCE, "SELECT COUNT(*);")
+        val starRocksCall = PsiTreeUtil.findChildOfType(starRocks, SqlFunctionCallExpression::class.java)!!
+        val mysqlCall = PsiTreeUtil.findChildOfType(mysql, SqlFunctionCallExpression::class.java)!!
+
+        assertSame(mysqlCall.nameElement?.node?.elementType, starRocksCall.nameElement?.node?.elementType)
+        assertSame(
+            "COUNT(*) must parse its asterisk through the same platform argument PSI as MySQL.\n${psiSummary(starRocks)}",
+            mysqlCall.parameterList?.firstChild?.node?.elementType,
+            starRocksCall.parameterList?.firstChild?.node?.elementType
+        )
+        assertSame(
+            SqlCompositeElementTypes.SQL_COLUMN_REFERENCE,
+            starRocksCall.parameterList?.firstChild?.node?.elementType
+        )
+        assertNotNull("COUNT(*) must resolve through the StarRocks function catalog.", starRocksCall.functionDefinition)
+    }
+
+    fun testLongLeadingFunctionCallPsiMatchesMysql() {
+        val sql =
+            "SELECT IF(DATE_FORMAT('2023-01-01', '%Y-%m') = " +
+                "DATE_FORMAT('2023-01-01', '%Y-%m'), 1, 0) AS is_new_store;"
+        val starRocks = createPsiFile(sql)
+        val mysql = PsiFileFactory.getInstance(project)
+            .createFileFromText("mysql.sql", MysqlDialect.INSTANCE, sql)
+        val starRocksCall = elementsOfType(starRocks, SqlCompositeElementTypes.SQL_FUNCTION_CALL)
+            .filterIsInstance<SqlFunctionCallExpression>()
+            .maxBy { it.textLength }
+        val mysqlCall = elementsOfType(mysql, SqlCompositeElementTypes.SQL_FUNCTION_CALL)
+            .filterIsInstance<SqlFunctionCallExpression>()
+            .maxBy { it.textLength }
+
+        fun childTypes(call: SqlFunctionCallExpression) =
+            call.node.getChildren(null).map { it.elementType }
+
+        assertEquals(
+            "Long leading function calls must expose the same formatter-facing PSI as MySQL.\n${psiSummary(starRocksCall)}",
+            childTypes(mysqlCall),
+            childTypes(starRocksCall)
+        )
+        assertTrue(PsiTreeUtil.findChildrenOfType(starRocks, PsiErrorElement::class.java).isEmpty())
+    }
+
     fun testQualifiedTableNamesExposePlatformReferenceChain() {
         val file = createPsiFile("SELECT * FROM dws.dws_trade_sale_by_store_item_day_ri_v2;")
         val tableReference = elementsOfType(file, StarRocksElementTypes.SQL_TABLE_REFERENCE)

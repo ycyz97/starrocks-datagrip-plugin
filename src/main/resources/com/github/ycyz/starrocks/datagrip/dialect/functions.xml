@@ -422,7 +422,6 @@
   </function>
   <function aggregate="true">
     <name>COUNT</name>
-    <prototype>(\*):N</prototype>
     <prototype>([set_quantifier] expr:ANY...):N</prototype>
   </function>
   <function>
