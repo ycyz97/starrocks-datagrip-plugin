@@ -11,14 +11,20 @@ import com.intellij.database.model.ObjectName
 import com.intellij.database.psi.DbDataSource
 import com.intellij.database.util.TreePattern
 import com.intellij.database.util.TreePatternNode
-import com.intellij.psi.PsiReference
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiReference
 import com.intellij.psi.ResolveState
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.dialects.BuiltinFunction
 import com.intellij.sql.dialects.base.SqlLanguageDialectBase
 import com.intellij.sql.dialects.base.TokensHelper
 import com.intellij.sql.dialects.functions.SqlFunctionsUtil
 import com.intellij.sql.dialects.SqlDialectImplUtilCore
+import com.intellij.sql.psi.SqlGroupByClause
+import com.intellij.sql.psi.SqlHavingClause
+import com.intellij.sql.psi.SqlOrderByClause
+import com.intellij.sql.psi.SqlQualifyClause
+import com.intellij.sql.psi.SqlQueryExpression
 import com.intellij.sql.psi.SqlScopeProcessor
 import com.intellij.psi.tree.IElementType
 import javax.swing.Icon
@@ -78,7 +84,13 @@ class StarRocksDialect private constructor() : SqlLanguageDialectBase("StarRocks
         state: ResolveState,
         reference: PsiReference
     ): Boolean {
-        return processAliases(processor, state, reference) &&
+        if (PsiTreeUtil.getParentOfType(reference.element, SqlQueryExpression::class.java) == null) {
+            return super.processUnqualifiedResolve(processor, state, reference)
+        }
+        val resolveAliases = SELECT_ALIAS_CLAUSES.any { clause ->
+            PsiTreeUtil.getParentOfType(reference.element, clause, false, SqlQueryExpression::class.java) != null
+        }
+        return (!resolveAliases || processAliases(processor, state, reference)) &&
             super.processUnqualifiedResolve(processor, state, reference)
     }
 
@@ -89,6 +101,12 @@ class StarRocksDialect private constructor() : SqlLanguageDialectBase("StarRocks
             StarRocksElementTypes.CREATE_STATEMENT,
             StarRocksElementTypes.ALTER_STATEMENT,
             StarRocksElementTypes.DROP_STATEMENT
+        )
+        private val SELECT_ALIAS_CLAUSES = listOf(
+            SqlGroupByClause::class.java,
+            SqlHavingClause::class.java,
+            SqlQualifyClause::class.java,
+            SqlOrderByClause::class.java
         )
 
         @JvmField

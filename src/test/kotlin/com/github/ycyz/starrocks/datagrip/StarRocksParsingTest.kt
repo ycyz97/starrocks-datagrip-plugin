@@ -51,6 +51,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.FileContentUtil
 import com.intellij.sql.dialects.SqlDialectMappings
 import com.intellij.sql.dialects.SqlDataSourceMappings
+import com.intellij.sql.inspections.SqlAggregatesInspection
 import com.intellij.sql.inspections.SqlSignatureInspection
 import com.intellij.sql.inspections.SqlResolveInspection
 import com.intellij.sql.inspections.SqlTypeInspection
@@ -164,7 +165,13 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         myFixture.enableInspections(SqlResolveInspection())
         myFixture.configureByText(
             "function-warning.sql",
-            "SELECT COUNT(*), SUM(price), ABS(1), IF(flag, 1, 0) FROM sales;"
+            "SELECT COUNT(*), SUM(price), ABS(1), IF(flag, 1, 0), " +
+                "CURDATE(), CURRENT_DATE(), CURRENT_DATE, " +
+                "CURTIME(), CURRENT_TIME(), CURRENT_TIME, " +
+                "CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP, " +
+                "LOCALTIME(), LOCALTIME(3), LOCALTIME, " +
+                "LOCALTIMESTAMP(), LOCALTIMESTAMP(3), LOCALTIMESTAMP, " +
+                "NOW(), NOW(3), UTC_TIME(), UTC_TIMESTAMP() FROM sales;"
         )
         val virtualFile = myFixture.file.virtualFile
         SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
@@ -184,6 +191,47 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 )
             }
         assertTrue("Function argument highlighting warnings: $argumentWarnings\n$diagnostics", argumentWarnings.isEmpty())
+    }
+
+    fun testSelectExpressionDoesNotResolveToLaterAggregateAlias() {
+        myFixture.enableInspections(SqlAggregatesInspection())
+        myFixture.configureByText(
+            "aggregate-alias.sql",
+            """
+                CREATE TABLE dws_trade_sale_by_order_ri (
+                    biz_date DATE,
+                    store_id BIGINT,
+                    is_member_order INT,
+                    item_cnt BIGINT,
+                    item_qty BIGINT
+                );
+                SELECT
+                    SUM(IF(is_member_order = 1, item_qty, 0)) AS member_item_qty,
+                    SUM(item_cnt) AS item_cnt,
+                    SUM(item_qty) AS item_qty
+                FROM dws_trade_sale_by_order_ri
+                GROUP BY biz_date, store_id;
+            """.trimIndent()
+        )
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val nestedAggregateErrors = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { it.contains("Nested aggregate", ignoreCase = true) }
+        assertTrue("Unexpected nested aggregate diagnostics: $nestedAggregateErrors", nestedAggregateErrors.isEmpty())
+
+        val itemQtyDefinition = elementsOfType(myFixture.file, StarRocksElementTypes.SQL_COLUMN_DEFINITION)
+            .filterIsInstance<SqlColumnDefinition>()
+            .single { it.name == "item_qty" }
+        val itemQtyReferences = elementsOfType(myFixture.file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+            .filter { it.text == "item_qty" }
+        assertEquals(2, itemQtyReferences.size)
+        itemQtyReferences.forEach { reference ->
+            assertSame("SELECT input item_qty must resolve to the source column.", itemQtyDefinition, reference.resolve())
+        }
     }
 
     fun testSemiAndAntiJoinsParseWithoutPsiErrors() {

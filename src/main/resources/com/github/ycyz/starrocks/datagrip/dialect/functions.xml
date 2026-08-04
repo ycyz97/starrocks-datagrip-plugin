@@ -444,13 +444,13 @@
     <name>CUME_DIST</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>CURDATE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():date</prototype>
   </function>
   <function>
     <name>CURRENT_DATE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():date</prototype>
   </function>
   <function>
     <name>CURRENT_GROUP</name>
@@ -462,11 +462,12 @@
   </function>
   <function>
     <name>CURRENT_TIME</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():time</prototype>
   </function>
   <function>
     <name>CURRENT_TIMESTAMP</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():datetime</prototype>
+    <prototype>(precision:N):datetime</prototype>
   </function>
   <function>
     <name>CURRENT_USER</name>
@@ -480,9 +481,9 @@
     <name>CURRENT_WAREHOUSE</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>CURTIME</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():time</prototype>
   </function>
   <function>
     <name>DATABASE</name>
@@ -1002,11 +1003,13 @@
   </function>
   <function>
     <name>LOCALTIME</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():time</prototype>
+    <prototype>(precision:N):time</prototype>
   </function>
   <function>
     <name>LOCALTIMESTAMP</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():datetime</prototype>
+    <prototype>(precision:N):datetime</prototype>
   </function>
   <function>
     <name>LOCATE</name>
@@ -1236,9 +1239,10 @@
     <name>NGRAM_SEARCH_CASE_INSENSITIVE</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>NOW</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():datetime</prototype>
+    <prototype>(precision:N):datetime</prototype>
   </function>
   <function>
     <name>NTILE</name>
@@ -1748,13 +1752,13 @@
     <name>USER</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>UTC_TIME</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():time</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>UTC_TIMESTAMP</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():datetime</prototype>
   </function>
   <function>
     <name>UUID</name>
