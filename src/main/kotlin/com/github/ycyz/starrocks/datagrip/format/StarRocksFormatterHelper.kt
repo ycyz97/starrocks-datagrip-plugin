@@ -72,7 +72,7 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.SQL_COLUMN_ALIAS_LIST to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_AS_EXPRESSION to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION to ::SqlUnsortedBlock,
-            StarRocksElementTypes.ANALYTIC_CLAUSE to ::SqlPostfixClauseBlock,
+            SqlCompositeElementTypes.SQL_ANALYTIC_CLAUSE to ::SqlPostfixClauseBlock,
             StarRocksElementTypes.SQL_UPDATE_DML_INSTRUCTION to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_DELETE_DML_INSTRUCTION to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_SET_CLAUSE to ::SqlUnsortedBlock,

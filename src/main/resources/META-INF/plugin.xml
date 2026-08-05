@@ -22,10 +22,14 @@
 
     <change-notes><![CDATA[
         <ul>
+            <li>Fixed analytic function signatures for <code>ROW_NUMBER</code>, ranking, value, offset, and bucket functions, eliminating false argument warnings.</li>
+            <li>Added platform-style <code>OVER</code> clause insertion when completing analytic functions.</li>
+            <li>Aligned analytic-clause PSI with the platform SQL parser so window-expression aliases participate in select-list <code>AS</code> alignment.</li>
             <li>Fixed excessive indentation when formatting select lists whose first item is a long function expression.</li>
             <li>Aligned function-call argument PSI with the platform SQL parser, including correct <code>COUNT(*)</code> handling.</li>
             <li>Fixed false nested-aggregate errors when an input column has the same name as a later aggregate alias.</li>
             <li>Fixed signature validation for current date and time functions, including zero-argument and precision forms.</li>
+            <li>Consolidated built-in function names around the platform function catalog to remove duplicate metadata.</li>
         </ul>
     ]]></change-notes>
 

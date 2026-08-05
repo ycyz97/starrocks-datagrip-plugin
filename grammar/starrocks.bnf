@@ -1011,7 +1011,7 @@ left multiplicative_operation ::= ("*" | "/" | "%" | "DIV" | "MOD") unary_expres
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 private unary_expression ::= ("+" | "-" | "!" | "~" | "BINARY")* postfix_expression
-private postfix_expression ::= (cast_expression_guarded | case_expression_guarded | exists_expression_guarded | interval_expression_guarded | scalar_subquery_guarded | array_literal | function_call | literal | parenthesized_value_expression | variable_reference | column_reference | typed_literal_expression) function_null_treatment_clause? analytic_clause_guarded? array_access_tail* field_access_tail*
+private postfix_expression ::= (cast_expression_guarded | case_expression_guarded | exists_expression_guarded | interval_expression_guarded | scalar_subquery_guarded | array_literal | function_call | literal | parenthesized_value_expression | variable_reference | column_reference | typed_literal_expression) array_access_tail* field_access_tail*
 array_literal ::= "[" (value_expression ("," value_expression)*)? "]" {
   elementType="SQL_ARRAY_LITERAL"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -1038,7 +1038,7 @@ case_else_clause ::= "ELSE" value_expression
 exists_expression ::= "EXISTS" "(" query_expression ")"
 interval_expression ::= "INTERVAL" value_expression interval_unit
 typed_literal_expression ::= typed_literal_prefix literal
-function_call ::= function_name ("." function_name)* <<parseFunctionCallTail>>
+function_call ::= function_name ("." function_name)* <<parseFunctionCallTail>> function_null_treatment_clause? analytic_clause_guarded?
   {
     elementType="SQL_FUNCTION_CALL"
     elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -1060,6 +1060,8 @@ in_list_or_subquery ::= "(" (in_subquery_guarded | value_expression ("," value_e
 private in_subquery_guarded ::= &("SELECT" | "WITH" | "VALUES") query_expression
 private analytic_clause_guarded ::= &"OVER" analytic_clause
 analytic_clause ::= "OVER" (window_reference | "(" window_specification ")") {
+  elementType="SQL_ANALYTIC_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
 }
 window_reference ::= identifier_reference {

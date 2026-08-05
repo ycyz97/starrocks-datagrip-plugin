@@ -71,6 +71,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_ALTER_SCHEMA_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_SCHEMA_STATEMENT
         "SQL_ALTER_TABLE_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_TABLE_STATEMENT
         "SQL_ALTER_VIEW_STATEMENT" -> SqlCompositeElementTypes.SQL_ALTER_VIEW_STATEMENT
+        "SQL_ANALYTIC_CLAUSE" -> SqlCompositeElementTypes.SQL_ANALYTIC_CLAUSE
         "SQL_ARGUMENT_LIST" -> SqlCompositeElementTypes.SQL_ARGUMENT_LIST
         "SQL_AS_QUERY_CLAUSE" -> SqlCompositeElementTypes.SQL_AS_QUERY_CLAUSE
         "SQL_AS_EXPRESSION" -> SqlCompositeElementTypes.SQL_AS_EXPRESSION

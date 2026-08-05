@@ -2,7 +2,6 @@ package com.github.ycyz.starrocks.datagrip
 
 import com.github.ycyz.starrocks.datagrip.completion.StarRocksCompletionCatalog
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
-import com.github.ycyz.starrocks.datagrip.dialect.StarRocksFunctionCatalog
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDefinitionProvider
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDdlStatements
 import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
@@ -69,7 +68,6 @@ object StarRocksScenarioValidator {
         validateCreateView(testDataDir.resolve("ddl/view.sql").readText())
         validateLocalDdlReference(testDataDir.resolve("dml/insert-local-ddl.sql").readText())
         validateComplexTypes(testDataDir.resolve("types/complex-types.sql").readText())
-        validateFunctionCatalog()
         validateSupplementaryCompletionCatalog()
         validateLexerKeywordTokens()
         validateSyntaxHighlighterColors()
@@ -208,25 +206,6 @@ object StarRocksScenarioValidator {
         }
         check(columnsByName["profile"]?.typeText?.contains("STRUCT", ignoreCase = true) == true) {
             "STRUCT type was not captured for profile."
-        }
-    }
-
-    private fun validateFunctionCatalog() {
-        listOf("CAST", "ROW_NUMBER", "UNNEST", "BITMAP_UNION_INT", "GET_JSON_STRING").forEach { function ->
-            check(StarRocksFunctionCatalog.find(function) != null) {
-                "Function catalog is missing $function."
-            }
-        }
-        check(StarRocksFunctionCatalog.FUNCTIONS.size >= 60) {
-            "Function catalog should cover common StarRocks function families."
-        }
-        listOf("ARRAY_JOIN", "BITMAP_COUNT", "JSON_LENGTH", "WINDOW_FUNNEL").forEach { function ->
-            check(function in StarRocksFunctionCatalog.BUILTIN_FUNCTION_NAMES) {
-                "Builtin function name catalog is missing $function."
-            }
-        }
-        check(StarRocksFunctionCatalog.BUILTIN_FUNCTION_NAMES.size >= 450) {
-            "Builtin function name catalog should track the StarRocks server function set."
         }
     }
 
@@ -1025,6 +1004,33 @@ object StarRocksScenarioValidator {
             ).containsMatchIn(functionsXml)
         ) {
             "UNNEST must remain a table-valued builtin so connected data-source resolution keeps its output column."
+        }
+        listOf(
+            "CUME_DIST",
+            "DENSE_RANK",
+            "FIRST_VALUE",
+            "LAG",
+            "LAST_VALUE",
+            "LEAD",
+            "NTILE",
+            "PERCENT_RANK",
+            "RANK",
+            "ROW_NUMBER"
+        ).forEach { function ->
+            check(
+                Regex("<function analytic=\"true\">\\s*<name>$function</name>")
+                    .containsMatchIn(functionsXml)
+            ) {
+                "$function must remain an analytic function for inspection and completion."
+            }
+        }
+        listOf("CUME_DIST", "DENSE_RANK", "PERCENT_RANK", "RANK", "ROW_NUMBER").forEach { function ->
+            check(
+                Regex("<name>$function</name>\\s*<prototype>\\(\\):N</prototype>")
+                    .containsMatchIn(functionsXml)
+            ) {
+                "$function must remain a zero-argument numeric function."
+            }
         }
 
         val keywordCatalog = projectDir.resolve("grammar/starrocks-keywords.txt").readText()

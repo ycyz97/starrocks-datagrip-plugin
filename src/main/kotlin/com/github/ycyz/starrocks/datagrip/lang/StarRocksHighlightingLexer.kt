@@ -1,7 +1,7 @@
 package com.github.ycyz.starrocks.datagrip.lang
 
 import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
-import com.github.ycyz.starrocks.datagrip.dialect.StarRocksFunctionCatalog
+import com.github.ycyz.starrocks.datagrip.dialect.StarRocksFunctionNames
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.psi.SqlTokens.SQL_IDENT
 import java.util.Locale
@@ -22,7 +22,7 @@ class StarRocksHighlightingLexer : StarRocksLexer() {
     }
 
     private companion object {
-        val FUNCTION_NAMES: Set<String> = StarRocksFunctionCatalog.BUILTIN_FUNCTION_NAMES
+        val FUNCTION_NAMES: Set<String> = StarRocksFunctionNames.NAMES
 
         val DATA_TYPE_NAMES: Set<String> = buildSet {
             addAll(StarRocksTypeSystem.SCALAR_TYPES)

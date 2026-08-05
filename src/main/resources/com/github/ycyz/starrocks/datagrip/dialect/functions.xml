@@ -440,9 +440,9 @@
     <name>CRC32_HASH</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>CUME_DIST</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function parens="required">
     <name>CURDATE</name>
@@ -569,9 +569,9 @@
     <name>DEGRESS</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>DENSE_RANK</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function>
     <name>DEXP</name>
@@ -689,9 +689,9 @@
     <name>FIND_IN_SET</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>FIRST_VALUE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(expr:ANY):ANY</prototype>
   </function>
   <function>
     <name>FIRST_VALUE_REWRITE</name>
@@ -957,9 +957,11 @@
     <name>JSON_SET</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>LAG</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(expr:ANY):ANY</prototype>
+    <prototype>(expr:ANY, offset:N):ANY</prototype>
+    <prototype>(expr:ANY, offset:N, default:ANY):ANY</prototype>
   </function>
   <function>
     <name>LAST_DAY</name>
@@ -969,17 +971,19 @@
     <name>LAST_QUERY_ID</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>LAST_VALUE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(expr:ANY):ANY</prototype>
   </function>
   <function>
     <name>LCASE</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>LEAD</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(expr:ANY):ANY</prototype>
+    <prototype>(expr:ANY, offset:N):ANY</prototype>
+    <prototype>(expr:ANY, offset:N, default:ANY):ANY</prototype>
   </function>
   <function>
     <name>LEAST</name>
@@ -1244,9 +1248,9 @@
     <prototype>():datetime</prototype>
     <prototype>(precision:N):datetime</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>NTILE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(buckets:N):N</prototype>
   </function>
   <function>
     <name>NULLIF</name>
@@ -1300,9 +1304,9 @@
     <name>PERCENTILE_UNION</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>PERCENT_RANK</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function>
     <name>PI</name>
@@ -1356,9 +1360,9 @@
     <name>RANDOM</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>RANK</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function>
     <name>REGEXP</name>
@@ -1408,9 +1412,9 @@
     <name>ROW</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function analytic="true">
     <name>ROW_NUMBER</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function>
     <name>RPAD</name>

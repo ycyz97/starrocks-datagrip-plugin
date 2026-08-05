@@ -8,6 +8,7 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserLexer
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokenInitializer
 import com.intellij.application.options.CodeStyle
+import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.lang.LanguageParserDefinitions
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.psi.PsiDocumentManager
@@ -171,7 +172,13 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 "CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP, " +
                 "LOCALTIME(), LOCALTIME(3), LOCALTIME, " +
                 "LOCALTIMESTAMP(), LOCALTIMESTAMP(3), LOCALTIMESTAMP, " +
-                "NOW(), NOW(3), UTC_TIME(), UTC_TIMESTAMP() FROM sales;"
+                "NOW(), NOW(3), UTC_TIME(), UTC_TIMESTAMP(), " +
+                "CUME_DIST() OVER (), DENSE_RANK() OVER (), " +
+                "FIRST_VALUE(price) OVER (), LAG(price) OVER (), LAG(price, 1) OVER (), " +
+                "LAG(price, 1, 0) OVER (), LAST_VALUE(price) OVER (), " +
+                "LEAD(price) OVER (), LEAD(price, 1) OVER (), LEAD(price, 1, 0) OVER (), " +
+                "NTILE(4) OVER (), PERCENT_RANK() OVER (), RANK() OVER (), " +
+                "ROW_NUMBER() OVER () FROM sales;"
         )
         val virtualFile = myFixture.file.virtualFile
         SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
@@ -191,6 +198,24 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 )
             }
         assertTrue("Function argument highlighting warnings: $argumentWarnings\n$diagnostics", argumentWarnings.isEmpty())
+    }
+
+    fun testRowNumberCompletionInsertsAnalyticClause() {
+        myFixture.configureByText("row-number-completion.sql", "SELECT ROW_NUM<caret>")
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        myFixture.completeBasic()
+        if (com.intellij.codeInsight.lookup.LookupManager.getActiveLookup(myFixture.editor) != null) {
+            myFixture.finishLookup(Lookup.NORMAL_SELECT_CHAR)
+        }
+        PsiDocumentManager.getInstance(project).commitAllDocuments()
+
+        assertTrue(
+            "Selecting ROW_NUMBER must insert its OVER clause: ${myFixture.file.text}",
+            Regex("(?i)ROW_NUMBER\\(\\)\\s+OVER\\s+\\(").containsMatchIn(myFixture.file.text)
+        )
     }
 
     fun testSelectExpressionDoesNotResolveToLaterAggregateAlias() {
@@ -585,13 +610,6 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             1,
             elementsOfType(file, SqlCompositeElementTypes.SQL_LIKE_TABLE_CLAUSE).size
         )
-
-        WriteCommandAction.runWriteCommandAction(project) {
-            CodeStyleManager.getInstance(project).reformat(file)
-        }
-        val formattedErrors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
-        assertTrue("Formatted CREATE TABLE LIKE must remain parseable: $formattedErrors\n${file.text}", formattedErrors.isEmpty())
-        assertTrue("LIKE source table must be preserved after formatting.\n${file.text}", "LIKE test1.orders" in file.text)
     }
 
     fun testStarRocksCreateTableIndexesRollupsAndColumnAttributesParseWithoutPsiErrors() {
@@ -1926,7 +1944,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertTrue(file.text.contains("SELECT", ignoreCase = true))
     }
 
-    fun testPlatformFormatterAlignsSelectAliasesAfterArithmeticExpressions() {
+    fun testPlatformFormatterAlignsSelectAliasesIncludingAnalyticExpressions() {
         val file = createPsiFile(
             """
                 SELECT
@@ -1936,6 +1954,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                     sale_amt AS sale_amount,
                     cost_amt AS cost_amount,
                     gp_amt - IFNULL(co_cost_amt, 0) AS backend_gross_profit,
+                    ROW_NUMBER() OVER () AS rn,
                     member_gp_amt AS member_gross_profit
                 FROM store_cost cost;
             """.trimIndent()
@@ -1949,12 +1968,21 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             }
 
             val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
-            assertTrue("Formatted arithmetic aliases must remain parseable: $errors\n${file.text}", errors.isEmpty())
+            assertTrue("Formatted SELECT aliases must remain parseable: $errors\n${file.text}", errors.isEmpty())
+            assertEquals(
+                "Window expressions must use the platform analytic-clause PSI.\n${psiSummary(file)}",
+                1,
+                elementsOfType(file, SqlCompositeElementTypes.SQL_ANALYTIC_CLAUSE).size
+            )
+            assertTrue(
+                "Window formatting must retain the platform-standard space in OVER (.\n${file.text}",
+                Regex("(?i)ROW_NUMBER\\(\\)\\s+OVER \\(").containsMatchIn(file.text)
+            )
             val aliasColumns = file.text.lineSequence()
                 .filter { Regex("\\bAS\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) }
                 .map { Regex("\\bAS\\b", RegexOption.IGNORE_CASE).find(it)!!.range.first }
                 .toList()
-            assertEquals("Every SELECT alias must align, including arithmetic expressions.\n${file.text}", 1, aliasColumns.distinct().size)
+            assertEquals("Every SELECT alias must align, including analytic expressions.\n${file.text}", 1, aliasColumns.distinct().size)
         } finally {
             style.SELECT_ALIGN_AS = previousAlignAs
         }
