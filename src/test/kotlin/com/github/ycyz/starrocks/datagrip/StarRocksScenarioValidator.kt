@@ -1005,6 +1005,65 @@ object StarRocksScenarioValidator {
         ) {
             "UNNEST must remain a table-valued builtin so connected data-source resolution keeps its output column."
         }
+        check(
+            Regex(
+                "<macro name=\\\"agg_order_by\\\">\\s*" +
+                    Regex.escape("ORDER BY (sort_key:ANY [{ASC | DESC}] [NULLS {FIRST | LAST}])...") +
+                    "\\s*</macro>"
+            ).containsMatchIn(functionsXml)
+        ) {
+            "Aggregate ORDER BY prototypes require direction and null-ordering support in the agg_order_by macro."
+        }
+        mapOf(
+            "AVG" to "([set_quantifier] expr:ANY):ANY",
+            "COUNT" to "([set_quantifier] expr:ANY...):N",
+            "MAX" to "([set_quantifier] expr:ANY):ANY",
+            "MIN" to "([set_quantifier] expr:ANY):ANY",
+            "SUM" to "([set_quantifier] expr:X):P0",
+            "ARRAY_AGG" to "([set_quantifier] expr:ANY [agg_order_by]):ANY",
+            "ARRAY_AGG_DISTINCT" to "(expr:ANY [agg_order_by]):ANY",
+            "GROUP_CONCAT" to "([set_quantifier] expr:str... [agg_order_by] [SEPARATOR expr:str]):str",
+            "STRING_AGG" to "([set_quantifier] expr:str, delimiter:str [agg_order_by]):str"
+        ).forEach { (function, prototype) ->
+            check(
+                Regex(
+                    "<function aggregate=\\\"true\\\">\\s*<name>$function</name>\\s*" +
+                        "<prototype>${Regex.escape(prototype)}</prototype>"
+                ).containsMatchIn(functionsXml)
+            ) {
+                "$function must keep its aggregate modifiers in the platform function prototype."
+            }
+        }
+        mapOf(
+            "TIMESTAMPADD" to listOf("(timestamp_unit, interval:ANY, datetime_expr:ANY):ANY"),
+            "TIMESTAMPDIFF" to listOf("(timestamp_unit, datetime_expr1:ANY, datetime_expr2:ANY):N"),
+            "TRIM" to listOf(
+                "(str:str):str",
+                "(str:str, characters:str):str",
+                "([{BOTH | LEADING | TRAILING}] [characters:str] FROM str:str):str"
+            )
+        ).forEach { (function, prototypes) ->
+            check(
+                Regex(
+                    "<function>\\s*<name>$function</name>\\s*" +
+                        prototypes.joinToString("\\s*") { "<prototype>${Regex.escape(it)}</prototype>" } +
+                        "\\s*</function>"
+                ).containsMatchIn(functionsXml)
+            ) {
+                "$function must keep keyword-bearing arguments in its platform function prototypes."
+            }
+        }
+        mapOf(
+            "timestamp_unit" to "{MICROSECOND | MILLISECOND | SECOND | MINUTE | HOUR | DAY | WEEK | MONTH | QUARTER | YEAR}"
+        ).forEach { (macro, body) ->
+            check(
+                Regex(
+                    "<macro name=\\\"$macro\\\">\\s*${Regex.escape(body)}\\s*</macro>"
+                ).containsMatchIn(functionsXml)
+            ) {
+                "$macro must keep supported bare date/time units out of column resolution."
+            }
+        }
         listOf(
             "CUME_DIST",
             "DENSE_RANK",
@@ -1024,12 +1083,51 @@ object StarRocksScenarioValidator {
                 "$function must remain an analytic function for inspection and completion."
             }
         }
+        mapOf(
+            "FIRST_VALUE" to listOf("(expr:ANY [IGNORE NULLS]):ANY"),
+            "LAST_VALUE" to listOf("(expr:ANY [IGNORE NULLS]):ANY"),
+            "LAG" to listOf(
+                "(expr:ANY [IGNORE NULLS]):ANY",
+                "(expr:ANY [IGNORE NULLS], offset:N):ANY",
+                "(expr:ANY [IGNORE NULLS], offset:N, default:ANY):ANY"
+            ),
+            "LEAD" to listOf(
+                "(expr:ANY [IGNORE NULLS]):ANY",
+                "(expr:ANY [IGNORE NULLS], offset:N):ANY",
+                "(expr:ANY [IGNORE NULLS], offset:N, default:ANY):ANY"
+            )
+        ).forEach { (function, prototypes) ->
+            check(
+                Regex(
+                    "<function analytic=\\\"true\\\">\\s*<name>$function</name>\\s*" +
+                        prototypes.joinToString("\\s*") { "<prototype>${Regex.escape(it)}</prototype>" } +
+                        "\\s*</function>"
+                ).containsMatchIn(functionsXml)
+            ) {
+                "$function must keep IGNORE NULLS in every supported analytic-function prototype."
+            }
+        }
         listOf("CUME_DIST", "DENSE_RANK", "PERCENT_RANK", "RANK", "ROW_NUMBER").forEach { function ->
             check(
                 Regex("<name>$function</name>\\s*<prototype>\\(\\):N</prototype>")
                     .containsMatchIn(functionsXml)
             ) {
                 "$function must remain a zero-argument numeric function."
+            }
+        }
+        mapOf(
+            "UUID" to "str",
+            "UUID_NUMERIC" to "N",
+            "UUID_V7" to "str",
+            "UUID_V7_NUMERIC" to "N"
+        ).forEach { (function, returnType) ->
+            check(
+                Regex(
+                    "<function parens=\\\"required\\\">\\s*<name>$function</name>\\s*" +
+                        "<prototype>\\(\\):$returnType</prototype>\\s*</function>"
+                ).containsMatchIn(functionsXml)
+            ) {
+                "$function must remain a required-parentheses zero-argument function."
             }
         }
 

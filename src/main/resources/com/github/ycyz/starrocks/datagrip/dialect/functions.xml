@@ -1,7 +1,13 @@
 <?xmlFile version="1.0" encoding="UTF-8"?>
 <functions>
+  <macro name="agg_order_by">
+    ORDER BY (sort_key:ANY [{ASC | DESC}] [NULLS {FIRST | LAST}])...
+  </macro>
   <macro name="set_quantifier">
     {DISTINCT | ALL}
+  </macro>
+  <macro name="timestamp_unit">
+    {MICROSECOND | MILLISECOND | SECOND | MINUTE | HOUR | DAY | WEEK | MONTH | QUARTER | YEAR}
   </macro>
   <!-- StarRocks built-in function names. Keep signatures generic until typed metadata is available. -->
   <function>
@@ -80,13 +86,13 @@
     <name>ARRAYS_ZIP</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>ARRAY_AGG</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>([set_quantifier] expr:ANY [agg_order_by]):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>ARRAY_AGG_DISTINCT</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(expr:ANY [agg_order_by]):ANY</prototype>
   </function>
   <function>
     <name>ARRAY_APPEND</name>
@@ -216,9 +222,9 @@
     <name>ATAN2</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>AVG</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>([set_quantifier] expr:ANY):ANY</prototype>
   </function>
   <function>
     <name>BIN</name>
@@ -691,7 +697,7 @@
   </function>
   <function analytic="true">
     <name>FIRST_VALUE</name>
-    <prototype>(expr:ANY):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS]):ANY</prototype>
   </function>
   <function>
     <name>FIRST_VALUE_REWRITE</name>
@@ -805,9 +811,9 @@
     <name>GREATEST</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>GROUP_CONCAT</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>([set_quantifier] expr:str... [agg_order_by] [SEPARATOR expr:str]):str</prototype>
   </function>
   <function>
     <name>HEX</name>
@@ -959,9 +965,9 @@
   </function>
   <function analytic="true">
     <name>LAG</name>
-    <prototype>(expr:ANY):ANY</prototype>
-    <prototype>(expr:ANY, offset:N):ANY</prototype>
-    <prototype>(expr:ANY, offset:N, default:ANY):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS]):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS], offset:N):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS], offset:N, default:ANY):ANY</prototype>
   </function>
   <function>
     <name>LAST_DAY</name>
@@ -973,7 +979,7 @@
   </function>
   <function analytic="true">
     <name>LAST_VALUE</name>
-    <prototype>(expr:ANY):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS]):ANY</prototype>
   </function>
   <function>
     <name>LCASE</name>
@@ -981,9 +987,9 @@
   </function>
   <function analytic="true">
     <name>LEAD</name>
-    <prototype>(expr:ANY):ANY</prototype>
-    <prototype>(expr:ANY, offset:N):ANY</prototype>
-    <prototype>(expr:ANY, offset:N, default:ANY):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS]):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS], offset:N):ANY</prototype>
+    <prototype>(expr:ANY [IGNORE NULLS], offset:N, default:ANY):ANY</prototype>
   </function>
   <function>
     <name>LEAST</name>
@@ -1099,9 +1105,9 @@
     <name>MATERIALIZE</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>MAX</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>([set_quantifier] expr:ANY):ANY</prototype>
   </function>
   <function>
     <name>MAX_BY</name>
@@ -1143,9 +1149,9 @@
     <name>MILLISECONDS_SUB</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>MIN</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>([set_quantifier] expr:ANY):ANY</prototype>
   </function>
   <function>
     <name>MINUTE</name>
@@ -1532,9 +1538,9 @@
     <name>STRFTIME</name>
     <prototype>(arg:ANY...):ANY</prototype>
   </function>
-  <function>
+  <function aggregate="true">
     <name>STRING_AGG</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>([set_quantifier] expr:str, delimiter:str [agg_order_by]):str</prototype>
   </function>
   <function>
     <name>STRLEFT</name>
@@ -1662,11 +1668,11 @@
   </function>
   <function>
     <name>TIMESTAMPADD</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(timestamp_unit, interval:ANY, datetime_expr:ANY):ANY</prototype>
   </function>
   <function>
     <name>TIMESTAMPDIFF</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(timestamp_unit, datetime_expr1:ANY, datetime_expr2:ANY):N</prototype>
   </function>
   <function>
     <name>TIME_FORMAT</name>
@@ -1722,7 +1728,9 @@
   </function>
   <function>
     <name>TRIM</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>(str:str):str</prototype>
+    <prototype>(str:str, characters:str):str</prototype>
+    <prototype>([{BOTH | LEADING | TRAILING}] [characters:str] FROM str:str):str</prototype>
   </function>
   <function>
     <name>TRIM_STRING</name>
@@ -1764,21 +1772,21 @@
     <name>UTC_TIMESTAMP</name>
     <prototype>():datetime</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>UUID</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>UUID_NUMERIC</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>UUID_V7</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
-  <function>
+  <function parens="required">
     <name>UUID_V7_NUMERIC</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function>
     <name>VARIANCE</name>

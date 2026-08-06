@@ -173,6 +173,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 "LOCALTIME(), LOCALTIME(3), LOCALTIME, " +
                 "LOCALTIMESTAMP(), LOCALTIMESTAMP(3), LOCALTIMESTAMP, " +
                 "NOW(), NOW(3), UTC_TIME(), UTC_TIMESTAMP(), " +
+                "UUID(), UUID_NUMERIC(), UUID_V7(), UUID_V7_NUMERIC(), " +
                 "CUME_DIST() OVER (), DENSE_RANK() OVER (), " +
                 "FIRST_VALUE(price) OVER (), LAG(price) OVER (), LAG(price, 1) OVER (), " +
                 "LAG(price, 1, 0) OVER (), LAST_VALUE(price) OVER (), " +
@@ -198,6 +199,134 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 )
             }
         assertTrue("Function argument highlighting warnings: $argumentWarnings\n$diagnostics", argumentWarnings.isEmpty())
+    }
+
+    fun testAggregateFunctionModifiersHaveNoSignatureOrResolveWarnings() {
+        val sql = """
+            CREATE TABLE aggregate_inputs (
+                item_id VARCHAR(36),
+                etl_time DATETIME,
+                amount DOUBLE
+            );
+            SELECT
+                AVG(DISTINCT amount),
+                COUNT(DISTINCT item_id),
+                MAX(DISTINCT amount),
+                MIN(DISTINCT amount),
+                SUM(DISTINCT amount),
+                ARRAY_AGG(DISTINCT item_id ORDER BY etl_time DESC NULLS LAST),
+                ARRAY_AGG_DISTINCT(item_id ORDER BY etl_time ASC NULLS FIRST),
+                GROUP_CONCAT(DISTINCT item_id ORDER BY etl_time DESC NULLS LAST SEPARATOR '-'),
+                STRING_AGG(DISTINCT item_id, '-' ORDER BY etl_time ASC NULLS FIRST),
+                STRING_AGG(ALL item_id, ':' ORDER BY etl_time DESC)
+            FROM aggregate_inputs;
+        """.trimIndent()
+        myFixture.enableInspections(SqlSignatureInspection())
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("aggregate-function-modifiers.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val errors = PsiTreeUtil.findChildrenOfType(myFixture.file, PsiErrorElement::class.java)
+        assertTrue("Aggregate modifier syntax must parse without PSI errors: $errors\n${psiSummary(myFixture.file)}", errors.isEmpty())
+
+        val warnings = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { description ->
+                description.contains("take such arguments", ignoreCase = true) ||
+                    description.contains("unable to resolve", ignoreCase = true) ||
+                    description.contains("unresolved", ignoreCase = true)
+            }
+        assertTrue(
+            "Aggregate modifiers must not produce signature or resolve warnings: $warnings\n${psiSummary(myFixture.file)}",
+            warnings.isEmpty()
+        )
+    }
+
+    fun testAnalyticNullTreatmentHasNoSignatureOrResolveWarnings() {
+        val sql = """
+            CREATE TABLE analytic_inputs (
+                item_name VARCHAR(36),
+                etl_time DATETIME
+            );
+            SELECT
+                FIRST_VALUE(item_name IGNORE NULLS) OVER (ORDER BY etl_time),
+                FIRST_VALUE(item_name) IGNORE NULLS OVER (ORDER BY etl_time),
+                LAST_VALUE(item_name IGNORE NULLS) OVER (ORDER BY etl_time),
+                LAST_VALUE(item_name) IGNORE NULLS OVER (ORDER BY etl_time),
+                LAG(item_name IGNORE NULLS) OVER (ORDER BY etl_time),
+                LAG(item_name IGNORE NULLS, 1) OVER (ORDER BY etl_time),
+                LAG(item_name IGNORE NULLS, 1, 'unknown') OVER (ORDER BY etl_time),
+                LAG(item_name, 1) IGNORE NULLS OVER (ORDER BY etl_time),
+                LEAD(item_name IGNORE NULLS) OVER (ORDER BY etl_time),
+                LEAD(item_name IGNORE NULLS, 1) OVER (ORDER BY etl_time),
+                LEAD(item_name IGNORE NULLS, 1, 'unknown') OVER (ORDER BY etl_time),
+                LEAD(item_name, 1) IGNORE NULLS OVER (ORDER BY etl_time)
+            FROM analytic_inputs;
+        """.trimIndent()
+        myFixture.enableInspections(SqlSignatureInspection())
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("analytic-null-treatment.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val errors = PsiTreeUtil.findChildrenOfType(myFixture.file, PsiErrorElement::class.java)
+        assertTrue("Analytic null treatment must parse without PSI errors: $errors\n${psiSummary(myFixture.file)}", errors.isEmpty())
+
+        val warnings = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { description ->
+                description.contains("take such arguments", ignoreCase = true) ||
+                    description.contains("unable to resolve", ignoreCase = true) ||
+                    description.contains("unresolved", ignoreCase = true)
+            }
+        assertTrue(
+            "Analytic null treatment must not produce signature or resolve warnings: $warnings\n${psiSummary(myFixture.file)}",
+            warnings.isEmpty()
+        )
+    }
+
+    fun testKeywordBearingFunctionArgumentsHaveNoSignatureOrResolveWarnings() {
+        val sql = """
+            CREATE TABLE special_function_inputs (
+                event_time DATETIME,
+                other_time DATETIME,
+                text_value VARCHAR(36)
+            );
+            SELECT
+                TIMESTAMPADD(DAY, 1, event_time),
+                TIMESTAMPADD(MICROSECOND, 100, event_time),
+                TIMESTAMPDIFF(MONTH, event_time, other_time),
+                TRIM(text_value),
+                TRIM(text_value, '-'),
+                TRIM(BOTH '-' FROM text_value),
+                TRIM(LEADING '-' FROM text_value),
+                TRIM(TRAILING FROM text_value)
+            FROM special_function_inputs;
+        """.trimIndent()
+        myFixture.enableInspections(SqlSignatureInspection())
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("keyword-bearing-function-arguments.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val errors = PsiTreeUtil.findChildrenOfType(myFixture.file, PsiErrorElement::class.java)
+        assertTrue("Keyword-bearing function arguments must parse without PSI errors: $errors\n${psiSummary(myFixture.file)}", errors.isEmpty())
+
+        val warnings = myFixture.doHighlighting()
+            .mapNotNull { it.description }
+            .filter { description ->
+                description.contains("take such arguments", ignoreCase = true) ||
+                    description.contains("unable to resolve", ignoreCase = true) ||
+                    description.contains("unresolved", ignoreCase = true)
+            }
+        assertTrue(
+            "Keyword-bearing function arguments must not produce signature or resolve warnings: $warnings\n${psiSummary(myFixture.file)}",
+            warnings.isEmpty()
+        )
     }
 
     fun testRowNumberCompletionInsertsAnalyticClause() {
