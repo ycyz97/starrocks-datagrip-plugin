@@ -45,4 +45,6 @@ open class StarRocksLexer : LexerBase() {
         }
         return bufferSequence.getOrNull(offset)
     }
+
+    protected fun parserTokenType(): IElementType? = delegate.tokenType
 }

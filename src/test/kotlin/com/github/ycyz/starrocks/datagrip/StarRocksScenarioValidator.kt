@@ -7,7 +7,7 @@ import com.github.ycyz.starrocks.datagrip.database.StarRocksDdlStatements
 import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingProfile
-import com.github.ycyz.starrocks.datagrip.format.StarRocksMaterializedViewBlock
+import com.github.ycyz.starrocks.datagrip.format.StarRocksViewBlock
 import com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighter
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksFeature
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
@@ -298,6 +298,18 @@ object StarRocksScenarioValidator {
         )
         check(StarRocksHighlightTokenTypes.FUNCTION in userFunctionTokens) {
             "StarRocks lexer should emit function tokens for user-defined function calls."
+        }
+
+        val createViewFunctionTexts = lexSignificantTokenTexts(
+            sql = "CREATE VIEW example_db.example_view (k1 COMMENT 'key') AS SELECT my_udf(k1) FROM source_table;",
+            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
+            useHighlightingLexer = true
+        )
+        check("example_view" !in createViewFunctionTexts) {
+            "A CREATE VIEW target followed by a column list must not use function highlighting."
+        }
+        check("my_udf" in createViewFunctionTexts) {
+            "Function highlighting must resume inside the CREATE VIEW query."
         }
 
         val functionLikeKeywordTexts = lexSignificantTokenTexts(
@@ -616,8 +628,14 @@ object StarRocksScenarioValidator {
             "Generated StarRocks materialized view must use the platform SQL_CREATE_MATERIALIZED_VIEW_STATEMENT formatter block."
         }
         check(
+            StarRocksFormatterHelper().basicBlockCreation[SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT]
+                ?.call() is StarRocksViewBlock
+        ) {
+            "StarRocks ordinary views must use the dialect-aware view formatter block."
+        }
+        check(
             StarRocksFormatterHelper().basicBlockCreation[SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT]
-                ?.call() is StarRocksMaterializedViewBlock
+                ?.call() is StarRocksViewBlock
         ) {
             "StarRocks materialized views must use the dialect-aware view formatter block."
         }

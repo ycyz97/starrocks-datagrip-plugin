@@ -158,7 +158,7 @@ table_order_by_clause ::= "ORDER" "BY" key_column_list {
   recoverWhile=clause_recover
 }
 
-materialized_view_order_by_clause ::= "ORDER" "BY" (key_column_list | key_column ("," key_column)*) {
+materialized_view_order_by_clause ::= "ORDER" "BY" key_column_list {
   pin=2
   recoverWhile=clause_recover
 }
@@ -170,28 +170,52 @@ create_view_statement ::= "CREATE" ("OR" "REPLACE")? "VIEW" if_not_exists? view_
   recoverWhile=statement_recover
 }
 
-create_materialized_view_statement ::= "CREATE" "MATERIALIZED" "VIEW" if_not_exists? materialized_view_reference view_column_list? create_materialized_view_clause* as_select_clause {
+create_materialized_view_statement ::= "CREATE" "MATERIALIZED" "VIEW" if_not_exists? materialized_view_reference materialized_view_options as_select_clause {
   elementType="SQL_CREATE_MATERIALIZED_VIEW_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=3
   recoverWhile=statement_recover
 }
-private create_materialized_view_clause ::= comment_clause
-  | partition_clause
-  | distribution_clause
-  | buckets_clause
+private materialized_view_options ::= materialized_view_option*
+private materialized_view_option ::= comment_clause
+  | materialized_view_distribution_clause
+  | materialized_view_refresh_clause
+  | materialized_view_partition_clause
   | materialized_view_order_by_clause
-  | refresh_clause
   | properties_clause
-private view_column_list ::= "(" view_column ("," view_column)* ","? ")"
-private view_column ::= identifier_reference view_column_comment?
+materialized_view_distribution_clause ::= "DISTRIBUTED" "BY" "HASH" "(" column_reference ("," column_reference)* ")" buckets_clause? {
+  elementType="DISTRIBUTION_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=2
+  recoverWhile=clause_recover
+}
+materialized_view_refresh_clause ::= "REFRESH" refresh_moment? refresh_scheme {
+  elementType="REFRESH_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=1
+  recoverWhile=clause_recover
+}
+materialized_view_partition_clause ::= "PARTITION" "BY" (function_call | column_reference) {
+  elementType="PARTITION_CLAUSE"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=2
+  recoverWhile=clause_recover
+}
+view_column_list ::= "(" view_column ("," view_column)* ","? ")" {
+  elementType="SQL_COLUMN_ALIAS_LIST"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
+view_column ::= identifier_reference view_column_comment? {
+  elementType="STARROCKS_COLUMN_ALIAS_DEFINITION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+}
 private view_column_comment ::= "COMMENT" string_literal
 refresh_clause ::= "REFRESH" refresh_moment? refresh_scheme? {
   pin=1
   recoverWhile=clause_recover
 }
 private refresh_moment ::= "IMMEDIATE" | "DEFERRED"
-private refresh_scheme ::= "MANUAL" | "ASYNC" refresh_schedule? | "SCHEDULE" refresh_schedule
+private refresh_scheme ::= "MANUAL" | "ASYNC" refresh_schedule?
 private refresh_schedule ::= refresh_start? refresh_every
 private refresh_start ::= "START" parenthesized_value_expression
 private refresh_every ::= "EVERY" "(" interval_expression ")"

@@ -2,6 +2,7 @@ package com.github.ycyz.starrocks.datagrip
 
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.github.ycyz.starrocks.datagrip.format.StarRocksCodeStyleSettings
+import com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserDefinition
@@ -46,6 +47,7 @@ import com.intellij.database.dialects.generic.model.GenericSchema
 import com.intellij.database.dialects.generic.model.GenericTable
 import com.intellij.database.model.ModelFactory
 import com.intellij.database.psi.DbDataSource
+import com.intellij.database.psi.DbElement
 import com.intellij.database.psi.DbPsiFacade
 import com.intellij.database.util.VirtualFileDataSourceProvider
 import com.intellij.openapi.vfs.VirtualFile
@@ -56,6 +58,7 @@ import com.intellij.sql.inspections.SqlAggregatesInspection
 import com.intellij.sql.inspections.SqlSignatureInspection
 import com.intellij.sql.inspections.SqlResolveInspection
 import com.intellij.sql.inspections.SqlTypeInspection
+import com.intellij.sql.formatter.settings.SqlCodeStyleSettings
 import com.intellij.sql.psi.impl.SqlTableElementListImpl
 import java.io.File
 
@@ -616,10 +619,10 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             """
                 CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.scheduled_sales
                 COMMENT 'scheduled materialized view'
-                PARTITION BY (biz_date, region, date_trunc('day', event_time))
                 DISTRIBUTED BY HASH(order_id, region) BUCKETS 12
+                REFRESH DEFERRED ASYNC START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY)
+                PARTITION BY date_trunc('day', event_time)
                 ORDER BY (biz_date, order_id)
-                REFRESH DEFERRED SCHEDULE START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY)
                 PROPERTIES (
                     "partition_refresh_number" = "3",
                     "query_rewrite_consistency" = "force_mv"
@@ -632,18 +635,18 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertParsesWithoutPsiErrors(
             """
                 CREATE MATERIALIZED VIEW analytics.legacy_async_sales
-                PARTITION BY date_trunc('month', biz_date)
                 DISTRIBUTED BY HASH(order_id)
-                ORDER BY order_id
                 REFRESH ASYNC START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY)
+                PARTITION BY date_trunc('month', biz_date)
+                ORDER BY (order_id)
                 AS SELECT biz_date, order_id FROM sales;
             """.trimIndent()
         )
         assertParsesWithoutPsiErrors(
             """
                 CREATE MATERIALIZED VIEW analytics.incremental_sales
-                PARTITION BY biz_date
                 REFRESH DEFERRED MANUAL
+                PARTITION BY biz_date
                 PROPERTIES ("refresh_mode" = "INCREMENTAL")
                 AS SELECT biz_date, order_id FROM sales;
             """.trimIndent()
@@ -652,7 +655,64 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             "CREATE MATERIALIZED VIEW analytics.immediate_sales REFRESH IMMEDIATE ASYNC AS SELECT order_id FROM sales;"
         )
         assertParsesWithoutPsiErrors(
-            "CREATE MATERIALIZED VIEW analytics.hourly_sales REFRESH SCHEDULE EVERY (INTERVAL 1 HOUR) AS SELECT order_id FROM sales;"
+            "CREATE MATERIALIZED VIEW analytics.hourly_sales REFRESH ASYNC EVERY (INTERVAL 1 HOUR) AS SELECT order_id FROM sales;"
+        )
+    }
+
+    fun testSynchronousCreateMaterializedViewSupportsCommentAndProperties() {
+        assertParsesWithoutPsiErrors(
+            "CREATE MATERIALIZED VIEW analytics.sync_sales " +
+                "COMMENT 'synchronous materialized view' " +
+                "PROPERTIES (\"replication_num\" = \"3\") " +
+                "AS SELECT order_id FROM sales;"
+        )
+        assertParsesWithoutPsiErrors(
+            "CREATE MATERIALIZED VIEW analytics.minimal_sync_sales AS SELECT order_id FROM sales;"
+        )
+    }
+
+    fun testMaterializedViewOptionsDoNotInferExecutionMode() {
+        assertParsesWithoutPsiErrors(
+            "CREATE MATERIALIZED VIEW analytics.partitioned_sales " +
+                "PARTITION BY biz_date AS SELECT order_id FROM sales;"
+        )
+        assertParsesWithoutPsiErrors(
+            "CREATE MATERIALIZED VIEW analytics.distributed_sales " +
+                "DISTRIBUTED BY HASH(order_id) AS SELECT order_id FROM sales;"
+        )
+    }
+
+    fun testMaterializedViewOptionsAcceptExistingClauseOrder() {
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE MATERIALIZED VIEW lo_mv2
+                PARTITION BY `lo_orderdate`
+                DISTRIBUTED BY HASH(`lo_orderkey`)
+                REFRESH ASYNC START('2023-07-01 10:00:00') EVERY (INTERVAL 1 DAY)
+                AS
+                SELECT
+                    lo_orderkey,
+                    lo_orderdate,
+                    lo_custkey,
+                    SUM(lo_quantity) AS total_quantity,
+                    SUM(lo_revenue) AS total_revenue,
+                    COUNT(lo_shipmode) AS shipmode_count
+                FROM lineorder
+                GROUP BY lo_orderkey, lo_orderdate, lo_custkey
+                ORDER BY lo_orderkey;
+            """.trimIndent()
+        )
+    }
+
+    fun testCreateMaterializedViewDoesNotAcceptViewColumnAliases() {
+        val file = createPsiFile(
+            "CREATE MATERIALIZED VIEW analytics.invalid_sales (order_id COMMENT 'id') " +
+                "REFRESH MANUAL AS SELECT order_id FROM sales;"
+        )
+
+        assertTrue(
+            "Materialized views must not consume the ordinary-view column alias syntax.\n${psiSummary(file)}",
+            PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).isNotEmpty()
         )
     }
 
@@ -1613,6 +1673,56 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
     }
 
+    fun testCreateViewSchemaQualifierResolvesAgainstConnectedModel() {
+        val model = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
+        val database = model.root.databases.createOrGet("") as GenericDatabase
+        database.isCurrent = true
+        val schema = database.schemas.createOrGet("dws") as GenericSchema
+        val dataSource = LocalDataSource.temporary().also {
+            it.name = "StarRocks CREATE VIEW resolve test"
+            it.model = model
+            it.introspectionScope = com.intellij.database.util.TreePattern(
+                com.intellij.database.util.TreePatternUtils.create(
+                    null as Array<com.intellij.database.model.ObjectName>?,
+                    ObjectKind.DATABASE,
+                    com.intellij.database.util.TreePatternUtils.create(
+                        null as Array<com.intellij.database.model.ObjectName>?,
+                        ObjectKind.SCHEMA
+                    )
+                )
+            )
+        }
+        LocalDataSourceManager.getInstance(project).addDataSource(dataSource)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        val dbDataSource = DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
+        assertNotNull(dbDataSource)
+        val schemaPsi = dbDataSource?.findElement(schema)
+        assertNotNull(schemaPsi)
+        VirtualFileDataSourceProvider.EP.point.registerExtension(
+            object : VirtualFileDataSourceProvider() {
+                override fun getDataSource(project: com.intellij.openapi.project.Project, file: VirtualFile): DbDataSource? =
+                    DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
+            },
+            testRootDisposable
+        )
+
+        fun schemaQualifier(sql: String): SqlReferenceExpression {
+            val file = createPsiFile(sql)
+            assertTrue(SqlDataSourceMappings.getInstance(project).getDataSources(file).contains(dbDataSource))
+            val view = elementsOfType(file, SqlCompositeElementTypes.SQL_VIEW_REFERENCE)
+                .filterIsInstance<SqlReferenceExpression>()
+                .single()
+            return view.qualifierExpression as SqlReferenceExpression
+        }
+
+        assertSame(schemaPsi, schemaQualifier("CREATE VIEW dws.v_sales AS SELECT 1;").resolve())
+        val unresolvedSchema = schemaQualifier("CREATE VIEW missing_db.v_sales AS SELECT 1;").resolve()
+        assertFalse(
+            "A missing schema must not resolve to an introspected database object: $unresolvedSchema",
+            unresolvedSchema is DbElement
+        )
+    }
+
     fun testUnionBranchesKeepIndependentColumnScopes() {
         val model = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
         val database = model.root.databases.createOrGet("") as GenericDatabase
@@ -2521,10 +2631,201 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         }
     }
 
+    fun testCreateViewColumnCommentsUsePlatformAliasPsi() {
+        val file = createPsiFile(
+            """
+                CREATE VIEW IF NOT EXISTS example_db.example_view
+                (
+                    k1 COMMENT 'first key',
+                    k2 COMMENT 'second key',
+                    k3 COMMENT 'third key',
+                    v1 COMMENT 'first value'
+                )
+                COMMENT 'my first view'
+                AS
+                SELECT store_id, biz_date
+                FROM dws.dws_trade_sale_by_store_day_ri;
+            """.trimIndent()
+        )
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Documented CREATE VIEW syntax must parse: $errors\n${psiSummary(file)}", errors.isEmpty())
+        val view = elementsOfType(file, SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT)
+            .filterIsInstance<com.intellij.sql.psi.SqlCreateViewStatement>()
+            .single()
+        assertEquals(listOf("k1", "k2", "k3", "v1"), view.columnAliases.map { it.name })
+        assertEquals(
+            "CREATE VIEW columns must be grouped in the platform alias-list PSI.\n${psiSummary(file)}",
+            1,
+            elementsOfType(file, SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST).size
+        )
+        assertTrue(
+            "CREATE VIEW column comments must stay inside alias definitions.\n${psiSummary(file)}",
+            view.columnAliases.all { alias -> alias.text.contains("COMMENT", ignoreCase = true) }
+        )
+    }
+
+    fun testCreateOrReplaceViewSupportsCompleteDocumentedSyntax() {
+        assertParsesWithoutPsiErrors(
+            """
+                CREATE OR REPLACE VIEW IF NOT EXISTS example_db.example_view
+                (
+                    k1 COMMENT 'first key',
+                    v1 COMMENT 'first value'
+                )
+                COMMENT 'documented view'
+                AS SELECT k1, v1 FROM source_table;
+            """.trimIndent()
+        )
+    }
+
+    fun testViewColumnFormatterFactoryDoesNotMatchTableAliases() {
+        val viewFile = createPsiFile("CREATE VIEW d.v (a, b) AS SELECT 1, 2;")
+        val tableAliasFile = createPsiFile("SELECT t.a, t.b FROM source_table AS t(a, b);")
+        val matcher = StarRocksFormatterHelper().complexBlockCreation.single().matcher
+        val viewAliases = elementsOfType(viewFile, SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST).single()
+        val tableAliases = elementsOfType(tableAliasFile, SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST).single()
+
+        assertTrue("View alias lists must use the StarRocks view layout.", matcher.matches(viewAliases.node))
+        assertFalse("Table alias lists must remain on the platform formatter path.", matcher.matches(tableAliases.node))
+    }
+
+    fun testCreateViewFormatterKeepsColumnListAndClausesAtStableIndents() {
+        val file = createPsiFile(
+            """
+                CREATE VIEW IF NOT EXISTS example_db.example_view
+                (
+                    k1 COMMENT 'first key',
+                    k2 COMMENT 'second key',
+                    v1 COMMENT 'first value'
+                )
+                COMMENT 'my first view'
+                AS
+                SELECT store_id, biz_date
+                FROM dws.sales;
+            """.trimIndent()
+        )
+        val style = CodeStyle.getSettings(file).getCustomSettings(StarRocksCodeStyleSettings::class.java)
+        val previousUseGeneralStyle = style.USE_GENERAL_STYLE
+        val previousWrapAs = style.VIEW_WRAP_AS
+        val previousWrapQuery = style.VIEW_WRAP_QUERY
+        val previousIndentQuery = style.VIEW_INDENT_QUERY
+        try {
+            style.USE_GENERAL_STYLE = false
+            style.VIEW_WRAP_AS = true
+            style.VIEW_WRAP_QUERY = true
+            style.VIEW_INDENT_QUERY = false
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+        } finally {
+            style.USE_GENERAL_STYLE = previousUseGeneralStyle
+            style.VIEW_WRAP_AS = previousWrapAs
+            style.VIEW_WRAP_QUERY = previousWrapQuery
+            style.VIEW_INDENT_QUERY = previousIndentQuery
+        }
+
+        val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        assertTrue("Formatted CREATE VIEW must remain parseable: $errors\n${file.text}", errors.isEmpty())
+        val lines = file.text.lineSequence().filter { it.isNotBlank() }.toList()
+        val createIndent = lines.first().indexOfFirst { !it.isWhitespace() }
+        val listIndent = lines.single { it.trim() == "(" }.indexOfFirst { !it.isWhitespace() }
+        val closingListIndent = lines.single { it.trim() == ")" }.indexOfFirst { !it.isWhitespace() }
+        assertEquals("The view column-list delimiters must align with CREATE.\n${file.text}", createIndent, listIndent)
+        assertEquals("The view column-list delimiters must align.\n${file.text}", listIndent, closingListIndent)
+        val firstColumnLine = lines.single { it.trimStart().startsWith("k1", ignoreCase = true) }
+        assertEquals(
+            "View columns must use the same single indent as CREATE TABLE columns.\n${file.text}",
+            createIndent + 4,
+            firstColumnLine.indexOfFirst { !it.isWhitespace() }
+        )
+        val viewCommentLine = lines.single { it.trimStart().startsWith("COMMENT", ignoreCase = true) && "my first view" in it }
+        assertEquals("View COMMENT must use one DDL clause indent.\n${file.text}", createIndent + 4, viewCommentLine.indexOfFirst { !it.isWhitespace() })
+        val asLine = lines.single { it.trimStart().startsWith("AS", ignoreCase = true) }
+        assertEquals("AS must align with CREATE.\n${file.text}", createIndent, asLine.indexOfFirst { !it.isWhitespace() })
+        listOf("SELECT", "FROM").forEach { prefix ->
+            val line = lines.single { it.trimStart().startsWith(prefix, ignoreCase = true) }
+            assertEquals("$prefix must align with CREATE.\n${file.text}", createIndent, line.indexOfFirst { !it.isWhitespace() })
+        }
+    }
+
+    fun testCreateViewFormatterDoesNotForceColumnListOrViewCommentBreaks() {
+        val tableFile = createPsiFile(
+            """
+                CREATE TABLE IF NOT EXISTS d.t (
+                    k1 VARCHAR(20) COMMENT 'key',
+                    k2 VARCHAR(20) COMMENT 'value'
+                );
+            """.trimIndent()
+        )
+        val file = createPsiFile(
+            """
+                CREATE VIEW IF NOT EXISTS d.v (
+                    k1 COMMENT 'key',
+                    k2 COMMENT 'value'
+                ) COMMENT 'view' AS SELECT 1, 2;
+            """.trimIndent()
+        )
+        val settings = CodeStyle.getSettings(file)
+        val dialectStyle = settings.getCustomSettings(StarRocksCodeStyleSettings::class.java)
+        val generalStyle = settings.getCustomSettings(SqlCodeStyleSettings::class.java)
+        val previousUseGeneralStyle = dialectStyle.USE_GENERAL_STYLE
+        val previousTableCollapse = generalStyle.TABLE_COLLAPSE
+        val previousTableOpening = generalStyle.TABLE_OPENING
+        val previousTableContent = generalStyle.TABLE_CONTENT
+        val previousTableClosing = generalStyle.TABLE_CLOSING
+        val previousWrapAs = generalStyle.VIEW_WRAP_AS
+        val previousWrapQuery = generalStyle.VIEW_WRAP_QUERY
+        try {
+            dialectStyle.USE_GENERAL_STYLE = true
+            generalStyle.TABLE_COLLAPSE = false
+            generalStyle.TABLE_OPENING = 1
+            generalStyle.TABLE_CONTENT = 2
+            generalStyle.TABLE_CLOSING = 3
+            generalStyle.VIEW_WRAP_AS = false
+            generalStyle.VIEW_WRAP_QUERY = false
+            WriteCommandAction.runWriteCommandAction(project) {
+                CodeStyleManager.getInstance(project).reformat(tableFile)
+                CodeStyleManager.getInstance(project).reformat(file)
+            }
+        } finally {
+            dialectStyle.USE_GENERAL_STYLE = previousUseGeneralStyle
+            generalStyle.TABLE_COLLAPSE = previousTableCollapse
+            generalStyle.TABLE_OPENING = previousTableOpening
+            generalStyle.TABLE_CONTENT = previousTableContent
+            generalStyle.TABLE_CLOSING = previousTableClosing
+            generalStyle.VIEW_WRAP_AS = previousWrapAs
+            generalStyle.VIEW_WRAP_QUERY = previousWrapQuery
+        }
+
+        val tableColumnList = elementsOfType(tableFile, SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST).single()
+        val columnList = elementsOfType(file, SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST).single()
+        val viewComment = elementsOfType(file, StarRocksElementTypes.COMMENT_CLAUSE)
+            .single { it.text.contains("'view'") }
+        fun lineAt(text: String, offset: Int): Int = text.take(offset).count { it == '\n' }
+
+        assertEquals(
+            "The inherited General SQL TABLE_OPENING setting must keep the CREATE TABLE list beside its name.\n${tableFile.text}",
+            lineAt(tableFile.text, tableFile.text.indexOf("d.t")),
+            lineAt(tableFile.text, tableColumnList.textOffset)
+        )
+
+        assertEquals(
+            "CREATE VIEW must inherit the same General SQL TABLE_OPENING behavior as CREATE TABLE.\n${file.text}",
+            lineAt(file.text, file.text.indexOf("d.v")),
+            lineAt(file.text, columnList.textOffset)
+        )
+        assertEquals(
+            "A view-level COMMENT must not be forced onto a new line.\n${file.text}",
+            lineAt(file.text, columnList.textRange.endOffset - 1),
+            lineAt(file.text, viewComment.textOffset)
+        )
+    }
+
     fun testMaterializedViewFormatterUsesSingleIndentForDocumentedClauses() {
         val file = createPsiFile(
             """
-                CREATE MATERIALIZED VIEW order_mv COMMENT 'orders' PARTITION BY date_trunc('day', biz_date) DISTRIBUTED BY HASH(order_id) BUCKETS 12 ORDER BY (biz_date, order_id) REFRESH DEFERRED SCHEDULE START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY) PROPERTIES ("replication_num" = "3") AS SELECT biz_date, order_id FROM orders;
+                CREATE MATERIALIZED VIEW order_mv COMMENT 'orders' DISTRIBUTED BY HASH(order_id) BUCKETS 12 REFRESH DEFERRED ASYNC START('2026-07-01 10:00:00') EVERY (INTERVAL 1 DAY) PARTITION BY date_trunc('day', biz_date) ORDER BY (biz_date, order_id) PROPERTIES ("replication_num" = "3") AS SELECT biz_date, order_id FROM orders;
             """.trimIndent()
         )
         val style = CodeStyle.getSettings(file).getCustomSettings(StarRocksCodeStyleSettings::class.java)
@@ -2552,7 +2853,11 @@ class StarRocksParsingTest : BasePlatformTestCase() {
 
         val lines = file.text.lineSequence().filter { it.isNotBlank() }.toList()
         val createIndent = lines.first().indexOfFirst { !it.isWhitespace() }
-        listOf("COMMENT", "PARTITION BY", "DISTRIBUTED BY", "ORDER BY", "REFRESH", "PROPERTIES").forEach { prefix ->
+        assertTrue(
+            "A materialized-view COMMENT must be allowed to stay beside the view name.\n${file.text}",
+            lines.first().contains("COMMENT 'orders'", ignoreCase = true)
+        )
+        listOf("PARTITION BY", "DISTRIBUTED BY", "ORDER BY", "REFRESH", "PROPERTIES").forEach { prefix ->
             val line = lines.single { it.trimStart().startsWith(prefix, ignoreCase = true) }
             val indent = line.indexOfFirst { !it.isWhitespace() }
             assertEquals("$prefix must use exactly one materialized-view clause indent.\n${file.text}", createIndent + 4, indent)

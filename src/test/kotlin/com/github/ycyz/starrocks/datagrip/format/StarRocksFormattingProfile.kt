@@ -33,10 +33,10 @@ object StarRocksFormattingProfile {
     val MATERIALIZED_VIEW_CLAUSE_ORDER: List<String> = listOf(
         "CREATE MATERIALIZED VIEW",
         "COMMENT",
-        "PARTITION BY",
         "DISTRIBUTED BY",
-        "ORDER BY",
         "REFRESH",
+        "PARTITION BY",
+        "ORDER BY",
         "PROPERTIES",
         "AS SELECT"
     )

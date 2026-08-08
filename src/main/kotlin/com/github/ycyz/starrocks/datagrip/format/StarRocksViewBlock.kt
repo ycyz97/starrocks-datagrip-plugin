@@ -4,7 +4,6 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.intellij.formatting.WrapType
 import com.intellij.lang.ASTNode
 import com.intellij.sql.formatter.model.BlockRole
-import com.intellij.sql.formatter.model.CONTINUATION_INDENT
 import com.intellij.sql.formatter.model.FlowPattern
 import com.intellij.sql.formatter.model.NONE_INDENT
 import com.intellij.sql.formatter.model.NORMAL_INDENT
@@ -17,6 +16,7 @@ import com.intellij.sql.formatter.model.SqlNodeBlock
 import com.intellij.sql.formatter.model.SqlPhraseBlock
 import com.intellij.sql.formatter.model.SqlQueryBlock
 import com.intellij.sql.formatter.model.SqlRangeBlock
+import com.intellij.sql.formatter.model.SqlTableParenthesizedColumnsSection
 import com.intellij.sql.formatter.model.StartStopPattern
 import com.intellij.sql.formatter.model.TailPattern
 import com.intellij.sql.formatter.model.UntilPattern
@@ -30,11 +30,11 @@ import com.intellij.sql.psi.SqlExpression
 /**
  * View formatting with StarRocks-aware clauses before AS.
  *
- * The platform SqlViewBlock delegates that range to a private option block whose
- * keyword list cannot be extended. StarRocks clauses are composite PSI nodes, so
- * the platform treats them as continuation text and adds another indent level.
+ * Ordinary views use the same StarRocks-aware block as materialized views because
+ * StarRocks column comments are composite clauses that the platform block does
+ * not classify as view options.
  */
-class StarRocksMaterializedViewBlock : SqlNodeBlock() {
+class StarRocksViewBlock : SqlNodeBlock() {
     override fun flowPatterns(): List<FlowPattern> = PATTERNS
 
     override fun whetherToFlatten(node: ASTNode): Boolean =
@@ -44,6 +44,7 @@ class StarRocksMaterializedViewBlock : SqlNodeBlock() {
         val sql = context.sql
         val clauseWrap = makeWrap(WrapType.ALWAYS, false)
         val firstContent = nestedBlocks.indexOfFirst { it !is SqlCommentBlock }
+        var hasExpandingOptions = false
 
         if (firstContent > 0) {
             nestedBlocks.subList(0, firstContent).forEach { it.myIndent = NONE_INDENT }
@@ -57,11 +58,12 @@ class StarRocksMaterializedViewBlock : SqlNodeBlock() {
                     block.myIndent = NORMAL_INDENT
                 }
                 BlockRole.PREFIX -> {
-                    block.myWrap = clauseWrap
-                    block.myIndent = NORMAL_INDENT
+                    block.myWrap = null
+                    block.myIndent = NONE_INDENT
+                    hasExpandingOptions = block.shape.expanding
                 }
                 BlockRole.AS -> {
-                    block.myWrap = if (sql.VIEW_WRAP_AS || hasRole(BlockRole.PREFIX)) clauseWrap else null
+                    block.myWrap = if (sql.VIEW_WRAP_AS || hasExpandingOptions) clauseWrap else null
                     block.myIndent = NONE_INDENT
                 }
                 BlockRole.BODY -> {
@@ -105,7 +107,7 @@ class StarRocksMaterializedViewBlock : SqlNodeBlock() {
                 matchType(SqlCommonKeywords.SQL_AS, SqlCommonKeywords.SQL_IS),
                 false,
                 BlockRole.PREFIX,
-                ::StarRocksMaterializedViewOptionsBlock
+                ::StarRocksViewOptionsBlock
             ),
             SingletonPattern(
                 null,
@@ -126,28 +128,40 @@ class StarRocksMaterializedViewBlock : SqlNodeBlock() {
     }
 }
 
-private class StarRocksMaterializedViewOptionsBlock : SqlRangeBlock() {
-    override fun determineRole(node: ASTNode): BlockRole =
-        if (node.elementType in CLAUSE_TYPES) BlockRole.ELEMENT else super.determineRole(node)
+private class StarRocksViewOptionsBlock : SqlRangeBlock() {
+    override fun determineRole(node: ASTNode): BlockRole = when {
+        node.elementType == SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST -> BlockRole.HEAD
+        node.elementType == StarRocksElementTypes.COMMENT_CLAUSE -> BlockRole.ALIAS2
+        node.elementType in CLAUSE_TYPES -> BlockRole.ELEMENT
+        else -> super.determineRole(node)
+    }
 
     override fun configureFormattingAttributes() {
         val clauseWrap = makeWrap(WrapType.ALWAYS, false)
         nestedBlocks.forEach { block ->
-            if (block.role == BlockRole.ELEMENT) {
-                block.myWrap = clauseWrap
-                block.myIndent = NONE_INDENT
-            } else {
-                block.myWrap = null
-                block.myIndent = CONTINUATION_INDENT
+            when (block.role) {
+                BlockRole.HEAD -> {
+                    block.myWrap = null
+                    block.myIndent = NONE_INDENT
+                }
+                BlockRole.ELEMENT -> {
+                    block.myWrap = clauseWrap
+                    block.myIndent = NORMAL_INDENT
+                }
+                BlockRole.ALIAS2 -> {
+                    block.myWrap = makeWrap(WrapType.CHOP_DOWN_IF_LONG, false)
+                    block.myIndent = NORMAL_INDENT
+                }
+                else -> {
+                    block.myWrap = null
+                    block.myIndent = com.intellij.sql.formatter.model.CONTINUATION_INDENT
+                }
             }
         }
     }
 
-    override fun userRequiresExpand(): Boolean = true
-
     private companion object {
         val CLAUSE_TYPES = setOf(
-            StarRocksElementTypes.COMMENT_CLAUSE,
             StarRocksElementTypes.PARTITION_CLAUSE,
             StarRocksElementTypes.DISTRIBUTION_CLAUSE,
             StarRocksElementTypes.BUCKETS_CLAUSE,
@@ -156,4 +170,17 @@ private class StarRocksMaterializedViewOptionsBlock : SqlRangeBlock() {
             StarRocksElementTypes.PROPERTIES_CLAUSE
         )
     }
+}
+
+/**
+ * View column lists follow the platform table-column layout, while table alias
+ * lists retain the platform cortege behavior used by FROM aliases.
+ */
+class StarRocksViewColumnAliasListBlock : SqlTableParenthesizedColumnsSection() {
+    override fun determineRole(node: ASTNode): BlockRole =
+        if (node.elementType == StarRocksElementTypes.STARROCKS_COLUMN_ALIAS_DEFINITION) {
+            BlockRole.ELEMENT
+        } else {
+            super.determineRole(node)
+        }
 }

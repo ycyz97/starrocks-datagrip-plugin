@@ -4,6 +4,7 @@ import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.intellij.psi.tree.IElementType
 import com.intellij.sql.formatter.SqlFormatterHelper
 import com.intellij.sql.formatter.model.SqlBlock
+import com.intellij.sql.formatter.model.NodeBlockFactoryRecord
 import com.intellij.sql.formatter.model.SqlCreateTableBlock
 import com.intellij.sql.formatter.model.SqlExplainPlanBlock
 import com.intellij.sql.formatter.model.SqlFunctionCallBlock
@@ -13,11 +14,25 @@ import com.intellij.sql.formatter.model.SqlPostfixClauseBlock
 import com.intellij.sql.formatter.model.SqlQueryBlock
 import com.intellij.sql.formatter.model.SqlStatementBlock
 import com.intellij.sql.formatter.model.SqlUnsortedBlock
-import com.intellij.sql.formatter.model.SqlViewBlock
+import com.intellij.sql.formatter.model.matchTypeWhen
 import com.intellij.sql.psi.SqlCompositeElementTypes
 import kotlin.reflect.KFunction0
 
 class StarRocksFormatterHelper : SqlFormatterHelper {
+    override val complexBlockCreation: List<NodeBlockFactoryRecord> = listOf(
+        NodeBlockFactoryRecord(
+            matchTypeWhen(
+                SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST,
+                "StarRocks view column alias list"
+            ) { node ->
+                generateSequence(node) { it.treeParent }.any { ancestor ->
+                    ancestor.elementType == SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT
+                }
+            },
+            ::StarRocksViewColumnAliasListBlock
+        )
+    )
+
     override val basicBlockCreation: Map<IElementType, KFunction0<out SqlBlock>> =
         mapOf(
             StarRocksElementTypes.SQL_SELECT_STATEMENT to ::SqlQueryBlock,
@@ -42,8 +57,8 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.SQL_COMMIT_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.SQL_ROLLBACK_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.SQL_TRUNCATE_TABLE_STATEMENT to ::SqlStatementBlock,
-            StarRocksElementTypes.SQL_CREATE_VIEW_STATEMENT to ::SqlViewBlock,
-            StarRocksElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT to ::StarRocksMaterializedViewBlock,
+            StarRocksElementTypes.SQL_CREATE_VIEW_STATEMENT to ::StarRocksViewBlock,
+            StarRocksElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT to ::StarRocksViewBlock,
             StarRocksElementTypes.CREATE_USER_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.ALTER_USER_STATEMENT to ::SqlStatementBlock,
             StarRocksElementTypes.DROP_USER_STATEMENT to ::SqlStatementBlock,
@@ -69,7 +84,6 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
             StarRocksElementTypes.SQL_WINDOW_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_ORDER_BY_CLAUSE to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_LIMIT_CLAUSE to ::SqlUnsortedBlock,
-            StarRocksElementTypes.SQL_COLUMN_ALIAS_LIST to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_AS_EXPRESSION to ::SqlUnsortedBlock,
             StarRocksElementTypes.SQL_NAMED_QUERY_DEFINITION to ::SqlUnsortedBlock,
             SqlCompositeElementTypes.SQL_ANALYTIC_CLAUSE to ::SqlPostfixClauseBlock,
