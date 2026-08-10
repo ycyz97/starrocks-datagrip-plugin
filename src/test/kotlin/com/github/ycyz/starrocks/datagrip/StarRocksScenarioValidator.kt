@@ -312,6 +312,32 @@ object StarRocksScenarioValidator {
             "Function highlighting must resume inside the CREATE VIEW query."
         }
 
+        val createTableFunctionTexts = lexSignificantTokenTexts(
+            sql = """
+                CREATE TABLE foo (id BIGINT);
+                CREATE TABLE IF NOT EXISTS analytics.foo (id BIGINT);
+                CREATE EXTERNAL TEMPORARY TABLE `analytics`.foo (id BIGINT);
+                CREATE TABLE SUM (id BIGINT);
+            """.trimIndent(),
+            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
+            useHighlightingLexer = true
+        )
+        check(createTableFunctionTexts.none { it.equals("foo", ignoreCase = true) }) {
+            "CREATE TABLE targets must not use function highlighting. Actual: $createTableFunctionTexts"
+        }
+        check("SUM" !in createTableFunctionTexts) {
+            "A CREATE TABLE target named like a builtin function must not use function highlighting. " +
+                "Actual: $createTableFunctionTexts"
+        }
+        val queryFunctionTexts = lexSignificantTokenTexts(
+            sql = "SELECT my_udf(id), SUM(id) FROM source_table;",
+            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
+            useHighlightingLexer = true
+        )
+        check("my_udf" in queryFunctionTexts && "SUM" in queryFunctionTexts) {
+            "Function highlighting must remain active for query expressions. Actual: $queryFunctionTexts"
+        }
+
         val functionLikeKeywordTexts = lexSignificantTokenTexts(
             sql = "SELECT EXTRACT(DAY FROM ts), GROUPING(k), GROUPING_ID(k), PERCENTILE(v, 0.95), SUM(v) OVER (PARTITION BY k) FROM t;",
             tokenType = StarRocksHighlightTokenTypes.FUNCTION,
