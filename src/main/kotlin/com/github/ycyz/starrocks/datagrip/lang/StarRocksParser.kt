@@ -30,7 +30,7 @@ class StarRocksParser : SqlParser(StarRocksDialect.INSTANCE) {
     }
 
     override fun parseQueryExpression(builder: PsiBuilder, level: Int): Boolean {
-        return StarRocksGeneratedParser.query_expression(builder, level)
+        return StarRocksGeneratedParser.top_query_expression(builder, level)
     }
 
     override fun parseDataTypeExt(builder: PsiBuilder): Boolean {

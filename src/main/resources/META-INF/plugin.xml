@@ -23,6 +23,7 @@
     <change-notes><![CDATA[
         <h3>Parsing and highlighting</h3>
         <ul>
+            <li>Fixed parenthesized top-level query expressions such as <code>(SELECT 1)</code> being reported as invalid DML.</li>
             <li>Fixed <code>CREATE TABLE</code> target names being highlighted as function calls when followed by a column list, including qualified names and <code>IF NOT EXISTS</code>, <code>EXTERNAL</code>, and <code>TEMPORARY</code> forms.</li>
             <li>Fixed view names followed by column lists being highlighted as function calls.</li>
             <li>Fixed a materialized-view parsing regression that rejected previously supported optional clauses and clause ordering.</li>

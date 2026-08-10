@@ -69,6 +69,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertParsesWithoutPsiErrors("SELECT COUNT(*);")
         assertParsesWithoutPsiErrors("SELECT COUNT (*);")
         assertParsesWithoutPsiErrors("SELECT COUNT(*) FROM sales;")
+        assertParsesWithoutPsiErrors("(SELECT 1);")
         assertParsesWithoutPsiErrors(
             """
                 SELECT

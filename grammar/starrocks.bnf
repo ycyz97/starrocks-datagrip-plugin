@@ -19,7 +19,7 @@ statement ::= dml_statement | ddl_statement | other_statement {
 
 private statement_recover ::= !(";" | ddl_statement_start | dml_statement_start | other_statement_start)
 private ddl_statement_start ::= "CREATE" | "ALTER" | "DROP" | "TRUNCATE" | "REFRESH" | "GRANT" | "REVOKE"
-private dml_statement_start ::= "SELECT" | "WITH" | "VALUES" | "INSERT" | "UPDATE" | "DELETE" | "MERGE"
+private dml_statement_start ::= "SELECT" | "WITH" | "VALUES" | "INSERT" | "UPDATE" | "DELETE" | "MERGE" | "("
 private other_statement_start ::= "SHOW" | "ADMIN" | "ANALYZE" | "SET" | "UNSET" | "KILL" | "SYNC" | "CALL" | "BEGIN" | "START" | "COMMIT" | "ROLLBACK" | "USE" | "EXPLAIN" | "DESC" | "DESCRIBE" | "LOAD" | "CANCEL" | "SUBMIT" | "EXPORT" | "BACKUP" | "RESTORE" | "RECOVER"
 
 ddl_statement ::= create_statement | alter_statement | drop_statement | truncate_table_statement | refresh_materialized_view_statement | grant_statement | revoke_statement
@@ -553,13 +553,14 @@ with_grant_option_clause ::= "WITH" "GRANT" "OPTION"
 dml_statement ::= with_update_statement | insert_statement | update_statement | delete_statement | merge_statement | select_statement
 private with_update_statement ::= &<<isWithUpdate>> with_clause update_statement
 
-select_statement ::= query_expression {
+select_statement ::= top_query_expression {
   elementType="SQL_SELECT_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
 
+private top_query_expression ::= parenthesized_query_expression | query_expression
 private query_expression ::= with_query_expression_guarded | plain_query_expression
 private plain_query_expression ::= set_query_expression_guarded | values_expression_guarded
 private repository_location_clause ::= "ON" "LOCATION" string_literal
