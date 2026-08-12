@@ -46,10 +46,10 @@ STRING='([^'\\]|\\.|'')*'|\"([^\"\\]|\\.|\"\")*\"
 {STRING}             { return SqlTokens.SQL_STRING_TOKEN; }
 {DELIMITED_IDENT}    { return SqlTokens.SQL_IDENT_DELIMITED; }
 {SYSTEM_VARIABLE}    { return SqlTokens.SQL_IDENT; }
-{NAMED_PARAMETER}    { return StarRocksHighlightTokenTypes.PARAMETER; }
-{BRACED_PARAMETER}   { return StarRocksHighlightTokenTypes.PARAMETER; }
-{BRACKETED_PARAMETER} { return StarRocksHighlightTokenTypes.PARAMETER; }
-"?"                  { return StarRocksHighlightTokenTypes.PARAMETER; }
+{NAMED_PARAMETER}    { return StarRocksCustomTokenTypes.PARAMETER; }
+{BRACED_PARAMETER}   { return StarRocksCustomTokenTypes.PARAMETER; }
+{BRACKETED_PARAMETER} { return StarRocksCustomTokenTypes.PARAMETER; }
+"?"                  { return StarRocksCustomTokenTypes.PARAMETER; }
 {TEMPLATED_IDENT}     { return SqlTokens.SQL_IDENT; }
 {SIZE_VALUE}          { yypushback(1); return SqlTokens.SQL_INTEGER_TOKEN; }
 {DIGIT_IDENT}         { return SqlTokens.SQL_IDENT; }

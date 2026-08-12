@@ -8,15 +8,13 @@ import com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormatterHelper
 import com.github.ycyz.starrocks.datagrip.format.StarRocksFormattingProfile
 import com.github.ycyz.starrocks.datagrip.format.StarRocksViewBlock
-import com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighter
+import com.github.ycyz.starrocks.datagrip.highlight.StarRocksSyntaxHighlighterFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksFeature
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksElementTypes
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksGeneratedParser
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksGrammarMilestone
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightingLexer
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes
-import com.github.ycyz.starrocks.datagrip.lang.StarRocksLexer
+import com.github.ycyz.starrocks.datagrip.lang.StarRocksParserLexer
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksParser
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksStatementElementSets
 import com.github.ycyz.starrocks.datagrip.lang.StarRocksTokens
@@ -25,7 +23,6 @@ import com.intellij.database.model.ObjectKind
 import com.intellij.database.types.DasTypeCategory
 import com.intellij.psi.TokenType.WHITE_SPACE
 import com.intellij.psi.tree.IElementType
-import com.intellij.sql.editor.SqlColors
 import com.intellij.sql.editor.SqlCodeBlockProviderUtils
 import com.intellij.sql.dialects.base.TokenClasses
 import com.intellij.sql.psi.SqlCompositeElementTypes
@@ -70,7 +67,7 @@ object StarRocksScenarioValidator {
         validateComplexTypes(testDataDir.resolve("types/complex-types.sql").readText())
         validateSupplementaryCompletionCatalog()
         validateLexerKeywordTokens()
-        validateSyntaxHighlighterColors()
+        validateSyntaxHighlighterArchitecture()
         validateDialectTokens()
         validateGeneratedGrammarSkeleton(projectDir)
         validateFormattingProfile()
@@ -239,7 +236,7 @@ object StarRocksScenarioValidator {
             "DESC",
             "WINDOW"
         ).forEach { keyword ->
-            val keywordLexer = StarRocksLexer()
+            val keywordLexer = StarRocksParserLexer()
             keywordLexer.start(keyword, 0, keyword.length, 0)
             check(keywordLexer.tokenType == SqlTokenRegistry.getType(keyword)) {
                 "StarRocks lexer should classify official keyword $keyword as its registered platform SQL token."
@@ -247,7 +244,7 @@ object StarRocksScenarioValidator {
         }
 
         listOf("select", "FrOm", "where", "limit").forEach { keyword ->
-            val keywordLexer = StarRocksLexer()
+            val keywordLexer = StarRocksParserLexer()
             keywordLexer.start(keyword, 0, keyword.length, 0)
             check(keywordLexer.tokenType == SqlTokenRegistry.getType(keyword.uppercase())) {
                 "StarRocks lexer should classify $keyword case-insensitively as its registered platform SQL token."
@@ -266,167 +263,25 @@ object StarRocksScenarioValidator {
             }
         }
 
-        val psiTokens = lexSignificantTokens("SELECT IF(flag, 1, 0), SUM(price) FROM t;")
-        check(StarRocksHighlightTokenTypes.FUNCTION !in psiTokens) {
-            "StarRocks PSI lexer should keep function calls on platform SQL tokens."
-        }
+    }
 
-        val functionTokens = lexSignificantTokens(
-            sql = "SELECT IF(flag, 1, 0), SUM(price), ARRAY_JOIN(tags, ','), WINDOW_FUNNEL(ts, event) FROM t;",
-            useHighlightingLexer = true
-        )
-        check(StarRocksHighlightTokenTypes.FUNCTION in functionTokens) {
-            "StarRocks lexer should emit function tokens for builtin function calls."
-        }
-
-        val basicFunctionTexts = lexSignificantTokenTexts(
-            sql = "SELECT COUNT(*), SUM(v), AVG(v), MIN(v), MAX(v), COALESCE(v, 0), IFNULL(v, 0), DATE(v), TIMESTAMP(v), MAP(), STRUCT(v), ROUND(v), CONCAT(v) FROM t;",
-            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
-            useHighlightingLexer = true
-        )
+    private fun validateSyntaxHighlighterArchitecture() {
         check(
-            basicFunctionTexts.containsAll(
-                listOf("COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "IFNULL", "DATE", "TIMESTAMP", "MAP", "STRUCT", "ROUND", "CONCAT")
-            )
+            StarRocksSyntaxHighlighterFactory::class.java.superclass.name ==
+                "com.intellij.sql.dialects.base.SqlSyntaxHighlighterFactory\$Base"
         ) {
-            "Basic and type-named StarRocks functions must share function highlighting. Actual: $basicFunctionTexts"
-        }
-
-        val userFunctionTokens = lexSignificantTokens(
-            sql = "SELECT my_udf(payload), analytics.custom_score(id) FROM t;",
-            useHighlightingLexer = true
-        )
-        check(StarRocksHighlightTokenTypes.FUNCTION in userFunctionTokens) {
-            "StarRocks lexer should emit function tokens for user-defined function calls."
-        }
-
-        val createViewFunctionTexts = lexSignificantTokenTexts(
-            sql = "CREATE VIEW example_db.example_view (k1 COMMENT 'key') AS SELECT my_udf(k1) FROM source_table;",
-            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
-            useHighlightingLexer = true
-        )
-        check("example_view" !in createViewFunctionTexts) {
-            "A CREATE VIEW target followed by a column list must not use function highlighting."
-        }
-        check("my_udf" in createViewFunctionTexts) {
-            "Function highlighting must resume inside the CREATE VIEW query."
-        }
-
-        val createTableFunctionTexts = lexSignificantTokenTexts(
-            sql = """
-                CREATE TABLE foo (id BIGINT);
-                CREATE TABLE IF NOT EXISTS analytics.foo (id BIGINT);
-                CREATE EXTERNAL TEMPORARY TABLE `analytics`.foo (id BIGINT);
-                CREATE TABLE SUM (id BIGINT);
-            """.trimIndent(),
-            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
-            useHighlightingLexer = true
-        )
-        check(createTableFunctionTexts.none { it.equals("foo", ignoreCase = true) }) {
-            "CREATE TABLE targets must not use function highlighting. Actual: $createTableFunctionTexts"
-        }
-        check("SUM" !in createTableFunctionTexts) {
-            "A CREATE TABLE target named like a builtin function must not use function highlighting. " +
-                "Actual: $createTableFunctionTexts"
-        }
-        val queryFunctionTexts = lexSignificantTokenTexts(
-            sql = "SELECT my_udf(id), SUM(id) FROM source_table;",
-            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
-            useHighlightingLexer = true
-        )
-        check("my_udf" in queryFunctionTexts && "SUM" in queryFunctionTexts) {
-            "Function highlighting must remain active for query expressions. Actual: $queryFunctionTexts"
-        }
-
-        val functionLikeKeywordTexts = lexSignificantTokenTexts(
-            sql = "SELECT EXTRACT(DAY FROM ts), GROUPING(k), GROUPING_ID(k), PERCENTILE(v, 0.95), SUM(v) OVER (PARTITION BY k) FROM t;",
-            tokenType = StarRocksHighlightTokenTypes.FUNCTION,
-            useHighlightingLexer = true
-        )
-        check(functionLikeKeywordTexts.containsAll(listOf("EXTRACT", "GROUPING", "GROUPING_ID", "PERCENTILE", "SUM"))) {
-            "StarRocks lexer should highlight function-like keyword calls as functions. Actual: $functionLikeKeywordTexts"
-        }
-        check("OVER" !in functionLikeKeywordTexts) {
-            "StarRocks lexer must not misclassify window clause keywords as functions."
-        }
-
-        val typeTokens = lexSignificantTokens(
-            sql = "CREATE TABLE t (id BIGINT, attrs MAP<STRING, JSON>, amount DECIMAL(18, 2));",
-            useHighlightingLexer = true
-        )
-        check(StarRocksHighlightTokenTypes.DATA_TYPE in typeTokens) {
-            "StarRocks lexer should emit data type tokens for StarRocks type names."
-        }
-
-        val variableAndParameterTokens = lexSignificantTokens(
-            sql = "SELECT @tenant, @@session.query_timeout, :limit, \${biz_date}, ? FROM t;",
-            useHighlightingLexer = true
-        )
-        check(StarRocksHighlightTokenTypes.VARIABLE in variableAndParameterTokens) {
-            "StarRocks lexer should emit variable tokens for user and system variables."
-        }
-        check(StarRocksHighlightTokenTypes.PARAMETER in variableAndParameterTokens) {
-            "StarRocks lexer should emit parameter tokens for named and positional parameters."
+            "StarRocks syntax highlighting must use the platform SqlSyntaxHighlighterFactory.Base."
         }
     }
 
-    private fun validateSyntaxHighlighterColors() {
-        val highlighter = StarRocksSyntaxHighlighter(project = null, file = null)
-        check(SqlColors.SQL_PROCEDURE in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.FUNCTION)) {
-            "StarRocks function token should use the platform SQL function color."
-        }
-        check(SqlColors.SQL_TYPE in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.DATA_TYPE)) {
-            "StarRocks data type token should use SQL type highlighting."
-        }
-        check(SqlColors.SQL_VARIABLE in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.VARIABLE)) {
-            "StarRocks variable token should use SQL variable highlighting."
-        }
-        check(SqlColors.SQL_PARAMETER in highlighter.getTokenHighlights(StarRocksHighlightTokenTypes.PARAMETER)) {
-            "StarRocks parameter token should use SQL parameter highlighting."
-        }
-        check(SqlColors.SQL_KEYWORD in highlighter.getTokenHighlights(SqlTokenRegistry.getType("SELECT"))) {
-            "StarRocks registered keyword token should keep platform SQL keyword highlighting."
-        }
-        val highlightLexer = highlighter.highlightingLexer
-        check(highlightLexer is StarRocksHighlightingLexer) {
-            "StarRocks syntax highlighter must use a dedicated highlighting lexer, not the parser lexer."
-        }
-        highlightLexer.start("SELECT JSON_LENGTH(payload), BITMAP_COUNT(bm) FROM t;")
-        val tokenTypes = mutableListOf<IElementType>()
-        while (highlightLexer.tokenType != null) {
-            highlightLexer.tokenType?.let(tokenTypes::add)
-            highlightLexer.advance()
-        }
-        check(StarRocksHighlightTokenTypes.FUNCTION in tokenTypes) {
-            "StarRocks syntax highlighter should use the highlighting lexer with builtin function tokens."
-        }
-    }
-
-    private fun lexSignificantTokens(sql: String, useHighlightingLexer: Boolean = false): List<IElementType> {
-        val lexer = if (useHighlightingLexer) StarRocksHighlightingLexer() else StarRocksLexer()
+    private fun lexSignificantTokens(sql: String): List<IElementType> {
+        val lexer = StarRocksParserLexer()
         lexer.start(sql, 0, sql.length, 0)
         val tokens = mutableListOf<IElementType>()
         while (lexer.tokenType != null) {
             val token = lexer.tokenType
             if (token != null && token != WHITE_SPACE) {
                 tokens += token
-            }
-            lexer.advance()
-        }
-        return tokens
-    }
-
-    private fun lexSignificantTokenTexts(
-        sql: String,
-        tokenType: IElementType,
-        useHighlightingLexer: Boolean = false
-    ): List<String> {
-        val lexer = if (useHighlightingLexer) StarRocksHighlightingLexer() else StarRocksLexer()
-        lexer.start(sql, 0, sql.length, 0)
-        val tokens = mutableListOf<String>()
-        while (lexer.tokenType != null) {
-            if (lexer.tokenType == tokenType) {
-                tokens += sql.substring(lexer.tokenStart, lexer.tokenEnd)
             }
             lexer.advance()
         }

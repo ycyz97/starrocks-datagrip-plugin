@@ -1,11 +1,11 @@
 package com.github.ycyz.starrocks.datagrip.highlight
 
-import com.intellij.openapi.fileTypes.SyntaxHighlighter
-import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
+import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
+import com.intellij.sql.dialects.base.SqlSyntaxHighlighterFactory
 
-class StarRocksSyntaxHighlighterFactory : SyntaxHighlighterFactory() {
-    override fun getSyntaxHighlighter(project: Project?, virtualFile: VirtualFile?): SyntaxHighlighter =
-        StarRocksSyntaxHighlighter(project, virtualFile)
-}
+/**
+ * Use the platform SQL highlighter so semantic annotations can classify PSI
+ * objects (functions, tables, columns, and types) instead of guessing from
+ * neighboring characters in a dialect-specific lexer.
+ */
+class StarRocksSyntaxHighlighterFactory : SqlSyntaxHighlighterFactory.Base(StarRocksDialect.INSTANCE)

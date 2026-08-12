@@ -27,7 +27,7 @@ internal object StarRocksElementTypeRegistry {
 
     private fun createToken(normalized: String): SqlTokenType {
         if (normalized == "STARROCKS_PARAMETER") {
-            return StarRocksHighlightTokenTypes.PARAMETER
+            return StarRocksCustomTokenTypes.PARAMETER
         }
         punctuationToken(normalized)?.let { return it }
         return SqlTokenRegistry.getType(normalized, SqlKeywordTokenType.FACTORY)
@@ -62,7 +62,7 @@ internal object StarRocksElementTypeRegistry {
         "!" -> SqlTokens.SQL_OP_NOT2
         "|" -> SqlTokens.SQL_OP_BITWISE_OR
         "&" -> SqlTokens.SQL_OP_BITWISE_AND
-        "?" -> StarRocksHighlightTokenTypes.PARAMETER
+        "?" -> StarRocksCustomTokenTypes.PARAMETER
         else -> null
     }
 

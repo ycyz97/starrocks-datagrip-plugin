@@ -957,12 +957,14 @@ use_statement ::= "USE" use_target {
 use_target ::= schema_reference {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-explain_statement ::= "EXPLAIN" ("ANALYZE" | "VERBOSE" | "LOGICAL" | "COSTS")* select_statement {
+explain_statement ::= explain_analyze_statement | explain_query_statement {
   elementType="SQL_EXPLAIN_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
+private explain_analyze_statement ::= "EXPLAIN" "ANALYZE" dml_statement
+private explain_query_statement ::= "EXPLAIN" ("LOGICAL" | "VERBOSE" | "COSTS")? select_statement
 describe_statement ::= ("DESC" | "DESCRIBE") "TABLE"? describe_target column_short_reference? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1

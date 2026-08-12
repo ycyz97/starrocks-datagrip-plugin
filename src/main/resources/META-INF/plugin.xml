@@ -23,25 +23,25 @@
     <change-notes><![CDATA[
         <h3>Parsing and highlighting</h3>
         <ul>
-            <li>Fixed parenthesized top-level query expressions such as <code>(SELECT 1)</code> being reported as invalid DML.</li>
-            <li>Fixed <code>CREATE TABLE</code> target names being highlighted as function calls when followed by a column list, including qualified names and <code>IF NOT EXISTS</code>, <code>EXTERNAL</code>, and <code>TEMPORARY</code> forms.</li>
-            <li>Fixed view names followed by column lists being highlighted as function calls.</li>
-            <li>Fixed a materialized-view parsing regression that rejected previously supported optional clauses and clause ordering.</li>
-            <li>Aligned analytic-clause PSI with the platform SQL parser so window-expression aliases participate in select-list <code>AS</code> alignment.</li>
+            <li>Fixed <code>EXPLAIN</code> and <code>EXPLAIN ANALYZE</code> statement parsing.</li>
+            <li>Fixed parsing of parenthesized top-level queries.</li>
+            <li>Improved function and database-object syntax highlighting.</li>
+            <li>Fixed materialized-view clause parsing.</li>
+            <li>Improved analytic-clause alias formatting.</li>
         </ul>
 
         <h3>Functions and inspections</h3>
         <ul>
-            <li>Fixed function argument parsing and signature validation across analytic, aggregate, date/time, and UUID functions, including <code>COUNT(*)</code>, zero-argument and precision forms, <code>DISTINCT</code>/<code>ALL</code>, function-local ordering and <code>SEPARATOR</code>, <code>IGNORE NULLS</code>, SQL-style <code>TRIM</code>, and bare units in <code>TIMESTAMPADD</code>/<code>TIMESTAMPDIFF</code>.</li>
-            <li>Added platform-style <code>OVER</code> clause insertion when completing analytic functions.</li>
-            <li>Fixed false nested-aggregate errors when an input column has the same name as a later aggregate alias.</li>
-            <li>Consolidated built-in function names around the platform function catalog to remove duplicate metadata.</li>
+            <li>Improved function argument parsing and signature validation.</li>
+            <li>Added <code>OVER</code> clause completion for analytic functions.</li>
+            <li>Fixed false nested-aggregate inspection errors.</li>
+            <li>Unified built-in function metadata.</li>
         </ul>
 
         <h3>Formatting</h3>
         <ul>
-            <li>Aligned view column-list, comment, query wrapping, and indentation behavior with DataGrip formatting settings while preserving StarRocks-specific clauses.</li>
-            <li>Fixed excessive indentation when formatting select lists whose first item is a long function expression.</li>
+            <li>Improved view, query, and clause formatting.</li>
+            <li>Fixed excessive select-list indentation.</li>
         </ul>
     ]]></change-notes>
 

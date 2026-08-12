@@ -35,6 +35,7 @@ import com.intellij.sql.psi.SqlReferenceExpression
 import com.intellij.sql.psi.SqlTypeCastExpression
 import com.intellij.sql.psi.SqlUnionExpression
 import com.intellij.sql.dialects.mysql.MysqlDialect
+import com.intellij.sql.editor.SqlColors
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.types.DasArrayType
 import com.github.ycyz.starrocks.datagrip.database.StarRocksDbms
@@ -498,7 +499,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
     fun testMultiValueInListParsesWithoutPsiErrors() {
         val lexer = StarRocksParserLexer()
         lexer.start("${ '$' }{aff_biz_date}")
-        assertSame(com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes.PARAMETER, lexer.tokenType)
+        assertSame(com.github.ycyz.starrocks.datagrip.lang.StarRocksCustomTokenTypes.PARAMETER, lexer.tokenType)
         assertEquals("${ '$' }{aff_biz_date}".length, lexer.tokenEnd)
         assertParsesWithoutPsiErrors("SELECT * FROM orders WHERE status IN (2, 7, 9);")
         assertParsesWithoutPsiErrors("SELECT * FROM stores WHERE name IN ('正常营业', '营建中');")
@@ -1239,7 +1240,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             lexer.start(parameter)
             assertSame(
                 "Parser parameters must use the dedicated StarRocks parameter token.",
-                com.github.ycyz.starrocks.datagrip.lang.StarRocksHighlightTokenTypes.PARAMETER,
+                com.github.ycyz.starrocks.datagrip.lang.StarRocksCustomTokenTypes.PARAMETER,
                 lexer.tokenType
             )
             assertEquals("Parameter placeholders must be emitted as one token.", parameter.length, lexer.tokenEnd)
@@ -1474,6 +1475,32 @@ class StarRocksParsingTest : BasePlatformTestCase() {
             assertNotNull("Built-in function ${call.text} must expose a platform name reference.", nameReference)
             assertNotNull("${call.name} must resolve through the dialect catalog.", nameReference?.resolve())
         }
+    }
+
+    fun testSemanticHighlightingDistinguishesFunctionsFromTableTargets() {
+        val sql = """
+            CREATE TABLE foo (id BIGINT);
+            INSERT INTO foo (id) VALUES (1);
+            INSERT OVERWRITE foo (id) SELECT id FROM foo;
+            SELECT SUM(id), my_udf(id) FROM foo;
+        """.trimIndent()
+        myFixture.configureByText("semantic-highlighting.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val highlights = myFixture.doHighlighting()
+        fun textsWithAttribute(attribute: String) = highlights
+            .filter { it.description == attribute }
+            .map { myFixture.file.text.substring(it.startOffset, it.endOffset) }
+
+        val procedureTexts = textsWithAttribute(SqlColors.SQL_PROCEDURE.externalName)
+        val tableTexts = textsWithAttribute(SqlColors.SQL_TABLE.externalName)
+
+        assertTrue("Built-in functions must keep platform procedure highlighting: $procedureTexts", "SUM" in procedureTexts)
+        assertTrue("User-defined function calls must keep platform procedure highlighting: $procedureTexts", "my_udf" in procedureTexts)
+        assertFalse("CREATE/INSERT table targets must not use procedure highlighting: $procedureTexts", "foo" in procedureTexts)
+        assertTrue("CREATE/INSERT table targets must use platform table highlighting: $tableTexts", "foo" in tableTexts)
     }
 
     fun testCountAsteriskPsiMatchesMysql() {
@@ -2360,7 +2387,7 @@ class StarRocksParsingTest : BasePlatformTestCase() {
     fun testPlatformFormatterPlacesExplainedQueryOnNextLine() {
         listOf(
             "EXPLAIN SELECT order_id FROM orders WHERE order_id=1;" to "SELECT",
-            "EXPLAIN ANALYZE VERBOSE SELECT order_id FROM orders WHERE order_id=1;" to "SELECT",
+            "EXPLAIN VERBOSE SELECT order_id FROM orders WHERE order_id=1;" to "SELECT",
             "EXPLAIN WITH base AS (SELECT 1 AS id) SELECT id FROM base;" to "WITH"
         ).forEach { (sql, bodyKeyword) ->
             val file = createPsiFile(sql)
@@ -2630,6 +2657,16 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 }
             }
         }
+    }
+
+    fun testExplainAnalyzeAcceptsDmlStatements() {
+        listOf(
+            "EXPLAIN ANALYZE SELECT order_id FROM orders WHERE order_id=1;",
+            "EXPLAIN ANALYZE INSERT INTO dws.monthly_sales SELECT 202608, 1;",
+            "EXPLAIN ANALYZE UPDATE orders SET status=2 WHERE order_id=1;",
+            "EXPLAIN ANALYZE DELETE FROM orders WHERE order_id=1;",
+            "EXPLAIN ANALYZE MERGE INTO orders USING updates ON orders.id=updates.id WHEN MATCHED THEN DELETE;"
+        ).forEach(::assertParsesWithoutPsiErrors)
     }
 
     fun testCreateViewColumnCommentsUsePlatformAliasPsi() {
