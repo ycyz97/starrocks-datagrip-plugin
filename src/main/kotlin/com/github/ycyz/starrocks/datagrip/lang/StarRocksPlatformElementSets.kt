@@ -9,7 +9,8 @@ internal object StarRocksPlatformElementSets {
     }
 
     val genericStatementTypes: Set<IElementType> = setOf(
-        SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT
+        SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT,
+        StarRocksElementTypes.STATEMENT
     )
 
     val registeredStarRocksTypes: Set<IElementType> by lazy {

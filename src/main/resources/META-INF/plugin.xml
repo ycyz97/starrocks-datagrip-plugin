@@ -21,27 +21,8 @@
     ]]></description>
 
     <change-notes><![CDATA[
-        <h3>Parsing and highlighting</h3>
         <ul>
-            <li>Fixed <code>EXPLAIN</code> and <code>EXPLAIN ANALYZE</code> statement parsing.</li>
-            <li>Fixed parsing of parenthesized top-level queries.</li>
-            <li>Improved function and database-object syntax highlighting.</li>
-            <li>Fixed materialized-view clause parsing.</li>
-            <li>Improved analytic-clause alias formatting.</li>
-        </ul>
-
-        <h3>Functions and inspections</h3>
-        <ul>
-            <li>Improved function argument parsing and signature validation.</li>
-            <li>Added <code>OVER</code> clause completion for analytic functions.</li>
-            <li>Fixed false nested-aggregate inspection errors.</li>
-            <li>Unified built-in function metadata.</li>
-        </ul>
-
-        <h3>Formatting</h3>
-        <ul>
-            <li>Improved view, query, and clause formatting.</li>
-            <li>Fixed excessive select-list indentation.</li>
+            <li>Fixed errors when executing multiple SQL statements with comments.</li>
         </ul>
     ]]></change-notes>
 

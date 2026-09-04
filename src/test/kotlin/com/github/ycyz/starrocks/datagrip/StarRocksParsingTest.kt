@@ -32,6 +32,7 @@ import com.intellij.sql.psi.SqlExpression
 import com.intellij.sql.psi.SqlLiteralExpression
 import com.intellij.sql.psi.SqlParenthesizedExpression
 import com.intellij.sql.psi.SqlReferenceExpression
+import com.intellij.sql.psi.SqlStatement
 import com.intellij.sql.psi.SqlTypeCastExpression
 import com.intellij.sql.psi.SqlUnionExpression
 import com.intellij.sql.dialects.mysql.MysqlDialect
@@ -64,6 +65,36 @@ import com.intellij.sql.psi.impl.SqlTableElementListImpl
 import java.io.File
 
 class StarRocksParsingTest : BasePlatformTestCase() {
+    fun testLeadingTriviaDoesNotMergeExecutableStatements() {
+        listOf(
+            "\nSET @start_date = '2026-01-01'; SELECT @start_date;",
+            "-- leading comment\nSET @start_date = '2026-01-01'; SELECT @start_date;",
+            "-- 测试\n-- select 1\nSELECT 2;\n\n-- 测试\nSELECT 3;"
+        ).forEach { sql ->
+            val file = createPsiFile(sql)
+            val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+            val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java)
+            assertTrue("Leading trivia must not create parse errors: $errors\n${psiSummary(file)}", errors.isEmpty())
+            assertEquals("Leading trivia must not merge executable statements.\n${psiSummary(file)}", 2, statements.size)
+        }
+    }
+
+    fun testStatementsWithCommentsAndSeparatorsRemainIndependent() {
+        val file = createPsiFile("-- 测试\n-- select 1\nSELECT 2;\n\n-- 测试\nSELECT 3;")
+        val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java)
+        assertEquals(2, statements.size)
+        assertTrue(PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).isEmpty())
+    }
+
+    fun testTopLevelStatementIsExecutableSqlStatement() {
+        val file = createPsiFile("-- 测试\nSELECT 2;\n\n-- 测试\nSELECT 3;")
+        val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java)
+        assertEquals(2, statements.size)
+        statements.forEach { statement ->
+            assertTrue(statement.node.elementType.toString(), statement is SqlStatement)
+        }
+    }
+
     fun testBasicSelectParsesWithoutPsiErrors() {
         assertParsesWithoutPsiErrors("SELECT 1")
         assertParsesWithoutPsiErrors("SELECT 1;")

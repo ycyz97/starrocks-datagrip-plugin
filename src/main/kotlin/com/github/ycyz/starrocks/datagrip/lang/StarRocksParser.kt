@@ -19,7 +19,7 @@ class StarRocksParser : SqlParser(StarRocksDialect.INSTANCE) {
 
     override fun getCurrentSqlInjection(): SqlSuggestedInjection = STARROCKS_INJECTION
 
-    override fun getExtendsTokenSets(): Array<TokenSet> = emptyArray()
+    override fun getExtendsTokenSets(): Array<TokenSet> = StarRocksGeneratedParser.EXTENDS_SETS_
 
     override fun parseExtraRoots(root: IElementType, builder: PsiBuilder, level: Int): Boolean {
         return StarRocksGeneratedParser.parse_root_(root, builder, level)
