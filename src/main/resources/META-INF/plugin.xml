@@ -23,6 +23,7 @@
     <change-notes><![CDATA[
         <ul>
             <li>Fixed errors when executing multiple SQL statements with comments.</li>
+            <li>Fixed SQL Structure view hierarchy for tables, columns, views, and queries.</li>
         </ul>
     ]]></change-notes>
 

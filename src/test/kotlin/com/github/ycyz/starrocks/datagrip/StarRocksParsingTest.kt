@@ -65,6 +65,41 @@ import com.intellij.sql.psi.impl.SqlTableElementListImpl
 import java.io.File
 
 class StarRocksParsingTest : BasePlatformTestCase() {
+    fun testStructureMatchesMysql() {
+        for (sql in listOf(
+            "SELECT 1; SELECT 2;",
+            "CREATE TABLE orders (id INT, amount INT);",
+            "CREATE VIEW order_ids AS SELECT id FROM orders;",
+            "WITH ids AS (SELECT 1 AS id) SELECT id FROM ids;",
+            "-- first\nCREATE TABLE orders (id INT);\n-- second\nSELECT id FROM orders;"
+        )) {
+            fun structure(dialect: com.intellij.lang.Language): List<String> {
+                val file = PsiFileFactory.getInstance(project).createFileFromText("structure.sql", dialect, sql)
+                val factory = com.intellij.lang.LanguageStructureViewBuilder.INSTANCE.forLanguage(dialect)
+                assertNotNull("SQL dialect must inherit the platform Structure factory", factory)
+                val builder = factory!!.getStructureViewBuilder(file)
+                    as com.intellij.ide.structureView.TreeBasedStructureViewBuilder
+                val model = builder.createStructureViewModel(null)
+                try {
+                    fun collect(element: com.intellij.ide.structureView.StructureViewTreeElement, depth: Int): List<String> =
+                        element.children.flatMap { child ->
+                            val item = child as com.intellij.ide.structureView.StructureViewTreeElement
+                            val psi = item.value as? PsiElement
+                            assertNotNull("Structure entry must navigate to the parsed file", psi)
+                            assertSame(file, psi!!.containingFile)
+                            listOf("${depth}: ${item.presentation.presentableText?.trim()}") + collect(item, depth + 1)
+                        }
+                    return collect(model.root, 0)
+                } finally {
+                    com.intellij.openapi.util.Disposer.dispose(model)
+                }
+            }
+            val expected = structure(MysqlDialect.INSTANCE)
+            assertFalse("MySQL Structure must contain entries", expected.isEmpty())
+            assertEquals("Structure differs for $sql", expected, structure(StarRocksDialect.INSTANCE))
+        }
+    }
+
     fun testLeadingTriviaDoesNotMergeExecutableStatements() {
         listOf(
             "\nSET @start_date = '2026-01-01'; SELECT @start_date;",

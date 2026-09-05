@@ -332,8 +332,8 @@ object StarRocksScenarioValidator {
         val extendsSetsMethod = StarRocksParser::class.java.getDeclaredMethod("getExtendsTokenSets")
         extendsSetsMethod.isAccessible = true
         val extendsSets = extendsSetsMethod.invoke(StarRocksParser()) as Array<*>
-        check(extendsSets.isEmpty()) {
-            "StarRocksParser should expose no custom extends token sets for the Grammar-Kit generated parser."
+        check(extendsSets === StarRocksGeneratedParser.EXTENDS_SETS_) {
+            "StarRocksParser must expose the Grammar-Kit generated extends token sets without replacing them."
         }
         val generatedRoot = projectDir
             .resolve("build/generated/src/main/java/com/github/ycyz/starrocks/datagrip/lang")

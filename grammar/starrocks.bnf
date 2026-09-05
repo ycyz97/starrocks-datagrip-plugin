@@ -12,7 +12,7 @@
 script ::= statement? (statement_separator statement?)* <<eof>>
 private statement_separator ::= ";"
 
-statement ::= dml_statement | ddl_statement | other_statement {
+private statement ::= dml_statement | ddl_statement | other_statement {
   pin=1
   recoverWhile=statement_recover
 }
@@ -22,9 +22,9 @@ private ddl_statement_start ::= "CREATE" | "ALTER" | "DROP" | "TRUNCATE" | "REFR
 private dml_statement_start ::= "SELECT" | "WITH" | "VALUES" | "INSERT" | "UPDATE" | "DELETE" | "MERGE" | "("
 private other_statement_start ::= "SHOW" | "ADMIN" | "ANALYZE" | "SET" | "UNSET" | "KILL" | "SYNC" | "CALL" | "BEGIN" | "START" | "COMMIT" | "ROLLBACK" | "USE" | "EXPLAIN" | "DESC" | "DESCRIBE" | "LOAD" | "CANCEL" | "SUBMIT" | "EXPORT" | "BACKUP" | "RESTORE" | "RECOVER"
 
-ddl_statement ::= create_statement | alter_statement | drop_statement | truncate_table_statement | refresh_materialized_view_statement | grant_statement | revoke_statement
+private ddl_statement ::= create_statement | alter_statement | drop_statement | truncate_table_statement | refresh_materialized_view_statement | grant_statement | revoke_statement
 
-create_statement ::= create_materialized_view_guarded
+private create_statement ::= create_materialized_view_guarded
   | create_view_guarded
   | create_table_guarded
   | create_catalog_guarded
@@ -288,7 +288,7 @@ create_index_statement ::= "CREATE" "BITMAP"? "INDEX" index_reference index_on_t
   recoverWhile=statement_recover
 }
 
-alter_statement ::= alter_materialized_view_guarded
+private alter_statement ::= alter_materialized_view_guarded
   | alter_table_guarded
   | alter_view_guarded
   | alter_catalog_guarded
@@ -436,7 +436,7 @@ alter_routine_load_statement ::= "ALTER" "ROUTINE" "LOAD" identifier_reference r
   recoverWhile=statement_recover
 }
 
-drop_statement ::= drop_materialized_view_guarded
+private drop_statement ::= drop_materialized_view_guarded
   | drop_table_guarded
   | drop_view_guarded
   | drop_catalog_guarded
@@ -550,7 +550,7 @@ security_principal ::= principal_type? principal_name ("@" principal_name)?
 private principal_name ::= identifier_reference | string_literal
 with_grant_option_clause ::= "WITH" "GRANT" "OPTION"
 
-dml_statement ::= with_update_statement | insert_statement | update_statement | delete_statement | merge_statement | select_statement
+private dml_statement ::= with_update_statement | insert_statement | update_statement | delete_statement | merge_statement | select_statement
 private with_update_statement ::= &<<isWithUpdate>> with_clause update_statement
 
 select_statement ::= top_query_expression {
@@ -837,7 +837,7 @@ merge_using_clause ::= "USING" table_source
 merge_on_clause ::= "ON" value_expression
 merge_when_clause ::= "WHEN" ("MATCHED" | "NOT" "MATCHED") ("THEN" ("UPDATE" set_clause | "DELETE" | "INSERT" insert_column_list? values_clause))
 
-other_statement ::= show_statement
+private other_statement ::= show_statement
   | admin_statement
   | analyze_statement
   | set_password_guarded
