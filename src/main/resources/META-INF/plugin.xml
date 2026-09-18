@@ -21,9 +21,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>2.0.5</h3>
         <ul>
             <li>Fixed errors when executing multiple SQL statements with comments.</li>
             <li>Fixed SQL Structure view hierarchy for tables, columns, views, and queries.</li>
+            <li>Fixed CREATE TABLE formatting splitting column definitions into one token per line when converting keyword or type case.</li>
+            <li>Preserved column definitions when editing column types and reformatting table declarations.</li>
         </ul>
     ]]></change-notes>
 

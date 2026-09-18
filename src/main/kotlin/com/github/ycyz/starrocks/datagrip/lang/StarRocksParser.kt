@@ -22,6 +22,11 @@ class StarRocksParser : SqlParser(StarRocksDialect.INSTANCE) {
     override fun getExtendsTokenSets(): Array<TokenSet> = StarRocksGeneratedParser.EXTENDS_SETS_
 
     override fun parseExtraRoots(root: IElementType, builder: PsiBuilder, level: Int): Boolean {
+        // Case conversion and editor changes reparse the lazy column list on its
+        // own. Parsing it as a script loses all column-definition nodes.
+        if (root == SqlCompositeElementTypes.SQL_TABLE_ELEMENT_LIST) {
+            return StarRocksGeneratedParser.table_column_list(builder, level)
+        }
         return StarRocksGeneratedParser.parse_root_(root, builder, level)
     }
 
