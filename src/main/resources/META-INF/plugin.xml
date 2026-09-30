@@ -25,6 +25,8 @@
             <li>Changed the default data source driver from <b>MySQL Connector/J</b> to <b>StarRocks Connector/J</b>, improving external catalog browsing and database switching.</li>
             <li>Improved data source organization and synchronization of tables, columns, and views.</li>
             <li>Improved materialized view definitions and SQL formatting.</li>
+            <li>Fixed false syntax errors for <code>SET CATALOG</code>, <code>SHOW [FULL] PROCESSLIST</code>, and <code>KILL QUERY/CONNECTION</code>.</li>
+            <li>Added syntax support for <code>SHOW [FULL] TABLES</code>, <code>SHOW [FULL] COLUMNS/FIELDS</code>, and <code>SHOW [GLOBAL/SESSION/LOCAL] VARIABLES</code>, including <code>LIKE</code> and <code>WHERE</code> filters.</li>
         </ul>
 
         <h3>Upgrade existing data sources</h3>

@@ -1062,6 +1062,81 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         assertTrue("INSERT partition must not be reported as unresolved: $unresolvedPartitions", unresolvedPartitions.isEmpty())
     }
 
+    fun testCommonSessionAndMetadataCommands() {
+        val statements = listOf(
+            "SET CATALOG default_catalog;",
+            "SET CATALOG `external``catalog`;",
+            "SET CATALOG 'default_catalog';",
+            "SHOW PROCESSLIST;", "SHOW FULL PROCESSLIST;",
+            "SHOW TABLES;", "SHOW FULL TABLES FROM default_catalog.ads LIKE 'sales%';",
+            "SHOW TABLES IN ads WHERE Tables_in_ads = 'sales';",
+            "SHOW COLUMNS FROM ads.sales;",
+            "SHOW FULL COLUMNS FROM default_catalog.ads.sales;",
+            "SHOW FIELDS IN sales IN ads LIKE 'id%';",
+            "SHOW FULL COLUMNS FROM sales FROM ads WHERE Field = 'id';",
+            "SHOW VARIABLES;", "SHOW GLOBAL VARIABLES LIKE 'query%';",
+            "SHOW SESSION VARIABLES WHERE Variable_name = 'query_timeout';",
+            "SHOW LOCAL VARIABLES;",
+            "KILL 123;", "KILL QUERY 123;", "KILL CONNECTION 123;",
+            "KILL QUERY '00000000-0000-0000-0000-000000000001';"
+        )
+        statements.forEach(::assertParsesWithoutPsiErrors)
+        // Exercise shared prefixes and statement boundaries in one console script.
+        assertParsesWithoutPsiErrors(statements.joinToString("\n") + "\n" + """
+            SET SESSION query_timeout = 300;
+            SET @start_date = '2026-01-01';
+            SET PASSWORD = PASSWORD('secret');
+            SHOW TABLE STATUS FROM ads LIKE 'sales%';
+            SHOW CREATE TABLE ads.sales;
+            SHOW FUNCTIONS FROM ads;
+            SHOW MATERIALIZED VIEWS FROM ads;
+            SHOW DATABASES FROM default_catalog;
+            SHOW PROC '/frontends';
+            SELECT @start_date;
+        """.trimIndent())
+    }
+
+    fun testCommonSessionCommandsRejectIncompleteSyntaxAndRecover() {
+        listOf(
+            "SET CATALOG", "SHOW FULL", "SHOW FULL COLUMNS", "SHOW COLUMNS FROM",
+            "SHOW GLOBAL", "SHOW VARIABLES WHERE", "SHOW TABLES LIKE",
+            "SHOW FULL VARIABLES", "SHOW GLOBAL TABLES", "KILL QUERY", "KILL CONNECTION"
+        ).forEach { sql ->
+            val file = createPsiFile("$sql; SELECT 42;")
+            assertTrue("Incomplete or unsupported command must report an error: $sql",
+                PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).isNotEmpty())
+            assertTrue("Recovery must preserve the following query: $sql\n${psiSummary(file)}",
+                elementsOfType(file, SqlCompositeElementTypes.SQL_SELECT_CLAUSE).any { it.text == "SELECT 42" })
+        }
+    }
+
+    fun testCommonSessionCommandsKeepPlatformReferencesAndFormatting() {
+        val file = createPsiFile("""
+            SET CATALOG default_catalog;
+            SHOW FULL TABLES FROM default_catalog.ads;
+            SHOW FULL COLUMNS FROM default_catalog.ads.sales;
+            SHOW GLOBAL VARIABLES WHERE Variable_name = 'query_timeout';
+            SHOW FULL PROCESSLIST;
+            KILL QUERY 123;
+        """.trimIndent())
+        assertEquals(1, elementsOfType(file, SqlCompositeElementTypes.SQL_USE_CATALOG_STATEMENT).size)
+        assertTrue(elementsOfType(file, SqlCompositeElementTypes.SQL_CATALOG_REFERENCE)
+            .any { it.text == "default_catalog" })
+        assertTrue(elementsOfType(file, SqlCompositeElementTypes.SQL_SCHEMA_REFERENCE)
+            .any { it.text == "default_catalog.ads" })
+        assertTrue(elementsOfType(file, SqlCompositeElementTypes.SQL_TABLE_REFERENCE)
+            .any { it.text == "default_catalog.ads.sales" })
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+        assertParsesWithoutPsiErrors(file.text)
+        val formatted = file.text
+        WriteCommandAction.runWriteCommandAction(project) {
+            CodeStyleManager.getInstance(project).reformat(file)
+        }
+        assertEquals("Formatting must be idempotent", formatted, file.text)
+    }
+
     fun testSessionSetStatementParsesWithoutPsiErrors() {
         assertParsesWithoutPsiErrors("SET SESSION new_planner_optimize_timeout = 10000;")
         assertParsesWithoutPsiErrors("BEGIN; START TRANSACTION; COMMIT; ROLLBACK;")

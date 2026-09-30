@@ -136,6 +136,7 @@ internal object StarRocksElementTypeRegistry {
         "SQL_SET_CLAUSE" -> SqlCompositeElementTypes.SQL_SET_CLAUSE
         "SQL_SET_ASSIGNMENT" -> SqlCompositeElementTypes.SQL_SET_ASSIGNMENT
         "SQL_SET_STATEMENT" -> SqlCompositeElementTypes.SQL_SET_STATEMENT
+        "SQL_USE_CATALOG_STATEMENT" -> SqlCompositeElementTypes.SQL_USE_CATALOG_STATEMENT
         "SQL_SPECIAL_LITERAL" -> SqlCompositeElementTypes.SQL_SPECIAL_LITERAL
         "SQL_START_TRANSACTION_STATEMENT" -> SqlCompositeElementTypes.SQL_START_TRANSACTION_STATEMENT
         "SQL_STRING_LITERAL" -> SqlCompositeElementTypes.SQL_STRING_LITERAL

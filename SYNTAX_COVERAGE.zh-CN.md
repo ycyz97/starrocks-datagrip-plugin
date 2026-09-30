@@ -47,7 +47,7 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 | View | 部分 | 已有 CREATE、ALTER、DROP、SHOW CREATE；官方可选子句仍需核对。 |
 | Materialized View | 部分 | 已部分覆盖 CREATE、ALTER、DROP、REFRESH 和 SHOW；缺少取消刷新等管理变体。 |
 | Database/Schema | 部分 | 已有 CREATE、ALTER、DROP、USE 和常用 SHOW；SHOW DATA、SHOW CREATE DATABASE 等仍需补充。 |
-| Catalog | 部分 | 已有 CREATE、ALTER、DROP、SHOW CATALOGS、SHOW CREATE CATALOG；缺少 SET CATALOG。 |
+| Catalog | 部分 | 已有 CREATE、ALTER、DROP、SHOW CATALOGS、SHOW CREATE CATALOG 和 SET CATALOG；剩余变体仍需核对。 |
 | Resource | 部分 | 已有 CREATE、ALTER、DROP、SHOW RESOURCES；官方变体仍需核对。 |
 | 账户与权限 | 部分 | 已有常用用户/角色 DDL、GRANT、REVOKE、SET PASSWORD；角色切换、模拟执行及多个 SHOW 语句缺失。 |
 | Backup/Restore | 部分 | BACKUP、RESTORE、Repository、RECOVER 当前为简化语法。 |
@@ -85,7 +85,8 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 - [x] 覆盖较高 — ALTER TABLE。支持逗号分隔动作、重命名与注释、分区与分桶、列与 STRUCT 字段、Rollup、索引、表属性、SWAP、Compaction 和持久化索引删除。
 - [ ] 缺失/待核对 — CANCEL ALTER TABLE。
 - [ ] 缺失/待核对 — REFRESH EXTERNAL TABLE。
-- [ ] 缺失/待核对 — SHOW ALTER、SHOW DELETE、SHOW DYNAMIC PARTITION TABLES、SHOW FULL COLUMNS、SHOW INDEX、SHOW TABLET。
+- [x] 部分 — SHOW [FULL] TABLES 和 SHOW [FULL] COLUMNS/FIELDS，支持命名空间、LIKE 和 WHERE 分支。
+- [ ] 缺失/待核对 — SHOW ALTER、SHOW DELETE、SHOW DYNAMIC PARTITION TABLES、SHOW INDEX、SHOW TABLET。
 - [ ] 待核对 — 比较所有分区、Rollup、索引和属性变更分支。
 
 ### Database、Catalog、View 与 Materialized View
@@ -93,7 +94,7 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 - [x] 部分 — CREATE/ALTER/DROP DATABASE 或 SCHEMA，以及 USE。
 - [ ] 缺失/待核对 — SHOW CREATE DATABASE、SHOW DATA。
 - [x] 部分 — CREATE/ALTER/DROP CATALOG、SHOW CATALOGS、SHOW CREATE CATALOG。
-- [ ] 缺失 — SET CATALOG。
+- [x] 部分 — SET CATALOG，支持标识符、反引号标识符和字符串目标；标识符目标保留 Catalog 引用。
 - [x] 部分 — CREATE/ALTER/DROP VIEW、SHOW CREATE VIEW。
 - [x] 部分 — CREATE/ALTER/DROP/REFRESH MATERIALIZED VIEW 及常用 SHOW。
 - [ ] 缺失/待核对 — CANCEL REFRESH MATERIALIZED VIEW。
@@ -171,7 +172,8 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 - [ ] 缺失 — ADD/DELETE/SHOW SQLBLACKLIST。
 - [ ] 缺失 — CREATE/DROP FILE、SHOW FILE。
 - [ ] 缺失 — INSTALL/UNINSTALL PLUGIN、SHOW PLUGINS。
-- [ ] 缺失/待核对 — SHOW COMPUTE NODES、SHOW PROCESSLIST、SHOW RUNNING QUERIES 和 Profile 语句。
+- [x] 部分 — SHOW [FULL] PROCESSLIST；SHOW [GLOBAL/SESSION/LOCAL] VARIABLES 的 LIKE/WHERE；KILL [QUERY/CONNECTION]。由 `testCommonSession*` 的解析、恢复、PSI、格式化测试及 `admin/show-admin.sql` 覆盖。
+- [ ] 缺失/待核对 — SHOW COMPUTE NODES、SHOW RUNNING QUERIES 和 Profile 语句。
 - [ ] 缺失 — Tablet/Replica Repair、Check、Version、Status、Distribution 和 Transaction 管理命令。
 - [ ] 待核对 — 逐项分类官方 `cluster-management` 目录中的所有页面。
 

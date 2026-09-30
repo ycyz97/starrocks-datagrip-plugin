@@ -842,6 +842,7 @@ private other_statement ::= show_statement
   | admin_statement
   | analyze_statement
   | set_password_guarded
+  | set_catalog_guarded
   | set_statement
   | unset_statement
   | kill_statement
@@ -858,10 +859,11 @@ private other_statement ::= show_statement
   | backup_restore_statement
 
 private set_password_guarded ::= &("SET" "PASSWORD") set_password_statement
+private set_catalog_guarded ::= &("SET" "CATALOG") set_catalog_statement
 private cancel_load_guarded ::= &("CANCEL" "LOAD") cancel_load_statement
 private export_guarded ::= &(("EXPORT" "TABLE") | ("CANCEL" "EXPORT")) export_statement
 
-show_statement ::= "SHOW" (show_partitions_clause | show_table_status_clause | show_create_clause | show_schema_scoped_clause | show_generic_clause) {
+show_statement ::= "SHOW" (show_processlist_clause | show_columns_clause | show_tables_clause | show_variables_clause | show_partitions_clause | show_table_status_clause | show_create_clause | show_schema_scoped_clause | show_generic_clause) {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
@@ -871,13 +873,18 @@ delete_dml_instruction ::= "FROM"? dml_target_table where_clause? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 private show_partitions_clause ::= "PARTITIONS" ("FROM" | "IN") table_reference show_like_clause?
+private show_processlist_clause ::= "FULL"? "PROCESSLIST"
+private show_columns_clause ::= "FULL"? ("COLUMNS" | "FIELDS") ("FROM" | "IN") table_reference show_schema_from_clause? show_filter_clause?
+private show_tables_clause ::= "FULL"? "TABLES" show_schema_from_clause? show_filter_clause?
+private show_variables_clause ::= ("GLOBAL" | "SESSION" | "LOCAL")? "VARIABLES" show_filter_clause?
+private show_filter_clause ::= show_like_clause | where_clause
 private show_table_status_clause ::= "TABLE" "STATUS" show_schema_from_clause? show_like_clause?
 private show_create_clause ::= "CREATE" show_create_target
 private show_schema_scoped_clause ::= show_schema_scoped_target show_schema_from_clause? show_like_clause?
-private show_schema_scoped_target ::= "TABLES" | "FUNCTIONS" | "MATERIALIZED" "VIEWS"
+private show_schema_scoped_target ::= "FUNCTIONS" | "MATERIALIZED" "VIEWS"
 private show_schema_from_clause ::= ("FROM" | "IN") schema_reference
 private show_generic_clause ::= show_generic_target show_from_clause? show_like_clause?
-private show_generic_target ::= "DATABASES" | "SCHEMAS" | "VARIABLES" | "ROLES" | "USERS" | "GRANTS" | "CATALOGS" | "RESOURCES" | "ANALYZE" "STATUS" | "STATS" "META" | "BACKUP" | "RESTORE" | "PROC" value_expression?
+private show_generic_target ::= "DATABASES" | "SCHEMAS" | "ROLES" | "USERS" | "GRANTS" | "CATALOGS" | "RESOURCES" | "ANALYZE" "STATUS" | "STATS" "META" | "BACKUP" | "RESTORE" | "PROC" value_expression?
 private show_from_clause ::= ("FROM" | "IN") qualified_identifier
 private show_like_clause ::= "LIKE" string_literal
 show_create_target ::= ("TABLE" table_reference) | ("VIEW" view_reference) | ("MATERIALIZED" "VIEW" materialized_view_reference) | ("CATALOG" catalog_reference)
@@ -904,6 +911,12 @@ analyze_reference_list ::= "(" column_reference ("," column_reference)* ")" {
 }
 analyze_histogram_clause ::= "UPDATE" "HISTOGRAM" "ON" column_reference ("," column_reference)*
 
+set_catalog_statement ::= "SET" "CATALOG" (catalog_reference | string_literal) {
+  elementType="SQL_USE_CATALOG_STATEMENT"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=2
+  recoverWhile=statement_recover
+}
 set_statement ::= "SET" ("SESSION" | "GLOBAL" | "LOCAL")? set_variable_assignment ("," set_variable_assignment)* {
   elementType="SQL_SET_STATEMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -920,7 +933,7 @@ unset_statement ::= "UNSET" "VARIABLE"? identifier_reference {
   pin=1
   recoverWhile=statement_recover
 }
-kill_statement ::= "KILL" value_expression {
+kill_statement ::= "KILL" ("QUERY" | "CONNECTION")? value_expression {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover

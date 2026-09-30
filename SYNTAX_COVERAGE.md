@@ -57,7 +57,7 @@ statements.
 | Views | Partial | CREATE, ALTER, DROP, and SHOW CREATE are represented; official optional clauses require verification. |
 | Materialized views | Partial | CREATE, ALTER, DROP, REFRESH, and SHOW forms are partly covered; cancellation and status-management variants remain. |
 | Databases and schemas | Partial | CREATE, ALTER, DROP, USE, and common SHOW forms exist; SHOW DATA and SHOW CREATE DATABASE require work. |
-| Catalogs | Partial | CREATE, ALTER, DROP, SHOW CATALOGS, and SHOW CREATE CATALOG exist; SET CATALOG is missing. |
+| Catalogs | Partial | CREATE, ALTER, DROP, SHOW CATALOGS, SHOW CREATE CATALOG, and SET CATALOG exist; remaining variants need comparison. |
 | Resources | Partial | CREATE, ALTER, DROP, and SHOW RESOURCES exist; documented variants need comparison. |
 | Accounts and privileges | Partial | Common user/role DDL, GRANT, REVOKE, and SET PASSWORD exist; role switching, impersonation, and several SHOW forms are missing. |
 | Backup and restore | Partial | BACKUP, RESTORE, repository operations, and RECOVER have simplified grammar. |
@@ -95,7 +95,8 @@ statements.
 - [x] Substantial — ALTER TABLE. Covers comma-separated actions; rename and comments; partition and bucket operations; column, STRUCT field, Rollup, and index changes; table properties; SWAP; compaction; and persistent-index removal.
 - [ ] Missing/review — CANCEL ALTER TABLE.
 - [ ] Missing/review — REFRESH EXTERNAL TABLE.
-- [ ] Missing/review — SHOW ALTER, SHOW DELETE, SHOW DYNAMIC PARTITION TABLES, SHOW FULL COLUMNS, SHOW INDEX, and SHOW TABLET.
+- [x] Partial — SHOW [FULL] TABLES and SHOW [FULL] COLUMNS/FIELDS, with namespace, LIKE, and WHERE branches.
+- [ ] Missing/review — SHOW ALTER, SHOW DELETE, SHOW DYNAMIC PARTITION TABLES, SHOW INDEX, and SHOW TABLET.
 - [ ] Review — compare all partition, rollup, index, and property mutation branches.
 
 ### Databases, catalogs, views, and materialized views
@@ -103,7 +104,7 @@ statements.
 - [x] Partial — CREATE/ALTER/DROP DATABASE or SCHEMA and USE.
 - [ ] Missing/review — SHOW CREATE DATABASE and SHOW DATA.
 - [x] Partial — CREATE/ALTER/DROP CATALOG, SHOW CATALOGS, and SHOW CREATE CATALOG.
-- [ ] Missing — SET CATALOG.
+- [x] Partial — SET CATALOG with identifier, quoted identifier, or string target; identifier targets expose a catalog reference.
 - [x] Partial — CREATE/ALTER/DROP VIEW and SHOW CREATE VIEW.
 - [x] Partial — CREATE/ALTER/DROP/REFRESH MATERIALIZED VIEW and common SHOW forms.
 - [ ] Missing/review — CANCEL REFRESH MATERIALIZED VIEW.
@@ -181,7 +182,8 @@ statements.
 - [ ] Missing — ADD/DELETE/SHOW SQLBLACKLIST.
 - [ ] Missing — CREATE/DROP FILE and SHOW FILE.
 - [ ] Missing — INSTALL/UNINSTALL PLUGIN and SHOW PLUGINS.
-- [ ] Missing/review — SHOW COMPUTE NODES, SHOW PROCESSLIST, SHOW RUNNING QUERIES, and profile statements.
+- [x] Partial — SHOW [FULL] PROCESSLIST; SHOW [GLOBAL/SESSION/LOCAL] VARIABLES with LIKE/WHERE; KILL [QUERY/CONNECTION]. Covered by `testCommonSession*` parsing, recovery, PSI, and formatting tests plus `admin/show-admin.sql`.
+- [ ] Missing/review — SHOW COMPUTE NODES, SHOW RUNNING QUERIES, and profile statements.
 - [ ] Missing — tablet/replica repair, check, version, status, distribution, and transaction administration commands.
 - [ ] Review — classify every page under the official `cluster-management` directory.
 
