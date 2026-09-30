@@ -30,6 +30,18 @@ completion are scoped to the StarRocks language.
 - Extends the platform SQL formatter with StarRocks SQL support.
 - Integrates JDBC metadata, the StarRocks type system, and native `SHOW CREATE`
   statements with the Database Tools platform.
+- Synchronizes `catalog → database → table/view`, grouping ordinary and
+  materialized views under Views. Column metadata is retained; JDBC foreign
+  keys, indexes, key constraints, routines, and user-defined types are not queried.
+
+Restart the IDE after upgrading, then disconnect, reconnect and fully refresh
+existing data sources to replace the old metadata tree. The StarRocks driver uses
+`databaseTerm=SCHEMA`; a connection interceptor applies it to existing data sources
+and overrides conflicting URL settings before Connector/J connects. Reconnecting
+allows DataGrip to refresh the old MySQL `jdbcCatalogIsSchema` detection.
+Synchronization requires access to `SHOW CATALOGS`,
+`SHOW DATABASES FROM catalog`, `SHOW FULL TABLES`, and `SHOW FULL COLUMNS`.
+It does not require SELECT grants on an external catalog's `information_schema.tables/columns`.
 
 Syntax support is intentionally tracked as structured coverage rather than a
 claim of full StarRocks compatibility. The current target baseline is the

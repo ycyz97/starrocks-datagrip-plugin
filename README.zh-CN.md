@@ -19,6 +19,9 @@ StarRocks Support 是一款面向 JetBrains DataGrip/IntelliJ 的插件，提供
 - 为 StarRocks 专属片段和属性提供补充补全；普通表、列、类型和函数补全仍由平台 SQL 补全系统负责。
 - 基于平台 SQL 格式化器提供 StarRocks SQL 格式化支持。
 - 将 JDBC 元数据、StarRocks 类型系统和原生 `SHOW CREATE` 语句接入 Database Tools 平台。
+- 数据源按 `catalog → database → table/view` 同步，普通视图和物化视图统一放入 View 分组；保留列元数据，不查询 JDBC 外键、索引、键约束、存储过程和用户定义类型。
+
+升级后请重启 IDE，断开并重新连接已有数据源，再执行完整刷新以替换旧元数据树。StarRocks 驱动使用 `databaseTerm=SCHEMA`，连接拦截器会在 Connector/J 建立连接前将该参数应用到已有数据源，并修正 URL 中冲突的参数；重新连接后由 DataGrip 更新旧的 MySQL `jdbcCatalogIsSchema` 判断。手动配置时，也可在数据源 Advanced 中设置 `databaseTerm=SCHEMA`。同步通过 `SHOW CATALOGS`、`SHOW DATABASES FROM catalog`、`SHOW FULL TABLES` 和 `SHOW FULL COLUMNS` 读取可见对象，不依赖外部 catalog 的 `information_schema.tables/columns` SELECT 权限。
 
 项目通过结构化清单记录语法支持，不声明已经完全兼容 StarRocks。当前目标基准为 StarRocks 4.1 文档。已实现、部分实现、缺失和待核对内容见[语法覆盖清单](SYNTAX_COVERAGE.zh-CN.md)。
 

@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.github.ycyz.starrocks.datagrip"
-version = "2.0.5"
+version = "2.1.0"
 
 val grammarKitGeneratedRoot = layout.buildDirectory.dir("generated/src/main/java")
 val generatedParserGrammar = layout.buildDirectory.file("generated/grammar/starrocks.bnf")
@@ -67,6 +67,7 @@ sourceSets {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.mysql:mysql-connector-j:9.4.0")
     testRuntimeOnly(kotlin("stdlib"))
 
     intellijPlatform {
@@ -95,7 +96,7 @@ intellijPlatform {
     }
     pluginVerification {
         ides {
-            create("DB", "261.26222.86")
+            create("DB", intellijPlatformVersion.get())
         }
     }
 }

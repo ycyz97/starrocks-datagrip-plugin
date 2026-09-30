@@ -63,7 +63,9 @@ object StarRocksDdlStatements {
     fun showCreateStatement(kind: ObjectKind, qualifiedName: String): String {
         return when (kind) {
             ObjectKind.MAT_VIEW -> "SHOW CREATE MATERIALIZED VIEW $qualifiedName"
-            ObjectKind.VIEW -> "SHOW CREATE VIEW $qualifiedName"
+            // SHOW CREATE TABLE preserves native DDL for both types grouped as VIEW.
+            // SHOW CREATE VIEW would downgrade an MV to a plain CREATE VIEW string.
+            ObjectKind.VIEW -> "SHOW CREATE TABLE $qualifiedName"
             else -> "SHOW CREATE TABLE $qualifiedName"
         }
     }

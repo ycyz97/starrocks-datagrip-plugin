@@ -4,6 +4,7 @@
     <url-template name="default" template="jdbc:mysql://{host::localhost}?[:{port::9030}][/{database}?][\?&lt;&amp;,user={user},password={password},{:identifier}={:param}&gt;]"/>
     <artifact name="MySQL Connector/J" use="true" rolling="true"/>
     <option name="auto-sync" value="true"/>
+    <property name="databaseTerm" value="SCHEMA"/>
     <property name="tinyInt1isBit" value="false"/>
     <property name="characterEncoding" value="utf8"/>
     <property name="characterSetResults" value="utf8"/>
