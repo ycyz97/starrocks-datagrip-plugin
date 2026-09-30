@@ -772,15 +772,15 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
     }
 
-    fun testCreateMaterializedViewDoesNotAcceptViewColumnAliases() {
+    fun testCreateMaterializedViewAcceptsColumnAliasesAndComments() {
         val file = createPsiFile(
-            "CREATE MATERIALIZED VIEW analytics.invalid_sales (order_id COMMENT 'id') " +
+            "CREATE MATERIALIZED VIEW analytics.sales (order_id COMMENT 'id') " +
                 "REFRESH MANUAL AS SELECT order_id FROM sales;"
         )
 
         assertTrue(
-            "Materialized views must not consume the ordinary-view column alias syntax.\n${psiSummary(file)}",
-            PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).isNotEmpty()
+            "Materialized view column aliases and comments must parse.\n${psiSummary(file)}",
+            PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).isEmpty()
         )
     }
 

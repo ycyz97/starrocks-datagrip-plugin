@@ -25,9 +25,9 @@ class StarRocksFormatterHelper : SqlFormatterHelper {
                 SqlCompositeElementTypes.SQL_COLUMN_ALIAS_LIST,
                 "StarRocks view column alias list"
             ) { node ->
-                generateSequence(node) { it.treeParent }.any { ancestor ->
-                    ancestor.elementType == SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT
-                }
+                // Query-local CTE and table aliases must keep their platform layout.
+                node.treeParent?.elementType == SqlCompositeElementTypes.SQL_CREATE_VIEW_STATEMENT ||
+                    node.treeParent?.elementType == SqlCompositeElementTypes.SQL_CREATE_MATERIALIZED_VIEW_STATEMENT
             },
             ::StarRocksViewColumnAliasListBlock
         )
