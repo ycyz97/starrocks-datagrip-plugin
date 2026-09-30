@@ -34,11 +34,29 @@ completion are scoped to the StarRocks language.
   materialized views under Views. Column metadata is retained; JDBC foreign
   keys, indexes, key constraints, routines, and user-defined types are not queried.
 
-Restart the IDE after upgrading, then disconnect, reconnect and fully refresh
-existing data sources to replace the old metadata tree. The StarRocks driver uses
-`databaseTerm=SCHEMA`; a connection interceptor applies it to existing data sources
-and overrides conflicting URL settings before Connector/J connects. Reconnecting
-allows DataGrip to refresh the old MySQL `jdbcCatalogIsSchema` detection.
+The predefined driver selects **Latest stable** for StarRocks Connector/J, recommended
+by the [StarRocks JDBC documentation](https://docs.starrocks.io/docs/integrations/JDBC_driver/).
+This selects the latest stable entry in the available artifact list; the plugin
+currently includes `com.starrocks:starrocks-connector-j:1.1.1`. New releases must
+be added to that list; this setting does not query Maven Central for new versions.
+The native selector uses JDBC `setCatalog` followed by `setSchema` on the same
+connection. This driver sends separate `SET CATALOG` and `USE` commands; no
+multi-query setting or custom remote JDBC helper is needed.
+
+For an existing data source, restart the IDE and update its StarRocks driver:
+download the StarRocks Connector/J artifact, remove the MySQL Connector/J driver
+file, set the class to `com.starrocks.cj.jdbc.Driver`, and change the URL prefix
+from `jdbc:mysql:` to `jdbc:starrocks:` (for example,
+`jdbc:starrocks://host:9030/default_catalog.ads`). Saved custom driver definitions
+may need to be reset to the predefined defaults or updated manually. Remove the
+old `databaseTerm` and plugin-added `allowMultiQueries` settings; keep
+`useLocalSessionState=false` so selecting the same database name in another
+catalog still executes `USE`. Then disconnect, reconnect and fully refresh the
+data source. Existing connection URLs and driver files are not silently migrated.
+On DataGrip 2026.1, the standard remote `setSchema` path can suppress a database
+selection error. If the toolbar and query behavior disagree, check
+`SELECT @@catalog, DATABASE()` in that same session; the plugin reads server
+state when loading the search path, but does not override the platform's error UI.
 Synchronization requires access to `SHOW CATALOGS`,
 `SHOW DATABASES FROM catalog`, `SHOW FULL TABLES`, and `SHOW FULL COLUMNS`.
 It does not require SELECT grants on an external catalog's `information_schema.tables/columns`.

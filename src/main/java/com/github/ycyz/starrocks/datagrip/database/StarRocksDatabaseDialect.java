@@ -10,6 +10,7 @@ import com.intellij.database.model.ObjectKind;
 import com.intellij.database.remote.jdbc.RemoteResultSet;
 import com.intellij.database.remote.jdbc.RemoteStatement;
 import com.intellij.database.util.DasUtil;
+import com.intellij.database.util.Casing;
 import com.intellij.database.util.DdlBuilder;
 import com.intellij.database.util.ObjectPath;
 import com.intellij.database.util.SearchPath;
@@ -19,7 +20,7 @@ import java.sql.SQLException;
 
 /** Database Tools behavior needed to preserve the StarRocks connection namespace. */
 public final class StarRocksDatabaseDialect extends AbstractDatabaseDialect {
-    static final String CURRENT_CATALOG_QUERY = "SELECT CATALOG()";
+    static final String CURRENT_CATALOG_QUERY = "SELECT @@catalog";
     static final String CURRENT_DATABASE_QUERY = "SELECT DATABASE()";
 
     public StarRocksDatabaseDialect() {
@@ -43,7 +44,45 @@ public final class StarRocksDatabaseDialect extends AbstractDatabaseDialect {
 
     @Override
     public ObjectKind getSearchPathObjectKind() {
+        return ObjectKind.SCHEMA;
+    }
+
+    @Override
+    public boolean supportsSearchPath() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsSchemaChanging() {
+        return true;
+    }
+
+    @Override
+    public String sqlSetSearchPath(SearchPath searchPath) {
+        ObjectPath current = searchPath.getCurrent();
+        if (current == null || current.getName().isEmpty()) return null;
+        if (current.kind == ObjectKind.DATABASE) {
+            return "SET CATALOG " + quoteNamespace(current.getName());
+        }
+        // Database Tools calls setCatalog then setSchema on the same connection.
+        // StarRocks Connector/J implements both with separate native statements.
         return null;
+    }
+
+    @Override
+    public String sqlResetSearchPath() {
+        return "SET CATALOG `default_catalog`";
+    }
+
+    @Override
+    public String catToScript(String name, ObjectKind kind, boolean quote, boolean mixed, Casing casing) {
+        // Generic SQL uses double quotes. StarRocks identifiers require backticks;
+        // quote every component to preserve names containing dots or keywords.
+        return quoteNamespace(name);
+    }
+
+    private static String quoteNamespace(String name) {
+        return "`" + name.replace("`", "``") + "`";
     }
 
     @Override
@@ -59,13 +98,14 @@ public final class StarRocksDatabaseDialect extends AbstractDatabaseDialect {
         DasObject object
     ) {
         DasObject schema = DasUtil.getSchemaObject(object);
+        DasObject catalog = DasUtil.getCatalogObject(object);
         return builder.qualifiedRef(
             parent,
             name,
             schema,
             DasUtil.getName(schema),
-            null,
-            null,
+            catalog,
+            DasUtil.getName(catalog),
             null,
             null
         );
@@ -92,7 +132,7 @@ public final class StarRocksDatabaseDialect extends AbstractDatabaseDialect {
 
     @Override
     public boolean shouldSwitchThroughJdbc(ObjectKind kind) {
-        return true;
+        return kind == ObjectKind.DATABASE || kind == ObjectKind.SCHEMA;
     }
 
     static SearchPath loadSearchPath(ScalarQuery query) throws Exception {

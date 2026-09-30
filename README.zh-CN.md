@@ -21,7 +21,13 @@ StarRocks Support 是一款面向 JetBrains DataGrip/IntelliJ 的插件，提供
 - 将 JDBC 元数据、StarRocks 类型系统和原生 `SHOW CREATE` 语句接入 Database Tools 平台。
 - 数据源按 `catalog → database → table/view` 同步，普通视图和物化视图统一放入 View 分组；保留列元数据，不查询 JDBC 外键、索引、键约束、存储过程和用户定义类型。
 
-升级后请重启 IDE，断开并重新连接已有数据源，再执行完整刷新以替换旧元数据树。StarRocks 驱动使用 `databaseTerm=SCHEMA`，连接拦截器会在 Connector/J 建立连接前将该参数应用到已有数据源，并修正 URL 中冲突的参数；重新连接后由 DataGrip 更新旧的 MySQL `jdbcCatalogIsSchema` 判断。手动配置时，也可在数据源 Advanced 中设置 `databaseTerm=SCHEMA`。同步通过 `SHOW CATALOGS`、`SHOW DATABASES FROM catalog`、`SHOW FULL TABLES` 和 `SHOW FULL COLUMNS` 读取可见对象，不依赖外部 catalog 的 `information_schema.tables/columns` SELECT 权限。
+预定义驱动默认选择 [StarRocks 官方文档推荐](https://docs.starrocks.io/docs/integrations/JDBC_driver/)的 StarRocks Connector/J 的 **Latest stable**。它从可用制品列表中选择最新稳定版本；插件目前收录 `com.starrocks:starrocks-connector-j:1.1.1`，后续版本仍需更新该列表，并非自动查询 Maven Central 的最新发布。原生选择器在同一连接上依次调用 JDBC `setCatalog` 和 `setSchema`，由该驱动独立执行 `SET CATALOG` 和 `USE`，不需要多语句配置或自定义远程 JDBC helper。
+
+已有数据源升级时，请重启 IDE 并更新 StarRocks 驱动：下载 StarRocks Connector/J 制品，移除 MySQL Connector/J 驱动文件，设置驱动类为 `com.starrocks.cj.jdbc.Driver`，将 URL 前缀从 `jdbc:mysql:` 改成 `jdbc:starrocks:`，例如 `jdbc:starrocks://host:9030/default_catalog.ads`。保存过自定义配置的驱动可能需要恢复预定义默认值，或手动更新。删除旧的 `databaseTerm` 和此前插件添加的 `allowMultiQueries` 配置，保持 `useLocalSessionState=false`，避免跨 catalog 选择同名数据库时跳过 `USE`。之后断开、重新连接并完整刷新数据源。插件不会静默迁移已有 URL 或驱动文件。
+
+DataGrip 2026.1 的标准远程 `setSchema` 路径可能吞掉选库错误。若工具栏与查询行为不一致，请在同一会话执行 `SELECT @@catalog, DATABASE()` 核对；插件加载当前命名空间时读取服务端状态，但不接管平台的错误界面。
+
+同步通过 `SHOW CATALOGS`、`SHOW DATABASES FROM catalog`、`SHOW FULL TABLES` 和 `SHOW FULL COLUMNS` 读取可见对象，不依赖外部 catalog 的 `information_schema.tables/columns` SELECT 权限。
 
 项目通过结构化清单记录语法支持，不声明已经完全兼容 StarRocks。当前目标基准为 StarRocks 4.1 文档。已实现、部分实现、缺失和待核对内容见[语法覆盖清单](SYNTAX_COVERAGE.zh-CN.md)。
 

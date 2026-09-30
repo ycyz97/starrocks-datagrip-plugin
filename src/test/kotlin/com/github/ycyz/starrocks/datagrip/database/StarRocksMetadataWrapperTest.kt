@@ -3,7 +3,6 @@ package com.github.ycyz.starrocks.datagrip.database
 import com.intellij.database.dataSource.DatabaseConnectionCore
 import com.intellij.database.dataSource.DataSourceBriefConfig
 import com.intellij.database.dataSource.DataSourceInfo
-import com.intellij.database.dataSource.DatabaseConnectionInterceptor
 import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.connection.ConnectionRequestor
@@ -134,20 +133,7 @@ class StarRocksMetadataWrapperTest : BasePlatformTestCase() {
     }
 
     private fun configureJdbcConnection(connection: DatabaseConnectionCore) {
-        var url = "jdbc:mysql://localhost:9030/sales?databaseTerm=CATALOG"
-        val properties = mutableMapOf("databaseTerm" to "CATALOG")
-        val proto = proxy<DatabaseConnectionInterceptor.ProtoConnection> { name, args ->
-            when (name) {
-                "getConnectionPoint" -> connection.connectionPoint
-                "getConnectionProperties" -> properties
-                "getUrl" -> url
-                "setUrl" -> { url = args[0] as String; null }
-                else -> error(name)
-            }
-        }
-        val interceptor = DatabaseConnectionInterceptor.EP_NAME.extensionList.filterIsInstance<StarRocksConnectionInterceptor>().single()
-        assertTrue(interceptor.interceptConnectionFast(proto, true))
-        effectiveJdbcConnection = connectorJConnection(url, properties)
+        effectiveJdbcConnection = starRocksJdbcConnection("jdbc:starrocks://localhost:9030/default_catalog.sales", emptyMap())
         DataSourceInfo.refreshDatabaseInfo(connection.connectionPoint.dataSource, connection)
     }
 
@@ -324,7 +310,7 @@ class StarRocksMetadataWrapperTest : BasePlatformTestCase() {
                 "getJdbcCatalogIsSchema" -> GenericJdbcHelper("MySQL", "4.1", effectiveJdbcConnection!!, javaClass.classLoader).jdbcCatalogIsSchema
                 "getDatabaseProductName" -> "StarRocks"
                 "getDatabaseProductVersion" -> "4.1"
-                "getDriverName" -> "MySQL Connector/J"
+                "getDriverName" -> "StarRocks Connector/J"
                 "getDriverVersion" -> "9.4.0"
                 "getJDBCMajorVersion" -> 4
                 "getJDBCMinorVersion" -> 2

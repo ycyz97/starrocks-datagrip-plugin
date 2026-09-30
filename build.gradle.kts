@@ -67,7 +67,7 @@ sourceSets {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
-    testImplementation("com.mysql:mysql-connector-j:9.4.0")
+    testImplementation("com.starrocks:starrocks-connector-j:1.1.1")
     testRuntimeOnly(kotlin("stdlib"))
 
     intellijPlatform {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <drivers>
-  <driver id="starrocks" name="StarRocks" dialect="StarRocks" forced-dbms="STARROCKS" driver-class="com.mysql.cj.jdbc.Driver">
-    <url-template name="default" template="jdbc:mysql://{host::localhost}?[:{port::9030}][/{database}?][\?&lt;&amp;,user={user},password={password},{:identifier}={:param}&gt;]"/>
-    <artifact name="MySQL Connector/J" use="true" rolling="true"/>
+  <driver id="starrocks" name="StarRocks" dialect="StarRocks" forced-dbms="STARROCKS" driver-class="com.starrocks.cj.jdbc.Driver">
+    <url-template name="default" template="jdbc:starrocks://{host::localhost}?[:{port::9030}][/{database}?][\?&lt;&amp;,user={user},password={password},{:identifier}={:param}&gt;]"/>
+    <artifact id="StarRocks ConnectorJ" rolling="true" use="true"/>
     <option name="auto-sync" value="true"/>
-    <property name="databaseTerm" value="SCHEMA"/>
+    <property name="useLocalSessionState" value="false"/>
     <property name="tinyInt1isBit" value="false"/>
     <property name="characterEncoding" value="utf8"/>
     <property name="characterSetResults" value="utf8"/>
