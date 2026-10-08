@@ -674,19 +674,20 @@ private derived_query_table ::= &parenthesized_query_start parenthesized_query_e
 private parenthesized_query_start ::= "(" ("SELECT" | "WITH" | "VALUES")
 private parenthesized_join_table ::= &parenthesized_join_start parenthesized_join_expression
 private parenthesized_join_start ::= "(" !("SELECT" | "WITH" | "VALUES")
-private join_expression_tail_guarded ::= &join_expression_tail_start join_expression_tail
+// Platform JOIN PSI is binary: each ON clause belongs to one pair of operands.
+left join_expression_tail_guarded ::= &join_expression_tail_start join_expression_tail {
+  elementType="SQL_JOIN_EXPRESSION"
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=1
+  recoverWhile=from_recover
+}
 private join_expression_tail_start ::= join_operator_start | ","
 private join_operator_start ::= "JOIN" | "STRAIGHT_JOIN" | "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS" | "NATURAL" | "SEMI" | "ANTI"
 parenthesized_join_expression ::= "(" table_source ")" {
   elementType="SQL_PARENTHESIZED_JOIN_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-join_expression ::= table_factor join_expression_tail_guarded+ {
-  elementType="SQL_JOIN_EXPRESSION"
-  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
-  pin=2
-  recoverWhile=from_recover
-}
+private join_expression ::= table_factor join_expression_tail_guarded+
 private join_expression_tail ::= join_operator table_factor join_condition_clause? | "," table_factor
 private join_operator ::= ("INNER" | "LEFT" ("OUTER" | "SEMI" | "ANTI")? | "RIGHT" ("OUTER" | "SEMI" | "ANTI")? | "FULL" "OUTER"? | "CROSS" | "NATURAL" | "SEMI" | "ANTI")? ("JOIN" | "STRAIGHT_JOIN")
 join_condition_clause ::= "ON" value_expression | using_clause {

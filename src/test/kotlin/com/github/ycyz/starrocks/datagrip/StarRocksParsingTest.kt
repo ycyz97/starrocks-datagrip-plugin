@@ -65,6 +65,65 @@ import com.intellij.sql.psi.impl.SqlTableElementListImpl
 import java.io.File
 
 class StarRocksParsingTest : BasePlatformTestCase() {
+    fun testUnqualifiedColumnsResolveInConsecutiveJoinConditions() {
+        val sql = """
+            CREATE TABLE orggoods (code INT);
+            CREATE TABLE warehouse (code INT, defpu INT);
+            CREATE TABLE dim_warehouse (wrh_code INT, wms_code INT);
+            SELECT d.wms_code, a.code
+            FROM orggoods a JOIN warehouse b JOIN dim_warehouse d
+            ON b.code = d.wrh_code AND defpu = 1 AND wrh_code = 3016 AND d.wrh_code = 3016
+            WHERE wrh_code = 3016;
+        """.trimIndent()
+        val file = createPsiFile(sql)
+        val target = PsiTreeUtil.findChildrenOfType(file, SqlColumnDefinition::class.java)
+            .single { it.name == "wrh_code" }
+        val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>().filter { it.name == "wrh_code" }
+        assertEquals(4, references.size)
+        references.forEach {
+            assertSame("${it.text} at ${it.textOffset} must resolve in JOIN and WHERE\n${psiSummary(file)}", target, it.resolve())
+        }
+        val joins = elementsOfType(file, SqlCompositeElementTypes.SQL_JOIN_EXPRESSION)
+        assertEquals("Three tables must form two binary JOIN nodes", 2, joins.size)
+        joins.forEach {
+            assertEquals("Each JOIN must have exactly two direct operands", 2, it.children.filterIsInstance<SqlExpression>().size)
+        }
+    }
+
+    fun testConsecutiveJoinOnScopesExcludeLaterTables() {
+        val ddl = """
+            CREATE TABLE first_table (first_key INT);
+            CREATE TABLE second_table (second_key INT);
+            CREATE TABLE third_table (third_key INT);
+            CREATE TABLE fourth_table (fourth_key INT);
+        """.trimIndent()
+        for (join in listOf("JOIN", "LEFT JOIN", "FULL JOIN")) {
+            val file = createPsiFile("""
+                $ddl
+                SELECT fourth_key FROM first_table a
+                $join second_table b ON first_key = second_key
+                $join third_table c ON second_key = third_key
+                $join fourth_table d ON third_key = fourth_key
+                WHERE fourth_key = 1;
+            """.trimIndent())
+            val definitions = PsiTreeUtil.findChildrenOfType(file, SqlColumnDefinition::class.java).associateBy { it.name }
+            elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+                .filterIsInstance<SqlReferenceExpression>().forEach {
+                    assertSame("$join: ${it.text} must resolve to its declaration", definitions.getValue(it.name), it.resolve())
+                }
+        }
+        val invalid = createPsiFile("""
+            $ddl
+            SELECT * FROM first_table a
+            JOIN second_table b ON third_key = second_key
+            JOIN third_table c ON first_key = third_key;
+        """.trimIndent())
+        val futureReference = elementsOfType(invalid, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>().first { it.name == "third_key" }
+        assertNull("An earlier ON must not see a table introduced by a later JOIN", futureReference.resolve())
+    }
+
     fun testMixedCaseLocalColumnsAndAliasesResolve() {
         for (sql in listOf(
             "CREATE TABLE sales (BiZ_DaTe INT); SELECT s.BIZ_DATE FROM sales s;",
@@ -2214,6 +2273,17 @@ class StarRocksParsingTest : BasePlatformTestCase() {
                 columnPsi,
                 reference.resolve()
             )
+        }
+
+        val consecutiveJoinFile = createPsiFile(
+            "SELECT d.biz_date FROM dws.stores a JOIN dws.stores b JOIN dws.sales d " +
+                "ON a.store_id = b.store_id AND biz_date = d.biz_date WHERE biz_date IS NOT NULL;"
+        )
+        val consecutiveJoinReferences = elementsOfType(consecutiveJoinFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>().filter { it.name == "biz_date" }
+        assertEquals(4, consecutiveJoinReferences.size)
+        consecutiveJoinReferences.forEach {
+            assertSame("Connected JOIN field ${it.text} must navigate to the third table's column", columnPsi, it.resolve())
         }
 
         val showPartitionsFile = createPsiFile("SHOW PARTITIONS FROM dws.sales;")
