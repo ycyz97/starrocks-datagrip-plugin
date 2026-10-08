@@ -21,19 +21,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>Data source integration</h3>
+        <p>The default data source driver is now <b>StarRocks Connector/J</b>, replacing MySQL Connector/J.</p>
         <ul>
-            <li>Fixed unresolved column and column alias references when their letter case differs from the definition, including backtick-quoted references, connected data sources, subqueries, and CTEs.</li>
-            <li>Changed the default data source driver from <b>MySQL Connector/J</b> to <b>StarRocks Connector/J</b>, improving external catalog browsing and database switching.</li>
+            <li>Improved external catalog browsing and database switching.</li>
             <li>Improved data source organization and synchronization of tables, columns, and views.</li>
-            <li>Improved materialized view definitions and SQL formatting.</li>
-            <li>Fixed false syntax errors for <code>SET CATALOG</code>, <code>SHOW [FULL] PROCESSLIST</code>, and <code>KILL QUERY/CONNECTION</code>.</li>
-            <li>Added syntax support for <code>SHOW [FULL] TABLES</code>, <code>SHOW [FULL] COLUMNS/FIELDS</code>, and <code>SHOW [GLOBAL/SESSION/LOCAL] VARIABLES</code>, including <code>LIKE</code> and <code>WHERE</code> filters.</li>
-            <li>Fixed false argument warnings for zero-argument functions such as <code>DATABASE()</code>, <code>CATALOG()</code>, and session information functions, while preserving warnings for invalid argument counts.</li>
-            <li>Added explicit overloads for <code>RAND</code>, <code>RANDOM</code>, and <code>UNIX_TIMESTAMP</code>, and corrected the <code>LOCALTIME</code> return type to <code>DATETIME</code>.</li>
         </ul>
 
         <h3>Upgrade existing data sources</h3>
-        <p>Install the update and restart the IDE, then complete these steps for existing data sources:</p>
+        <p><b>Existing data sources need a driver update.</b> Install the update and restart the IDE, then complete these steps:</p>
         <ol>
             <li>
                 <b>Update the driver files.</b>
@@ -51,6 +47,24 @@
             </li>
         </ol>
         <p><b>Alternative:</b> You can recreate the data source, but make sure it uses the updated StarRocks driver.</p>
+
+        <h3>SQL resolution and formatting</h3>
+        <ul>
+            <li>Fixed unresolved column and column alias references when their letter case differs from the definition, including backtick-quoted references, connected data sources, subqueries, and CTEs.</li>
+            <li>Improved materialized view definitions and SQL formatting.</li>
+        </ul>
+
+        <h3>Syntax support</h3>
+        <ul>
+            <li>Fixed false syntax errors for <code>SET CATALOG</code>, <code>SHOW [FULL] PROCESSLIST</code>, and <code>KILL QUERY/CONNECTION</code>.</li>
+            <li>Added syntax support for <code>SHOW [FULL] TABLES</code>, <code>SHOW [FULL] COLUMNS/FIELDS</code>, and <code>SHOW [GLOBAL/SESSION/LOCAL] VARIABLES</code>, including <code>LIKE</code> and <code>WHERE</code> filters.</li>
+        </ul>
+
+        <h3>Function signatures</h3>
+        <ul>
+            <li>Fixed false argument warnings for zero-argument functions such as <code>DATABASE()</code>, <code>CATALOG()</code>, and session information functions, while preserving warnings for invalid argument counts.</li>
+            <li>Added explicit overloads for <code>RAND</code>, <code>RANDOM</code>, and <code>UNIX_TIMESTAMP</code>, and corrected the <code>LOCALTIME</code> return type to <code>DATETIME</code>.</li>
+        </ul>
     ]]></change-notes>
 
     <extensions defaultExtensionNs="com.intellij">
