@@ -315,6 +315,50 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
     }
 
+    fun testSessionAndOptionalArgumentFunctionSignatures() {
+        val zeroArgumentFunctions = listOf(
+            "DATABASE", "CATALOG", "CONNECTION_ID", "CURRENT_GROUP", "CURRENT_ROLE",
+            "CURRENT_USER", "CURRENT_VERSION", "CURRENT_WAREHOUSE", "CURRENT_TIMEZONE",
+            "VERSION", "LAST_QUERY_ID", "USER", "SESSION_USER", "PI",
+            "BITMAP_EMPTY", "HLL_EMPTY", "PERCENTILE_EMPTY"
+        )
+        fun signatureWarnings(expressions: List<String>): List<String> {
+            myFixture.configureByText("session-functions.sql", "SELECT " + expressions.joinToString(", ") + ";")
+            val virtualFile = myFixture.file.virtualFile
+            SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+            FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+            assertTrue("Function calls must parse", PsiTreeUtil.findChildrenOfType(myFixture.file, PsiErrorElement::class.java).isEmpty())
+            return myFixture.doHighlighting().mapNotNull { it.description }
+                .filter { it.contains("take such arguments", ignoreCase = true) || it.contains("resolve", ignoreCase = true) }
+        }
+        myFixture.enableInspections(SqlSignatureInspection(), SqlResolveInspection())
+        val valid = zeroArgumentFunctions.map { "$it()" } + listOf(
+            "RAND()", "RAND(3)", "RANDOM()", "RANDOM(3)",
+            "UNIX_TIMESTAMP()", "UNIX_TIMESTAMP('2026-01-01 00:00:00')",
+            "UNIX_TIMESTAMP(CAST('2026-01-01' AS DATE))",
+            "UNIX_TIMESTAMP('2026-01-01', '%Y-%m-%d')", "LOCALTIME()", "LOCALTIME(3)",
+            "NOW()", "NOW(3)", "UUID()", "ABS(1)", "CONCAT('a', 'b')"
+        )
+        assertEquals("Valid calls must not report signature warnings", emptyList<String>(), signatureWarnings(valid))
+        // Keep real argument-count errors visible instead of making all functions variadic/optional.
+        (zeroArgumentFunctions.map { "$it(1)" } + listOf(
+            "RAND(1, 2)", "RANDOM(1, 2)", "UNIX_TIMESTAMP('2026-01-01', '%Y-%m-%d', 1)",
+            "LOCALTIME(1, 2)", "ABS()"
+        )).forEach { invalid ->
+            assertTrue("Invalid call must retain its argument warning: $invalid",
+                signatureWarnings(listOf(invalid)).any { it.contains("take such arguments", ignoreCase = true) })
+        }
+    }
+
+    fun testLocaltimePrototypesReturnDatetime() {
+        val file = createPsiFile("SELECT LOCALTIME(), LOCALTIME(3), NOW(), NOW(3);")
+        val calls = PsiTreeUtil.findChildrenOfType(file, SqlFunctionCallExpression::class.java)
+        val localtime = calls.first { it.text == "LOCALTIME()" }.functionDefinition!!
+        val now = calls.first { it.text == "NOW()" }.functionDefinition!!
+        assertEquals("LOCALTIME must share NOW's datetime return types and precision overloads",
+            now.prototypes.map { it.toString() }, localtime.prototypes.map { it.toString() })
+    }
+
     fun testAnalyticNullTreatmentHasNoSignatureOrResolveWarnings() {
         val sql = """
             CREATE TABLE analytic_inputs (

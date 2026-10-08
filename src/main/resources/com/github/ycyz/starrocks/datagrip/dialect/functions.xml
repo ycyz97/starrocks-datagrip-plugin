@@ -260,7 +260,7 @@
   </function>
   <function>
     <name>BITMAP_EMPTY</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():ANY</prototype>
   </function>
   <function>
     <name>BITMAP_FROM_BINARY</name>
@@ -368,7 +368,7 @@
   </function>
   <function>
     <name>CATALOG</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>CEIL</name>
@@ -404,7 +404,7 @@
   </function>
   <function>
     <name>CONNECTION_ID</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function>
     <name>CONV</name>
@@ -460,11 +460,11 @@
   </function>
   <function>
     <name>CURRENT_GROUP</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>CURRENT_ROLE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>CURRENT_TIME</name>
@@ -477,15 +477,15 @@
   </function>
   <function>
     <name>CURRENT_USER</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>CURRENT_VERSION</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>CURRENT_WAREHOUSE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function parens="required">
     <name>CURTIME</name>
@@ -493,7 +493,7 @@
   </function>
   <function>
     <name>DATABASE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>DATE</name>
@@ -833,7 +833,7 @@
   </function>
   <function>
     <name>HLL_EMPTY</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():ANY</prototype>
   </function>
   <function>
     <name>HLL_HASH</name>
@@ -975,7 +975,7 @@
   </function>
   <function>
     <name>LAST_QUERY_ID</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function analytic="true">
     <name>LAST_VALUE</name>
@@ -1013,8 +1013,8 @@
   </function>
   <function>
     <name>LOCALTIME</name>
-    <prototype>():time</prototype>
-    <prototype>(precision:N):time</prototype>
+    <prototype>():datetime</prototype>
+    <prototype>(precision:N):datetime</prototype>
   </function>
   <function>
     <name>LOCALTIMESTAMP</name>
@@ -1300,7 +1300,7 @@
   </function>
   <function>
     <name>PERCENTILE_EMPTY</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():ANY</prototype>
   </function>
   <function>
     <name>PERCENTILE_HASH</name>
@@ -1316,7 +1316,7 @@
   </function>
   <function>
     <name>PI</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
   </function>
   <function>
     <name>PMOD</name>
@@ -1360,11 +1360,13 @@
   </function>
   <function>
     <name>RAND</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
+    <prototype>(seed:N):N</prototype>
   </function>
   <function>
     <name>RANDOM</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
+    <prototype>(seed:N):N</prototype>
   </function>
   <function analytic="true">
     <name>RANK</name>
@@ -1468,7 +1470,7 @@
   </function>
   <function>
     <name>SESSION_USER</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>SHA2</name>
@@ -1746,7 +1748,9 @@
   </function>
   <function>
     <name>UNIX_TIMESTAMP</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():N</prototype>
+    <prototype>(date:ANY):N</prototype>
+    <prototype>(date:str, format:str):N</prototype>
   </function>
   <function>
     <name>UNNEST</name>
@@ -1762,7 +1766,7 @@
   </function>
   <function>
     <name>USER</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function parens="required">
     <name>UTC_TIME</name>
@@ -1939,7 +1943,7 @@
   </function>
   <function>
     <name>CURRENT_TIMEZONE</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>DATE_DIFF</name>
@@ -2075,7 +2079,7 @@
   </function>
   <function>
     <name>VERSION</name>
-    <prototype>(arg:ANY...):ANY</prototype>
+    <prototype>():str</prototype>
   </function>
   <function>
     <name>WEEKDAY</name>
