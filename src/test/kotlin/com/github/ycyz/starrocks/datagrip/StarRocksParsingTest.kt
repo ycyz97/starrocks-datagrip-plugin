@@ -65,6 +65,113 @@ import com.intellij.sql.psi.impl.SqlTableElementListImpl
 import java.io.File
 
 class StarRocksParsingTest : BasePlatformTestCase() {
+    fun testMixedCaseLocalColumnsAndAliasesResolve() {
+        for (sql in listOf(
+            "CREATE TABLE sales (BiZ_DaTe INT); SELECT s.BIZ_DATE FROM sales s;",
+            "CREATE TABLE sales (BiZ_DaTe INT); SELECT s.`biz_DATE` FROM sales s;",
+            "CREATE TABLE sales (BiZ_DaTe INT); SELECT biz_date FROM sales;",
+            "SELECT q.total FROM (SELECT 1 AS Total) q;",
+            "SELECT q.`ToTaL` FROM (SELECT 1 AS Total) q;",
+            "WITH q AS (SELECT 1 AS Total) SELECT TOTAL FROM q;",
+            "SELECT 1 AS Total ORDER BY tOTAL;",
+            "SELECT 1 AS Total GROUP BY tOTAL;"
+        )) {
+            val file = createPsiFile(sql)
+            assertTrue(PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).isEmpty())
+            val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+                .filterIsInstance<SqlReferenceExpression>()
+            assertFalse("Fixture must exercise column resolution: $sql", references.isEmpty())
+            references.forEach { reference ->
+                assertNotNull("Mixed-case ${reference.text} must resolve in $sql", reference.resolve())
+            }
+        }
+    }
+
+    fun testMixedCaseColumnsResolveAgainstCaseSensitiveDataSourceModel() {
+        val model = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
+        model.root.defaultCasing = com.intellij.database.util.Casing.EXACT
+        val database = model.root.databases.createOrGet("") as GenericDatabase
+        database.isCurrent = true
+        val schema = database.schemas.createOrGet("dws") as GenericSchema
+        val table = schema.tables.createOrGet("sales") as GenericTable
+        val column = table.columns.createOrGet("BiZ_DaTe")
+        val dataSource = LocalDataSource.temporary().also {
+            it.name = "StarRocks column casing test"
+            it.model = model
+            it.introspectionScope = com.intellij.database.util.TreePattern(
+                com.intellij.database.util.TreePatternUtils.create(
+                    null as Array<com.intellij.database.model.ObjectName>?, ObjectKind.DATABASE,
+                    com.intellij.database.util.TreePatternUtils.create(
+                        null as Array<com.intellij.database.model.ObjectName>?, ObjectKind.SCHEMA
+                    )
+                )
+            )
+        }
+        LocalDataSourceManager.getInstance(project).addDataSource(dataSource)
+        com.intellij.openapi.util.Disposer.register(testRootDisposable, com.intellij.openapi.Disposable {
+            LocalDataSourceManager.getInstance(project).removeDataSource(dataSource)
+        })
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        val dbDataSource = DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
+        assertNotNull(dbDataSource)
+        val columnPsi = dbDataSource!!.findElement(column)
+        assertNotNull(columnPsi)
+        VirtualFileDataSourceProvider.EP.point.registerExtension(
+            object : VirtualFileDataSourceProvider() {
+                override fun getDataSource(project: com.intellij.openapi.project.Project, file: VirtualFile): DbDataSource? =
+                    DbPsiFacade.getInstance(project).findDataSource(dataSource.uniqueId)
+            },
+            testRootDisposable
+        )
+        val sql = "SELECT biz_date, BIZ_DATE, s.Biz_Date, s.`biz_DATE` FROM dws.sales s;"
+        val file = createPsiFile(sql)
+        val tableReference = elementsOfType(file, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>().single()
+        assertSame("The test table must resolve before its columns", dbDataSource.findElement(table), tableReference.resolve())
+        val references = elementsOfType(file, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>()
+        assertEquals(4, references.size)
+        references.forEach { reference ->
+            assertSame("${reference.text} must navigate to the original column", columnPsi, reference.resolve())
+        }
+        assertEquals("BiZ_DaTe", column.name)
+
+        for (aliasSql in listOf(
+            "SELECT q.total FROM (SELECT 1 AS Total) q;",
+            "SELECT q.`ToTaL` FROM (SELECT 1 AS Total) q;",
+            "WITH q AS (SELECT 1 AS Total) SELECT TOTAL FROM q;",
+            "SELECT 1 AS Total ORDER BY tOTAL;"
+        )) {
+            val aliasFile = createPsiFile(aliasSql)
+            val alias = PsiTreeUtil.findChildrenOfType(aliasFile, SqlAsExpression::class.java)
+                .single { it.name == "Total" }
+            val reference = elementsOfType(aliasFile, StarRocksElementTypes.SQL_COLUMN_REFERENCE)
+                .filterIsInstance<SqlReferenceExpression>().single()
+            assertSame("Connected column alias must resolve: $aliasSql", alias, reference.resolve())
+        }
+
+        val wrongTableFile = createPsiFile("SELECT * FROM dws.SALES;")
+        val wrongTable = elementsOfType(wrongTableFile, StarRocksElementTypes.SQL_TABLE_REFERENCE)
+            .filterIsInstance<SqlReferenceExpression>().single()
+        assertFalse("Column matching must not change table casing", wrongTable.resolve() === dbDataSource.findElement(table))
+
+        myFixture.configureByText("column-casing.sql", sql)
+        myFixture.enableInspections(SqlResolveInspection())
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+        val unresolved = myFixture.doHighlighting().mapNotNull { it.description }
+            .filter { it.contains("Unable to resolve", ignoreCase = true) }
+        assertTrue("Mixed-case columns must not produce unresolved warnings: $unresolved", unresolved.isEmpty())
+
+        myFixture.configureByText("missing-column.sql", "SELECT s.missing_column FROM dws.sales s;")
+        SqlDialectMappings.getInstance(project).setMapping(myFixture.file.virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(myFixture.file.virtualFile), true)
+        assertTrue("A genuinely missing column must still be reported", myFixture.doHighlighting().any {
+            it.description?.contains("Unable to resolve", ignoreCase = true) == true
+        })
+    }
+
     fun testStructureMatchesMysql() {
         for (sql in listOf(
             "SELECT 1; SELECT 2;",

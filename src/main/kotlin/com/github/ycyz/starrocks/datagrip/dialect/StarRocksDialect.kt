@@ -8,9 +8,11 @@ import com.intellij.database.Dbms
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.model.ObjectName
 import com.intellij.database.psi.DbDataSource
+import com.intellij.database.symbols.DasSymbol
 import com.intellij.database.util.TreePattern
 import com.intellij.database.util.TreePatternNode
 import com.intellij.psi.PsiReference
+import com.intellij.psi.PsiElement
 import com.intellij.psi.ResolveState
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.dialects.BuiltinFunction
@@ -19,6 +21,9 @@ import com.intellij.sql.dialects.base.TokensHelper
 import com.intellij.sql.dialects.functions.SqlFunctionsUtil
 import com.intellij.sql.dialects.SqlDialectImplUtilCore
 import com.intellij.sql.psi.SqlGroupByClause
+import com.intellij.sql.psi.SqlAsExpression
+import com.intellij.sql.psi.SqlColumnAliasDefinition
+import com.intellij.sql.psi.SqlReferenceExpression
 import com.intellij.sql.psi.SqlHavingClause
 import com.intellij.sql.psi.SqlOrderByClause
 import com.intellij.sql.psi.SqlQualifyClause
@@ -43,6 +48,25 @@ class StarRocksDialect private constructor() : SqlLanguageDialectBase("StarRocks
     }
     override fun isOperatorSupported(token: IElementType?): Boolean = true
     override fun getSystemVariables(): Set<String> = emptySet()
+
+    override fun shouldSkipResolveNameCheck(
+        symbol: DasSymbol?,
+        kind: ObjectKind,
+        expectedKinds: Set<ObjectKind>,
+        place: PsiElement?
+    ): Boolean {
+        // Connected SQL uses the model's casing provider instead of the dialect's
+        // NamingService. Accept only equal column names here; the platform still
+        // checks scope, target kind and ambiguity for these candidates.
+        val reference = place as? SqlReferenceExpression
+        if (symbol != null && reference?.kind == ObjectKind.COLUMN &&
+            symbol.name.equals(reference.name, ignoreCase = true)) {
+            if (kind == ObjectKind.COLUMN || symbol.psiDeclarations.any {
+                it is SqlAsExpression || it is SqlColumnAliasDefinition
+            }) return true
+        }
+        return super.shouldSkipResolveNameCheck(symbol, kind, expectedKinds, place)
+    }
 
     override fun <T : MutableCollection<ObjectKind>> getParentDbTypes(result: T, type: ObjectKind): T {
         super.getParentDbTypes(result, type)

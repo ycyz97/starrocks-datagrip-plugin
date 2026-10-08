@@ -22,6 +22,7 @@
 
     <change-notes><![CDATA[
         <ul>
+            <li>Fixed unresolved column and column alias references when their letter case differs from the definition, including backtick-quoted references, connected data sources, subqueries, and CTEs.</li>
             <li>Changed the default data source driver from <b>MySQL Connector/J</b> to <b>StarRocks Connector/J</b>, improving external catalog browsing and database switching.</li>
             <li>Improved data source organization and synchronization of tables, columns, and views.</li>
             <li>Improved materialized view definitions and SQL formatting.</li>
@@ -70,7 +71,7 @@
         <jdbcMetadataWrapper dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksMetadataWrapper$Factory"/>
         <jdbcSourceLoader dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.introspector.jdbc.GenericJdbcSourceLoader"/>
         <scriptGenerator dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.generator.GenericScriptGenerator"/>
-        <namingService dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.naming.GenericNamingService$Provider"/>
+        <namingService dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksNamingService$Provider"/>
         <sqlObjectBuilder dbms="STARROCKS" implementationClass="com.intellij.database.dialects.sql92.Sql92ObjectBuilder"/>
         <definitionProvider dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksDefinitionProvider"/>
         <typeSystem dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksTypeSystem"/>
