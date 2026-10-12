@@ -18,52 +18,21 @@
             <li>JDBC metadata, StarRocks type system, object resolution, and native <code>SHOW CREATE</code> support.</li>
             <li>Syntax coverage aligned with the StarRocks 4.1 documentation baseline.</li>
         </ul>
+
+        <h3>Upgrade existing data sources from 2.0.x</h3>
+        <p>
+            If you are upgrading the plugin from <b>2.0.x</b> to <b>2.1 or later</b>,
+            existing StarRocks data sources require a driver update.
+            Replace MySQL Connector/J with StarRocks Connector/J, set the driver class to
+            <code>com.starrocks.cj.jdbc.Driver</code>, change the URL prefix from
+            <code>jdbc:mysql:</code> to <code>jdbc:starrocks:</code>, then reconnect and refresh the data source.
+            This migration is only required for upgrades from 2.0.x to 2.1 or later.
+        </p>
     ]]></description>
 
     <change-notes><![CDATA[
-        <h3>Data source integration</h3>
-        <p>The default data source driver is now <b>StarRocks Connector/J</b>, replacing MySQL Connector/J.</p>
         <ul>
-            <li>Improved external catalog browsing and database switching.</li>
-            <li>Improved data source organization and synchronization of tables, columns, and views.</li>
-        </ul>
-
-        <h3>Upgrade existing data sources</h3>
-        <p><b>Existing data sources need a driver update.</b> Install the update and restart the IDE, then complete these steps:</p>
-        <ol>
-            <li>
-                <b>Update the driver files.</b>
-                In <b>Data Sources and Drivers &gt; Drivers</b>, select StarRocks and restore its default configuration.<br/>
-                Download the StarRocks driver and remove the old MySQL driver files.
-            </li>
-            <li>
-                <b>Check the driver class:</b> <code>com.starrocks.cj.jdbc.Driver</code>.
-            </li>
-            <li>
-                <b>Update the URL prefix:</b> <code>jdbc:mysql://</code> to <code>jdbc:starrocks://</code>.
-            </li>
-            <li>
-                <b>Reconnect</b> and fully refresh the data source.
-            </li>
-        </ol>
-        <p><b>Alternative:</b> You can recreate the data source, but make sure it uses the updated StarRocks driver.</p>
-
-        <h3>SQL resolution and formatting</h3>
-        <ul>
-            <li>Fixed unresolved column and column alias references when their letter case differs from the definition, including backtick-quoted references, connected data sources, subqueries, and CTEs.</li>
-            <li>Improved materialized view definitions and SQL formatting.</li>
-        </ul>
-
-        <h3>Syntax support</h3>
-        <ul>
-            <li>Fixed false syntax errors for <code>SET CATALOG</code>, <code>SHOW [FULL] PROCESSLIST</code>, and <code>KILL QUERY/CONNECTION</code>.</li>
-            <li>Added syntax support for <code>SHOW [FULL] TABLES</code>, <code>SHOW [FULL] COLUMNS/FIELDS</code>, and <code>SHOW [GLOBAL/SESSION/LOCAL] VARIABLES</code>, including <code>LIKE</code> and <code>WHERE</code> filters.</li>
-        </ul>
-
-        <h3>Function signatures</h3>
-        <ul>
-            <li>Fixed false argument warnings for zero-argument functions such as <code>DATABASE()</code>, <code>CATALOG()</code>, and session information functions, while preserving warnings for invalid argument counts.</li>
-            <li>Added explicit overloads for <code>RAND</code>, <code>RANDOM</code>, and <code>UNIX_TIMESTAMP</code>, and corrected the <code>LOCALTIME</code> return type to <code>DATETIME</code>.</li>
+            <li>Fixed <b>Expand column list</b> (Alt+Enter) unnecessarily adding backticks to every generated column name. Plain identifiers now remain unquoted, while reserved keywords, special names, and explicitly requested quoting use StarRocks backticks.</li>
         </ul>
     ]]></change-notes>
 

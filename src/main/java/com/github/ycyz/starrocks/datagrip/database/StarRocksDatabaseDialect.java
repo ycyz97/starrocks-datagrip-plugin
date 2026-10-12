@@ -76,9 +76,10 @@ public final class StarRocksDatabaseDialect extends AbstractDatabaseDialect {
 
     @Override
     public String catToScript(String name, ObjectKind kind, boolean quote, boolean mixed, Casing casing) {
-        // Generic SQL uses double quotes. StarRocks identifiers require backticks;
-        // quote every component to preserve names containing dots or keywords.
-        return quoteNamespace(name);
+        // Keep the platform's quote/casing/keyword decision, using StarRocks
+        // backticks instead of the generic naming service's double quotes.
+        String scripted = super.catToScript(name, kind, quote, mixed, casing);
+        return scripted.equals(name) ? name : quoteNamespace(name);
     }
 
     private static String quoteNamespace(String name) {

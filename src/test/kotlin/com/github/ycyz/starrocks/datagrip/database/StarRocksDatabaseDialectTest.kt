@@ -10,8 +10,15 @@ import com.intellij.database.dialects.generic.model.GenericSchema
 import com.intellij.database.util.DdlBuilder
 import com.intellij.database.util.ObjectPath
 import com.intellij.database.util.SearchPath
+import com.intellij.database.util.Casing
 import com.intellij.database.util.DbImplUtilCore
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
+import com.intellij.psi.PsiFileFactory
+import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.sql.intentions.SqlExpandColumnListIntention
+import com.intellij.sql.psi.SqlReferenceExpression
+import com.intellij.sql.psi.SqlTableType
 
 class StarRocksDatabaseDialectTest : BasePlatformTestCase() {
     fun testStarRocksDatabaseDialectIsRegistered() {
@@ -66,6 +73,33 @@ class StarRocksDatabaseDialectTest : BasePlatformTestCase() {
         assertFalse(dialect.supportsCommonTableExpression())
     }
 
+    fun testColumnScriptRespectsQuoteSuppression() {
+        val dialect = StarRocksDatabaseDialect()
+
+        assertEquals(
+            "item_code",
+            dialect.catToScript("item_code", ObjectKind.COLUMN, false, false, Casing.EXACT),
+        )
+        assertEquals(
+            "`item_code`",
+            dialect.catToScript("item_code", ObjectKind.COLUMN, true, false, Casing.EXACT),
+        )
+    }
+
+    fun testExpandSubqueryColumnsOnlyQuotesNamesThatNeedIt() {
+        val dialect = StarRocksDialect.INSTANCE
+        val file = PsiFileFactory.getInstance(project).createFileFromText(
+            "expand-columns.sql", dialect,
+            "SELECT * FROM (SELECT 1 AS item_code, 2 AS `order`, 3 AS `item.name`, 4 AS `a``b`) s;",
+        )
+        val asterisk = PsiTreeUtil.findChildrenOfType(file, SqlReferenceExpression::class.java)
+            .single { it.name == "*" }
+        val type = asterisk.dasType as SqlTableType
+        val expanded = SqlExpandColumnListIntention.getAllColumnsList(project, asterisk, type, dialect)
+
+        assertEquals("item_code, `order`, `item.name`, `a``b`", expanded)
+    }
+
     fun testTableReferencesKeepCatalogAcrossRepeatedQueries() {
         val model = ModelFactory.BLACK_HOLE.createModel(StarRocksDbms.INSTANCE, GenericModel::class.java)
         for (catalogName in listOf("external_one", "external_two", "default_catalog", "external_one")) {
@@ -74,7 +108,7 @@ class StarRocksDatabaseDialectTest : BasePlatformTestCase() {
             val table = schema.tables.createOrGet("issue103_cdc_guard_20260908")
             val builder = DdlBuilder().withDialect(StarRocksDatabaseDialect()).qualifyReferences(true)
             assertEquals(
-                "`$catalogName`.`work_temp`.`issue103_cdc_guard_20260908`",
+                "$catalogName.work_temp.issue103_cdc_guard_20260908",
                 builder.qualifiedRef(table).statement,
             )
         }
@@ -103,10 +137,10 @@ class StarRocksDatabaseDialectTest : BasePlatformTestCase() {
             helper.appendFromTable(builder, table, "t", null)
             helper.appendLimit(table, builder, dialect, 100, offset, false, false)
             val sql = builder.statement
-            assertTrue(sql, sql.contains("FROM `external_catalog`.`work_temp`.`issue103_cdc_guard_20260908`"))
+            assertTrue(sql, sql.contains("FROM external_catalog.work_temp.issue103_cdc_guard_20260908"))
             // GenericDmlHelper may apply paging through JDBC rather than SQL.
             // The table target must stay qualified in either case.
-            assertFalse(sql, sql.contains("`default_catalog`"))
+            assertFalse(sql, sql.contains("default_catalog"))
         }
     }
 
