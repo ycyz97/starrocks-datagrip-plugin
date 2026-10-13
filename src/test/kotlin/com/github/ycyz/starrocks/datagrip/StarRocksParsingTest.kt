@@ -855,6 +855,18 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         )
     }
 
+    fun testInsertStaticPartitionAssignmentsParseWithoutPsiErrors() {
+        assertParsesWithoutPsiErrors(
+            "INSERT OVERWRITE xxx.xxxxxxx PARTITION (p_date = 'aaaa') SELECT * FROM source_sales;"
+        )
+        assertParsesWithoutPsiErrors(
+            "INSERT OVERWRITE sales PARTITION (`p_date` = '2026-10-13', region = 'CN') (id) VALUES (1);"
+        )
+        assertParsesWithoutPsiErrors(
+            "INSERT INTO sales PARTITION (p_date = '2026-10-13') WITH base AS (SELECT 1 AS id) SELECT id FROM base;"
+        )
+    }
+
     fun testKeywordFunctionWithWhitespaceParsesWithoutPsiErrors() {
         assertParsesWithoutPsiErrors(
             "SELECT * FROM inventory QUALIFY DENSE_RANK () OVER (ORDER BY biz_date DESC) = 1;"

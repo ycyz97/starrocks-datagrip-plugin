@@ -33,6 +33,7 @@
     <change-notes><![CDATA[
         <ul>
             <li>Fixed <b>Expand column list</b> (Alt+Enter) unnecessarily adding backticks to every generated column name. Plain identifiers now remain unquoted, while reserved keywords, special names, and explicitly requested quoting use StarRocks backticks.</li>
+            <li>Added syntax support for static partition assignments in <code>INSERT INTO/OVERWRITE</code>, such as <code>PARTITION (p_date = '2026-10-13')</code>.</li>
         </ul>
     ]]></change-notes>
 
