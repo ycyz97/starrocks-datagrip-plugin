@@ -335,8 +335,9 @@ alter_table_action ::= rename_action
 
 rename_action ::= "RENAME" ("ROLLUP" identifier_reference identifier_reference
   | "PARTITION" partition_reference identifier_reference
-  | "COLUMN" column_reference "TO"? identifier_reference
+  | "COLUMN" column_reference "TO"? rename_column_target
   | "TO"? identifier_reference)
+private rename_column_target ::= identifier | delimited_identifier | quoted_identifier
 alter_table_comment_action ::= "COMMENT" "="? string_literal
 
 add_partition_action ::= "ADD" ("TEMPORARY"? "PARTITION" if_not_exists? partition_reference "VALUES" partition_values

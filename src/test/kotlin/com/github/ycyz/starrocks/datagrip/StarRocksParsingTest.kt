@@ -394,6 +394,28 @@ class StarRocksParsingTest : BasePlatformTestCase() {
         ).forEach { sql -> assertParsesWithoutPsiErrors(sql) }
     }
 
+    fun testRenameColumnTargetIsNotReportedAsUnresolved() {
+        val sql = """
+            CREATE TABLE ads.ads_normal_item_pool_multidim_analysis_mi (
+                lv2_item_qty BIGINT,
+                lv3_item_qty BIGINT
+            );
+            ALTER TABLE ads.ads_normal_item_pool_multidim_analysis_mi
+                RENAME COLUMN lv2_item_qty TO lv2_item_cnt;
+            ALTER TABLE ads.ads_normal_item_pool_multidim_analysis_mi
+                RENAME COLUMN lv3_item_qty TO lv3_item_cnt;
+        """.trimIndent()
+        myFixture.enableInspections(SqlResolveInspection())
+        myFixture.configureByText("rename-column.sql", sql)
+        val virtualFile = myFixture.file.virtualFile
+        SqlDialectMappings.getInstance(project).setMapping(virtualFile, StarRocksDialect.INSTANCE)
+        FileContentUtil.reparseFiles(project, listOf(virtualFile), true)
+
+        val unresolved = myFixture.doHighlighting()
+            .filter { it.description?.contains("Unable to resolve", ignoreCase = true) == true }
+        assertTrue("Rename targets must not be reported as unresolved: $unresolved", unresolved.isEmpty())
+    }
+
     fun testNaturalJoinParsesWithoutPsiErrors() {
         assertParsesWithoutPsiErrors("SELECT * FROM orders NATURAL JOIN customers;")
     }
