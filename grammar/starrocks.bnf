@@ -20,7 +20,7 @@ private statement ::= dml_statement | ddl_statement | other_statement {
 private statement_recover ::= !(";" | ddl_statement_start | dml_statement_start | other_statement_start)
 private ddl_statement_start ::= "CREATE" | "ALTER" | "DROP" | "TRUNCATE" | "REFRESH" | "GRANT" | "REVOKE"
 private dml_statement_start ::= "SELECT" | "WITH" | "VALUES" | "INSERT" | "UPDATE" | "DELETE" | "MERGE" | "("
-private other_statement_start ::= "SHOW" | "ADMIN" | "ANALYZE" | "SET" | "UNSET" | "KILL" | "SYNC" | "CALL" | "BEGIN" | "START" | "COMMIT" | "ROLLBACK" | "USE" | "EXPLAIN" | "DESC" | "DESCRIBE" | "LOAD" | "CANCEL" | "SUBMIT" | "EXPORT" | "BACKUP" | "RESTORE" | "RECOVER"
+private other_statement_start ::= "SHOW" | "ADMIN" | "ANALYZE" | "SET" | "UNSET" | "KILL" | "SYNC" | "CALL" | "BEGIN" | "START" | "COMMIT" | "ROLLBACK" | "USE" | "EXPLAIN" | "DESC" | "DESCRIBE" | "LOAD" | "CANCEL" | "SUBMIT" | "EXPORT" | "BACKUP" | "RESTORE" | "RECOVER" | "PAUSE" | "RESUME" | "STOP"
 
 private ddl_statement ::= create_statement | alter_statement | drop_statement | truncate_table_statement | refresh_materialized_view_statement | grant_statement | revoke_statement
 
@@ -59,8 +59,9 @@ create_table_statement ::= "CREATE" table_scope? "TABLE" if_not_exists? table_re
 }
 
 private create_table_body ::= &"LIKE" like_table_clause
-  | table_column_list? create_table_clause* create_table_source?
+  | (ctas_column_list | table_column_list)? create_table_clause* create_table_source?
 private create_table_source ::= &"LIKE" like_table_clause | &"AS" as_select_clause
+private ctas_column_list ::= "(" identifier_reference ("," identifier_reference)* ","? ")"
 
 like_table_clause ::= "LIKE" table_reference {
   elementType="SQL_LIKE_TABLE_CLAUSE"
@@ -83,7 +84,7 @@ private create_table_clause ::= engine_clause
   | rollup_clause
   | table_order_by_clause
 
-private clause_recover ::= !(";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "REFRESH" | "PROPERTIES" | "ROLLUP" | "ORDER" | "FROM" | "LIKE" | "AS")
+private clause_recover ::= !(";" | "ENGINE" | "PRIMARY" | "DUPLICATE" | "UNIQUE" | "AGGREGATE" | "COMMENT" | "PARTITION" | "DISTRIBUTED" | "BUCKETS" | "REFRESH" | "PROPERTIES" | "ROLLUP" | "ORDER" | "FROM" | "LIKE" | "AS" | "WITH")
 
 engine_clause ::= "ENGINE" "="? engine_name {
   pin=1
@@ -101,8 +102,10 @@ partition_clause ::= "PARTITION" "BY" partition_expression partition_definition_
   pin=2
   recoverWhile=clause_recover
 }
-partition_expression ::= partition_method_expression | function_call | parenthesized_value_expression | column_reference
+partition_expression ::= partition_method_expression | partition_expression_list | parenthesized_value_expression
 private partition_method_expression ::= ("RANGE" | "LIST") "(" column_reference ("," column_reference)* ")"
+private partition_expression_list ::= partition_expression_item ("," partition_expression_item)*
+private partition_expression_item ::= function_call | column_reference
 partition_definition_list ::= "(" (partition_definition ("," partition_definition)* | range_partition_bounds) ")"
 partition_definition ::= "PARTITION" partition_reference "VALUES" partition_values {
   elementType="SQL_PARTITION_DEFINITION"
@@ -246,8 +249,13 @@ create_routine_load_statement ::= "CREATE" "ROUTINE" "LOAD" qualified_identifier
   pin=3
   recoverWhile=statement_recover
 }
-routine_load_clause ::= columns_clause | properties_clause | from_kafka_clause
-columns_clause ::= "COLUMNS" ("TERMINATED" "BY" string_literal)?
+routine_load_clause ::= columns_clause | rows_terminated_clause | routine_partition_clause | routine_temporary_partition_clause | routine_where_clause | routine_delete_clause | properties_clause | from_kafka_clause
+columns_clause ::= "COLUMNS" (("TERMINATED" "BY" string_literal) | load_column_mapping)
+rows_terminated_clause ::= "ROWS" "TERMINATED" "BY" string_literal
+private routine_partition_clause ::= "PARTITION" parenthesized_identifier_list
+private routine_temporary_partition_clause ::= "TEMPORARY" "PARTITION" parenthesized_identifier_list
+private routine_where_clause ::= where_clause
+private routine_delete_clause ::= "DELETE" "ON" value_expression
 from_kafka_clause ::= "FROM" "KAFKA" property_list?
 
 create_repository_statement ::= "CREATE" "REPOSITORY" identifier_reference "WITH" "BROKER" identifier_reference? repository_location_clause? properties_clause? {
@@ -314,6 +322,7 @@ alter_table_statement ::= "ALTER" "TABLE" if_exists? table_reference alter_table
   recoverWhile=statement_recover
 }
 alter_table_action ::= rename_action
+  | alter_expression_partition_action
   | alter_table_comment_action
   | add_partition_action
   | drop_partition_action
@@ -383,6 +392,7 @@ swap_table_action ::= "SWAP" "WITH" table_reference
 set_properties_action ::= "SET" "PROPERTIES"? property_list
 compaction_action ::= ("BASE" | "CUMULATIVE")? "COMPACT" compaction_partition_target?
 private compaction_partition_target ::= partition_reference | alter_partition_name_list
+alter_expression_partition_action ::= "PARTITION" "BY" partition_expression "BETWEEN" literal "AND" literal
 
 alter_view_statement ::= "ALTER" "VIEW" view_reference as_select_clause {
   elementType="SQL_ALTER_VIEW_STATEMENT"
@@ -552,8 +562,9 @@ security_principal ::= principal_type? principal_name ("@" principal_name)?
 private principal_name ::= identifier_reference | string_literal
 with_grant_option_clause ::= "WITH" "GRANT" "OPTION"
 
-private dml_statement ::= with_update_statement | insert_statement | update_statement | delete_statement | merge_statement | select_statement
+private dml_statement ::= with_update_statement | with_delete_statement | insert_statement | update_statement | delete_statement | merge_statement | select_statement
 private with_update_statement ::= &<<isWithUpdate>> with_clause update_statement
+private with_delete_statement ::= &"WITH" with_clause delete_statement
 
 select_statement ::= top_query_expression {
   elementType="SQL_SELECT_STATEMENT"
@@ -568,7 +579,7 @@ private plain_query_expression ::= set_query_expression_guarded | values_express
 private repository_location_clause ::= "ON" "LOCATION" string_literal
 private alter_schema_action ::= set_properties_action | "SET" "DATA" "QUOTA" numeric_literal identifier_reference?
 private embedded_query_expression ::= query_expression
-private query_recover ::= !(";" | "," | ")" | "SELECT" | "WITH" | "VALUES" | "UPDATE" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS" | "ROWS" | "RANGE" | "GROUPS")
+private query_recover ::= !(";" | "," | ")" | "SELECT" | "WITH" | "VALUES" | "INSERT" | "UPDATE" | "DELETE" | "MERGE" | "FROM" | "WHERE" | "GROUP" | "HAVING" | "QUALIFY" | "WINDOW" | "ORDER" | "LIMIT" | "UNION" | "INTERSECT" | "EXCEPT" | "MINUS" | "ROWS" | "RANGE" | "GROUPS")
 private set_query_expression_guarded ::= &"SELECT" sql_query_expression
 private with_query_expression_guarded ::= &"WITH" with_query_expression
 private values_expression_guarded ::= &"VALUES" values_expression
@@ -787,17 +798,26 @@ insert_statement ::= "INSERT" insert_dml_instruction {
   pin=2
   recoverWhile=statement_recover
 }
-insert_dml_instruction ::= ("INTO" | "OVERWRITE") "TABLE"? insert_table_columns_list (embedded_query_expression | values_clause) {
+insert_dml_instruction ::= ("INTO" | "OVERWRITE") ("TABLE"? insert_table_columns_list | files_insert_target) insert_option* (embedded_query_expression | values_clause) {
   elementType="SQL_INSERT_DML_INSTRUCTION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
+private files_insert_target ::= "FILES" "(" files_property_list? ")"
+private files_property_list ::= files_property_pair ("," files_property_pair)* ","?
+private files_property_pair ::= string_literal "=" property_value
+private insert_option ::= insert_label_clause | insert_by_name_clause | insert_properties_clause
+private insert_label_clause ::= "WITH" "LABEL" identifier_reference
+private insert_by_name_clause ::= "BY" "NAME"
+private insert_properties_clause ::= "PROPERTIES" "(" files_property_list? ")"
 insert_table_columns_list ::= table_reference insert_partition_clause? insert_reference_list? {
   elementType="SQL_TABLE_COLUMNS_LIST"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-private insert_partition_clause ::= "PARTITION" "(" insert_partition_item ("," insert_partition_item)* ")"
+private insert_partition_clause ::= ("TEMPORARY" "PARTITION" | "PARTITION") "(" insert_partition_item ("," insert_partition_item)* ")"
 private insert_partition_item ::= insert_partition_name ("=" value_expression)?
 private insert_partition_name ::= identifier | delimited_identifier | quoted_identifier
+load_column_mapping ::= "(" load_column_mapping_item ("," load_column_mapping_item)* ")"
+private load_column_mapping_item ::= identifier_reference ("=" value_expression)?
 insert_reference_list ::= "(" column_reference ("," column_reference)* ")" {
   elementType="SQL_REFERENCE_LIST"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -857,6 +877,7 @@ private other_statement ::= show_statement
   | describe_statement
   | load_statement
   | cancel_load_guarded
+  | routine_load_control_statement
   | task_statement
   | export_guarded
   | backup_restore_statement
@@ -865,16 +886,23 @@ private set_password_guarded ::= &("SET" "PASSWORD") set_password_statement
 private set_catalog_guarded ::= &("SET" "CATALOG") set_catalog_statement
 private cancel_load_guarded ::= &("CANCEL" "LOAD") cancel_load_statement
 private export_guarded ::= &(("EXPORT" "TABLE") | ("CANCEL" "EXPORT")) export_statement
+routine_load_control_statement ::= ("PAUSE" | "RESUME" | "STOP") "ROUTINE" "LOAD" qualified_identifier {
+  elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
+  pin=3
+  recoverWhile=statement_recover
+}
 
 show_statement ::= "SHOW" (show_processlist_clause | show_columns_clause | show_tables_clause | show_variables_clause | show_partitions_clause | show_table_status_clause | show_create_clause | show_schema_scoped_clause | show_generic_clause) {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=1
   recoverWhile=statement_recover
 }
-delete_dml_instruction ::= "FROM"? dml_target_table where_clause? {
+delete_dml_instruction ::= "FROM"? dml_target_table delete_partition_clause? delete_using_clause? where_clause? {
   elementType="SQL_DELETE_DML_INSTRUCTION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
+private delete_partition_clause ::= "PARTITION" (partition_reference | parenthesized_identifier_list)
+private delete_using_clause ::= "USING" table_source
 private show_partitions_clause ::= "PARTITIONS" ("FROM" | "IN") table_reference show_like_clause?
 private show_processlist_clause ::= "FULL"? "PROCESSLIST"
 private show_columns_clause ::= "FULL"? ("COLUMNS" | "FIELDS") ("FROM" | "IN") table_reference show_schema_from_clause? show_filter_clause?
@@ -887,7 +915,7 @@ private show_schema_scoped_clause ::= show_schema_scoped_target show_schema_from
 private show_schema_scoped_target ::= "FUNCTIONS" | "MATERIALIZED" "VIEWS"
 private show_schema_from_clause ::= ("FROM" | "IN") schema_reference
 private show_generic_clause ::= show_generic_target show_from_clause? show_like_clause?
-private show_generic_target ::= "DATABASES" | "SCHEMAS" | "ROLES" | "USERS" | "GRANTS" | "CATALOGS" | "RESOURCES" | "ANALYZE" "STATUS" | "STATS" "META" | "BACKUP" | "RESTORE" | "PROC" value_expression?
+private show_generic_target ::= "DATABASES" | "SCHEMAS" | "ROLES" | "USERS" | "GRANTS" | "CATALOGS" | "RESOURCES" | "ANALYZE" "STATUS" | "STATS" "META" | "BACKUP" | "RESTORE" | "ROUTINE" "LOAD" "TASK"? | "PROC" value_expression?
 private show_from_clause ::= ("FROM" | "IN") qualified_identifier
 private show_like_clause ::= "LIKE" string_literal
 show_create_target ::= ("TABLE" table_reference) | ("VIEW" view_reference) | ("MATERIALIZED" "VIEW" materialized_view_reference) | ("CATALOG" catalog_reference)
@@ -995,28 +1023,39 @@ set_variable_assignment ::= (variable_reference | identifier_reference) "=" valu
   elementType="SQL_SET_ASSIGNMENT"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
-load_statement ::= "LOAD" "LABEL" qualified_identifier "(" load_payload ")" ("WITH" "BROKER")? properties_clause? {
+load_statement ::= "LOAD" "LABEL" qualified_identifier "(" load_payload ")" ("WITH" "BROKER" (property_list | properties_clause)?)? properties_clause? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
 }
-private load_payload ::= "DATA" "INFILE" "(" string_literal ("," string_literal)* ")" "INTO" "TABLE" table_reference load_data_clause*
-private load_data_clause ::= columns_clause | "FORMAT" "AS" string_literal
+private load_payload ::= "DATA" "INFILE" "(" string_literal ("," string_literal)* ")" "NEGATIVE"? "INTO" "TABLE" table_reference load_data_clause*
+private load_data_clause ::= load_partition_clause | load_temporary_partition_clause | columns_clause | rows_terminated_clause | "FORMAT" "AS" string_literal | load_column_mapping | columns_from_path_clause | load_set_clause | where_clause
+private load_partition_clause ::= "PARTITION" parenthesized_identifier_list
+private load_temporary_partition_clause ::= "TEMPORARY" "PARTITION" parenthesized_identifier_list
+private columns_from_path_clause ::= "COLUMNS" "FROM" "PATH" "AS" parenthesized_identifier_list
+private load_set_clause ::= "SET" ("(" set_assignment ("," set_assignment)* ")" | set_assignment ("," set_assignment)*)
 cancel_load_statement ::= "CANCEL" "LOAD" ("FROM" schema_reference)? where_clause? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
 }
-task_statement ::= "SUBMIT" "TASK" identifier_reference "AS" (refresh_materialized_view_statement | query_expression) {
+task_statement ::= "SUBMIT" "TASK" identifier_reference? task_schedule_clause? properties_clause? "AS" task_etl_statement {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
 }
-export_statement ::= "EXPORT" "TABLE" table_reference "TO" string_literal properties_clause? | "CANCEL" "EXPORT" ("FROM" schema_reference)? where_clause? {
+private task_schedule_clause ::= "SCHEDULE" task_schedule_start? "EVERY" "(" interval_expression ")"
+private task_schedule_start ::= "START" parenthesized_value_expression
+private task_etl_statement ::= refresh_materialized_view_statement | insert_statement | create_table_statement | query_expression
+export_statement ::= "EXPORT" "TABLE" table_reference export_partition_clause? export_column_clause? "TO" string_literal properties_clause? export_broker_clause?
+  | "CANCEL" "EXPORT" ("FROM" schema_reference)? where_clause? {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
   pin=2
   recoverWhile=statement_recover
 }
+private export_partition_clause ::= "PARTITION" parenthesized_identifier_list
+private export_column_clause ::= parenthesized_identifier_list
+private export_broker_clause ::= "WITH" "BROKER" "(" files_property_list? ")"
 backup_restore_statement ::= ("BACKUP" | "RESTORE") "SNAPSHOT" qualified_identifier ("TO" | "FROM") identifier_reference ("ON" "(" table_reference ("," table_reference)* ")")? properties_clause?
   | "RECOVER" ("TABLE" | "DATABASE" | "PARTITION" | "REPOSITORY")? identifier_reference {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -1082,7 +1121,7 @@ case_else_clause ::= "ELSE" value_expression
 exists_expression ::= "EXISTS" "(" query_expression ")"
 interval_expression ::= "INTERVAL" value_expression interval_unit
 typed_literal_expression ::= typed_literal_prefix literal
-function_call ::= function_name ("." function_name)* <<parseFunctionCallTail>> function_null_treatment_clause? analytic_clause_guarded?
+function_call ::= function_name ("." function_name)* <<parseFunctionCallTail>> function_filter_clause? function_null_treatment_clause? analytic_clause_guarded?
   {
     elementType="SQL_FUNCTION_CALL"
     elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
@@ -1096,6 +1135,7 @@ function_keyword ::= <<parseFunctionKeyword>> {
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"
 }
 private function_null_treatment_clause ::= ("IGNORE" | "RESPECT") "NULLS"
+function_filter_clause ::= "FILTER" "(" "WHERE" value_expression ")"
 parenthesized_value_expression ::= "(" value_expression ("," value_expression)* ")" {
   elementType="SQL_PARENTHESIZED_EXPRESSION"
   elementTypeFactory="com.github.ycyz.starrocks.datagrip.lang.StarRocksElementFactory.elementType"

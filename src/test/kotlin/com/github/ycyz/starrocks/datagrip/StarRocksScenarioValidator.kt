@@ -1070,10 +1070,20 @@ object StarRocksScenarioValidator {
 
     private fun validateDmlMutationFixtureCoverage(sql: String) {
         val statements = splitStatements(sql)
-        check(statements.size == 4) {
-            "DML mutations fixture should contain 4 standalone statements, found ${statements.size}."
+        check(statements.size == 8) {
+            "DML mutations fixture should contain 8 standalone statements, found ${statements.size}."
         }
-        listOf("INSERT OVERWRITE", "UPDATE", "DELETE", "MERGE").forEach { keyword ->
+        listOf(
+            "INSERT OVERWRITE",
+            "INSERT INTO FILES",
+            "TEMPORARY PARTITION",
+            "WITH LABEL",
+            "BY NAME",
+            "UPDATE",
+            "DELETE",
+            "USING",
+            "MERGE"
+        ).forEach { keyword ->
             check(keyword in sql) { "DML mutations fixture must cover $keyword." }
         }
     }

@@ -35,15 +35,15 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 
 ## 当前概要
 
-当前插件对核心查询、常用表 DDL/DML、视图、物化视图、Catalog 和 Resource 的支持较强；对集群管理、统计任务、导入生命周期命令以及较新的托管对象语法支持明显不足。
+当前插件对核心查询、常用表 DDL/DML、视图、物化视图、Catalog 和 Resource 的支持较强；对集群管理、统计任务、剩余导入生命周期命令以及较新的托管对象语法支持明显不足。
 
 核对时，官方目录共有 196 个 Markdown 页面。该数字不能直接作为兼容率分母，因为其中同时包含 SELECT 子句、功能说明、非 SQL 入口和独立 SQL 语句。
 
 | 领域 | 当前评估 | 主要依据或限制 |
 | --- | --- | --- |
-| SELECT 与表达式 | 部分，覆盖较高 | 已覆盖 CTE、JOIN、子查询、集合运算、窗口、`QUALIFY` 和 grouping sets；`OFFSET`、`PIVOT`、`SELECT * EXCLUDE` 尚待核对或实现。 |
-| 表 DDL | 部分，覆盖较高 | 已建模 CREATE、DROP、TRUNCATE、CTAS、LIKE、分区、分桶、索引、常用属性及官方文档中的 `ALTER TABLE` 动作类别。 |
-| DML | 部分，覆盖较高 | INSERT、UPDATE、DELETE、MERGE 已有结构化入口和场景；仍需逐分支对照官方变体。 |
+| SELECT 与表达式 | 部分，覆盖较高 | 已覆盖 CTE、JOIN、子查询、集合运算、窗口、`QUALIFY`、grouping sets 和聚合 `FILTER`；`OFFSET`、`PIVOT`、`SELECT * EXCLUDE` 尚待核对或实现。 |
+| 表 DDL | 部分，覆盖较高 | 已建模 CREATE、DROP、TRUNCATE、CTAS、LIKE、多列表达式分区、分桶、索引、常用属性及官方文档中的 `ALTER TABLE` 动作类别。 |
+| DML | 部分，覆盖较高 | INSERT、UPDATE、DELETE、MERGE 已有结构化入口和场景；INSERT 已覆盖标签、属性、临时分区和 FILES 写出，DELETE 已覆盖分区、CTE 和 USING，仍需逐分支对照官方变体。 |
 | View | 部分 | 已有 CREATE、ALTER、DROP、SHOW CREATE；官方可选子句仍需核对。 |
 | Materialized View | 部分 | 已部分覆盖 CREATE、ALTER、DROP、REFRESH 和 SHOW；缺少取消刷新等管理变体。 |
 | Database/Schema | 部分 | 已有 CREATE、ALTER、DROP、USE 和常用 SHOW；SHOW DATA、SHOW CREATE DATABASE 等仍需补充。 |
@@ -51,7 +51,7 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 | Resource | 部分 | 已有 CREATE、ALTER、DROP、SHOW RESOURCES；官方变体仍需核对。 |
 | 账户与权限 | 部分 | 已有常用用户/角色 DDL、GRANT、REVOKE、SET PASSWORD；角色切换、模拟执行及多个 SHOW 语句缺失。 |
 | Backup/Restore | 部分 | BACKUP、RESTORE、Repository、RECOVER 当前为简化语法。 |
-| 导入、导出与任务 | 部分 | 已部分建模 Broker Load、CANCEL LOAD、Routine Load、SUBMIT TASK、EXPORT；大部分生命周期和 Pipe 命令缺失。 |
+| 导入、导出与任务 | 部分 | 已覆盖 Broker Load/Routine Load 的常用列转换、过滤和分区分支，以及 SUBMIT TASK 的 INSERT/CTAS 调度和 EXPORT 的分区、列、Broker 分支；其余生命周期和 Pipe 命令仍缺失。 |
 | 统计信息 | 部分，覆盖较低 | 已有 ANALYZE TABLE 和部分 SHOW；统计任务生命周期语句大多缺失。 |
 | 集群管理 | 部分，覆盖较低 | 已有 SET、KILL、SYNC、EXPLAIN、SHOW PROC 以及少量 ADMIN SHOW；官方大部分集群管理语句缺失。 |
 | Function DDL | 缺失 | 函数调用和函数目录支持不等于支持 CREATE/DROP FUNCTION。 |
@@ -68,7 +68,7 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 - [x] 部分 — UNION、INTERSECT、EXCEPT、MINUS。
 - [x] 部分 — 窗口定义、分析函数和窗口帧。
 - [x] 部分 — QUALIFY、GROUPING SETS、ROLLUP、CUBE。
-- [x] 部分 — 子查询、CASE、CAST、IN、BETWEEN、LIKE、REGEXP、数组和复杂类型。
+- [x] 部分 — 子查询、CASE、CAST、IN、BETWEEN、LIKE、REGEXP、数组和复杂类型；聚合函数支持 `FILTER (WHERE ...)`。
 - [ ] 缺失/待核对 — `SELECT ... OFFSET`。
 - [ ] 缺失/待核对 — `PIVOT`。
 - [ ] 缺失/待核对 — `SELECT * EXCLUDE (...)`。
@@ -77,12 +77,12 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 
 ### 表、索引与 DML
 
-- [x] 部分 — CREATE TABLE、CTAS、CREATE TABLE LIKE。
+- [x] 部分 — CREATE TABLE、CTAS、CREATE TABLE LIKE；CTAS 支持显式列名列表。
 - [x] 部分 — 当前文法列出的 OLAP 和外表引擎变体。
-- [x] 部分 — Key 模型、分区、分布、桶、Rollup、索引、生成列和属性。
+- [x] 部分 — Key 模型、单列和多列表达式分区、分布、桶、Rollup、索引、生成列和属性。
 - [x] 部分 — DROP TABLE、TRUNCATE TABLE、CREATE INDEX、DROP INDEX。
-- [x] 部分 — INSERT、INSERT OVERWRITE、UPDATE、DELETE、MERGE。
-- [x] 覆盖较高 — ALTER TABLE。支持逗号分隔动作、重命名与注释、分区与分桶、列与 STRUCT 字段、Rollup、索引、表属性、SWAP、Compaction 和持久化索引删除。
+- [x] 部分 — INSERT、INSERT OVERWRITE、UPDATE、DELETE、MERGE；INSERT 支持标签、属性、临时分区、BY NAME 和 `INSERT INTO FILES`，DELETE 支持分区、USING 和 CTE。
+- [x] 覆盖较高 — ALTER TABLE。支持逗号分隔动作、重命名与注释、分区与分桶、表达式分区合并、列与 STRUCT 字段、Rollup、索引、表属性、SWAP、Compaction 和持久化索引删除。
 - [ ] 缺失/待核对 — CANCEL ALTER TABLE。
 - [ ] 缺失/待核对 — REFRESH EXTERNAL TABLE。
 - [x] 部分 — SHOW [FULL] TABLES 和 SHOW [FULL] COLUMNS/FIELDS，支持命名空间、LIKE 和 WHERE 分支。
@@ -129,14 +129,14 @@ English version: [`SYNTAX_COVERAGE.md`](SYNTAX_COVERAGE.md)
 
 ### 导入、导出与任务
 
-- [x] 部分 — Broker Load、CANCEL LOAD。
-- [x] 部分 — CREATE、ALTER ROUTINE LOAD。
-- [x] 部分 — SUBMIT TASK。
-- [x] 部分 — EXPORT、CANCEL EXPORT。
+- [x] 部分 — Broker Load、CANCEL LOAD；Broker Load 支持列映射、路径列、过滤、负载模式和分区分支。
+- [x] 部分 — CREATE、ALTER ROUTINE LOAD；Routine Load 支持列映射、过滤、分区、删除条件和常用生命周期控制。
+- [x] 部分 — SUBMIT TASK；支持 INSERT、CTAS、定时调度和任务属性。
+- [x] 部分 — EXPORT、CANCEL EXPORT；EXPORT 支持分区、列列表和 Broker 属性。
 - [ ] 缺失/待核对 — ALTER LOAD、SHOW LOAD、SHOW TRANSACTION。
 - [ ] 缺失 — ALTER TASK、DROP TASK。
-- [ ] 缺失 — PAUSE、RESUME、STOP ROUTINE LOAD。
-- [ ] 缺失 — SHOW ROUTINE LOAD、SHOW ROUTINE LOAD TASK。
+- [x] 部分 — PAUSE、RESUME、STOP ROUTINE LOAD。
+- [x] 部分 — SHOW ROUTINE LOAD、SHOW ROUTINE LOAD TASK。
 - [ ] 缺失 — CREATE/ALTER/DROP PIPE。
 - [ ] 缺失 — SUSPEND/RESUME PIPE、RETRY FILE、SHOW PIPES。
 - [ ] 待核对/不适用 — 根据实际入口区分 Spark Load、Stream Load 是 SQL 语句还是外部协议。

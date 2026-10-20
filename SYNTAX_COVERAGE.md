@@ -41,8 +41,8 @@ An item should only move to **Complete** when all of the following are present:
 
 The plugin currently provides strong coverage for core queries, common table
 DDL/DML, views, materialized views, catalogs, and resources. Coverage is much
-less complete for cluster administration, statistics jobs, loading lifecycle
-commands, and newer managed object families.
+less complete for cluster administration, statistics jobs, remaining loading
+lifecycle commands, and newer managed object families.
 
 The official directory contained 196 Markdown pages at the review snapshot.
 This is not a denominator for a compatibility percentage: it includes SELECT
@@ -51,9 +51,9 @@ statements.
 
 | Area | Current assessment | Main evidence or limitation |
 | --- | --- | --- |
-| SELECT and expressions | Partial, high coverage | CTE, joins, subqueries, set operations, windows, `QUALIFY`, and grouping sets have regression coverage. `OFFSET`, `PIVOT`, and `SELECT * EXCLUDE` need review or implementation. |
-| Table DDL | Partial, high coverage | CREATE, DROP, TRUNCATE, CTAS, LIKE, partitioning, distribution, indexes, common table properties, and the documented `ALTER TABLE` action families are modeled. |
-| DML | Partial, high coverage | INSERT, UPDATE, DELETE, and MERGE have structured entries and scenarios; documented variants still require branch-by-branch comparison. |
+| SELECT and expressions | Partial, high coverage | CTE, joins, subqueries, set operations, windows, `QUALIFY`, grouping sets, and aggregate `FILTER` have regression coverage. `OFFSET`, `PIVOT`, and `SELECT * EXCLUDE` need review or implementation. |
+| Table DDL | Partial, high coverage | CREATE, DROP, TRUNCATE, named-column CTAS, LIKE, multi-column expression partitioning, distribution, indexes, common table properties, and the documented `ALTER TABLE` action families are modeled. |
+| DML | Partial, high coverage | INSERT, UPDATE, DELETE, and MERGE have structured entries and scenarios. INSERT covers labels, properties, temporary partitions, and FILES output; DELETE covers partitions, CTEs, and USING. |
 | Views | Partial | CREATE, ALTER, DROP, and SHOW CREATE are represented; official optional clauses require verification. |
 | Materialized views | Partial | CREATE, ALTER, DROP, REFRESH, and SHOW forms are partly covered; cancellation and status-management variants remain. |
 | Databases and schemas | Partial | CREATE, ALTER, DROP, USE, and common SHOW forms exist; SHOW DATA and SHOW CREATE DATABASE require work. |
@@ -61,7 +61,7 @@ statements.
 | Resources | Partial | CREATE, ALTER, DROP, and SHOW RESOURCES exist; documented variants need comparison. |
 | Accounts and privileges | Partial | Common user/role DDL, GRANT, REVOKE, and SET PASSWORD exist; role switching, impersonation, and several SHOW forms are missing. |
 | Backup and restore | Partial | BACKUP, RESTORE, repository operations, and RECOVER have simplified grammar. |
-| Loading, export, and tasks | Partial | Broker Load, CANCEL LOAD, Routine Load, SUBMIT TASK, and EXPORT are partly modeled. Lifecycle and Pipe commands are mostly absent. |
+| Loading, export, and tasks | Partial | Common Broker Load/Routine Load transformations, scheduled INSERT/CTAS tasks, and partitioned or Broker-backed EXPORT are modeled. Remaining lifecycle and Pipe commands are mostly absent. |
 | Statistics | Partial, low coverage | ANALYZE TABLE and selected SHOW forms exist. Analyze-job lifecycle statements are mostly absent. |
 | Cluster administration | Partial, low coverage | SET, KILL, SYNC, EXPLAIN, SHOW PROC, and a small ADMIN SHOW subset exist. Most official cluster-management commands are absent. |
 | Function DDL | Missing | Function invocation/catalog support does not imply CREATE/DROP FUNCTION syntax support. |
@@ -78,7 +78,7 @@ statements.
 - [x] Partial — UNION, INTERSECT, EXCEPT, and MINUS.
 - [x] Partial — Window definitions, analytic functions, and frames.
 - [x] Partial — QUALIFY and GROUPING SETS/ROLLUP/CUBE.
-- [x] Partial — Subqueries, CASE, CAST, IN, BETWEEN, LIKE, REGEXP, arrays, and complex types.
+- [x] Partial — Subqueries, CASE, CAST, IN, BETWEEN, LIKE, REGEXP, arrays, and complex types; aggregate functions support `FILTER (WHERE ...)`.
 - [ ] Missing/review — `SELECT ... OFFSET`.
 - [ ] Missing/review — `PIVOT`.
 - [ ] Missing/review — `SELECT * EXCLUDE (...)`.
@@ -87,12 +87,12 @@ statements.
 
 ### Tables, indexes, and DML
 
-- [x] Partial — CREATE TABLE, CTAS, and CREATE TABLE LIKE.
+- [x] Partial — CREATE TABLE, CTAS, and CREATE TABLE LIKE; CTAS supports an explicit column-name list.
 - [x] Partial — OLAP/external engine variants currently listed by the grammar.
-- [x] Partial — key models, partitions, distribution, buckets, rollups, indexes, generated columns, and properties.
+- [x] Partial — key models, single- and multi-column expression partitions, distribution, buckets, rollups, indexes, generated columns, and properties.
 - [x] Partial — DROP TABLE, TRUNCATE TABLE, CREATE INDEX, and DROP INDEX.
-- [x] Partial — INSERT, INSERT OVERWRITE, UPDATE, DELETE, and MERGE.
-- [x] Substantial — ALTER TABLE. Covers comma-separated actions; rename and comments; partition and bucket operations; column, STRUCT field, Rollup, and index changes; table properties; SWAP; compaction; and persistent-index removal.
+- [x] Partial — INSERT, INSERT OVERWRITE, UPDATE, DELETE, and MERGE. INSERT covers labels, properties, temporary partitions, BY NAME, and `INSERT INTO FILES`; DELETE covers partitions, USING, and CTEs.
+- [x] Substantial — ALTER TABLE. Covers comma-separated actions; rename and comments; partition and bucket operations; expression-partition merging; column, STRUCT field, Rollup, and index changes; table properties; SWAP; compaction; and persistent-index removal.
 - [ ] Missing/review — CANCEL ALTER TABLE.
 - [ ] Missing/review — REFRESH EXTERNAL TABLE.
 - [x] Partial — SHOW [FULL] TABLES and SHOW [FULL] COLUMNS/FIELDS, with namespace, LIKE, and WHERE branches.
@@ -139,14 +139,14 @@ statements.
 
 ### Loading, unloading, and tasks
 
-- [x] Partial — Broker Load and CANCEL LOAD.
-- [x] Partial — CREATE and ALTER ROUTINE LOAD.
-- [x] Partial — SUBMIT TASK.
-- [x] Partial — EXPORT and CANCEL EXPORT.
+- [x] Partial — Broker Load and CANCEL LOAD; Broker Load covers column mappings, path columns, filters, negative loading, and partition branches.
+- [x] Partial — CREATE and ALTER ROUTINE LOAD; Routine Load covers column mappings, filters, partitions, delete conditions, and common lifecycle controls.
+- [x] Partial — SUBMIT TASK; supports INSERT, CTAS, schedules, and task properties.
+- [x] Partial — EXPORT and CANCEL EXPORT; EXPORT covers partitions, column lists, and Broker properties.
 - [ ] Missing/review — ALTER LOAD, SHOW LOAD, and SHOW TRANSACTION.
 - [ ] Missing — ALTER TASK and DROP TASK.
-- [ ] Missing — PAUSE, RESUME, and STOP ROUTINE LOAD.
-- [ ] Missing — SHOW ROUTINE LOAD and SHOW ROUTINE LOAD TASK.
+- [x] Partial — PAUSE, RESUME, and STOP ROUTINE LOAD.
+- [x] Partial — SHOW ROUTINE LOAD and SHOW ROUTINE LOAD TASK.
 - [ ] Missing — CREATE/ALTER/DROP PIPE.
 - [ ] Missing — SUSPEND/RESUME PIPE, RETRY FILE, and SHOW PIPES.
 - [ ] Review/N/A — Spark Load and Stream Load pages must be classified by actual SQL entry point versus external protocol.

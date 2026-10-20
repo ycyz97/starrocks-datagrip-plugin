@@ -15,6 +15,7 @@ QUALIFY row_number() OVER (PARTITION BY biz_date, store_id, order_id ORDER BY se
 SELECT
     store_id,
     SUM(item_qty) AS item_qty,
+    SUM(item_qty) FILTER (WHERE item_qty > 0) AS positive_item_qty,
     COUNT(DISTINCT order_id) AS order_qty,
     bitmap_union_int(CAST(member_card_no AS BIGINT)) AS member_qty
 FROM sale_data

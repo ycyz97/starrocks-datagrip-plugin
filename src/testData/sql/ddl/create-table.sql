@@ -38,3 +38,25 @@ PARTITION BY date_trunc('day', biz_date)
 DISTRIBUTED BY HASH(order_id) BUCKETS 8
 PROPERTIES ("replication_num" = "1")
 LIKE dws.dws_trade_sale_by_order_ri;
+
+CREATE TABLE dws.dws_trade_sale_by_city
+(
+    biz_date DATE,
+    city STRING,
+    order_id STRING
+)
+DUPLICATE KEY (biz_date, city, order_id)
+PARTITION BY biz_date, city
+DISTRIBUTED BY HASH(order_id)
+PROPERTIES ("replication_num" = "1");
+
+CREATE TABLE dws.dws_trade_sale_by_city_ctas (biz_date, city, order_id)
+DUPLICATE KEY (biz_date, city, order_id)
+DISTRIBUTED BY HASH(order_id)
+AS
+SELECT biz_date, city, order_id
+FROM dws.dws_trade_sale_by_order_ri;
+
+ALTER TABLE dws.dws_trade_sale_by_order_ri
+PARTITION BY date_trunc('month', biz_date)
+BETWEEN '2024-01-01' AND '2024-03-31';
