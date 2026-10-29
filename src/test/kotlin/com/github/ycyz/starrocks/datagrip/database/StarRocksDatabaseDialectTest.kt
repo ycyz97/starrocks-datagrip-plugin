@@ -2,6 +2,8 @@ package com.github.ycyz.starrocks.datagrip.database
 
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.model.ModelFactory
+import com.intellij.database.DbmsExtension
+import com.intellij.database.dialects.SqlAffectAnalyzer
 import com.intellij.database.dialects.base.BaseDmlHelper
 import com.intellij.database.script.generator.dml.DmlHelper
 import com.intellij.database.dialects.generic.model.GenericModel
@@ -12,11 +14,13 @@ import com.intellij.database.util.ObjectPath
 import com.intellij.database.util.SearchPath
 import com.intellij.database.util.Casing
 import com.intellij.database.util.DbImplUtilCore
+import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.github.ycyz.starrocks.datagrip.dialect.StarRocksDialect
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.intentions.SqlExpandColumnListIntention
+import com.intellij.sql.psi.SqlCreateTableStatement
 import com.intellij.sql.psi.SqlReferenceExpression
 import com.intellij.sql.psi.SqlTableType
 
@@ -71,6 +75,103 @@ class StarRocksDatabaseDialectTest : BasePlatformTestCase() {
 
         assertEquals("Generic SQL", dialect.displayName)
         assertFalse(dialect.supportsCommonTableExpression())
+    }
+
+    fun testTemporaryTableCreationDoesNotTriggerMetadataIntrospection() {
+        val dialect = StarRocksDatabaseDialect()
+        val temporaryFile = PsiFileFactory.getInstance(project).createFileFromText(
+            "temporary-table.sql",
+            StarRocksDialect.INSTANCE,
+            "CREATE TEMPORARY TABLE scratch (id BIGINT);",
+        )
+        val temporaryTable = PsiTreeUtil.findChildOfType(temporaryFile, SqlCreateTableStatement::class.java)
+        assertNotNull(temporaryTable)
+        assertTrue(temporaryTable!!.isTemporary)
+        assertFalse(dialect.triggersIntrospection(temporaryTable))
+
+        val regularFile = PsiFileFactory.getInstance(project).createFileFromText(
+            "regular-table.sql",
+            StarRocksDialect.INSTANCE,
+            "CREATE TABLE persistent (id BIGINT);",
+        )
+        val regularTable = PsiTreeUtil.findChildOfType(regularFile, SqlCreateTableStatement::class.java)
+        assertNotNull(regularTable)
+        assertFalse(regularTable!!.isTemporary)
+        assertTrue(dialect.triggersIntrospection(regularTable))
+    }
+
+    fun testAffectAnalyzerCreatesTableLevelRefreshMention() {
+        val registered = DbmsExtension<SqlAffectAnalyzer>("com.intellij.database.sqlEffectAnalyzer")
+            .forDbms(StarRocksDbms.INSTANCE)
+        assertTrue(registered is StarRocksAffectAnalyzer)
+
+        val source = LocalDataSource.temporary().also {
+            it.info.setDbms(StarRocksDbms.INSTANCE)
+        }
+        val file = PsiFileFactory.getInstance(project).createFileFromText(
+            "affect-table.sql",
+            StarRocksDialect.INSTANCE,
+            "CREATE TABLE dwd.orders (id BIGINT);",
+        )
+        val statement = PsiTreeUtil.findChildOfType(file, SqlCreateTableStatement::class.java)
+        assertNotNull(statement)
+        val searchPath = SearchPath.of(
+            ObjectPath.create("default_catalog", ObjectKind.DATABASE)
+                .append("dwd", ObjectKind.SCHEMA),
+        )
+
+        val impactees = StarRocksAffectAnalyzer().determineAffectedObjects(source, listOf(statement!!), searchPath)
+        assertEquals(1, impactees.mentions.size)
+        val mention = impactees.mentions.single()
+        assertEquals("default_catalog", mention.databaseName.name)
+        assertEquals("dwd", mention.schemaName.name)
+        assertEquals("orders", mention.objectNewName.name)
+        assertEquals(ObjectKind.TABLE, mention.objectKind)
+    }
+
+    fun testAffectAnalyzerIgnoresTemporaryTableCreation() {
+        val source = LocalDataSource.temporary().also {
+            it.info.setDbms(StarRocksDbms.INSTANCE)
+        }
+        val file = PsiFileFactory.getInstance(project).createFileFromText(
+            "affect-temporary-table.sql",
+            StarRocksDialect.INSTANCE,
+            "CREATE TEMPORARY TABLE scratch (id BIGINT);",
+        )
+        val statement = PsiTreeUtil.findChildOfType(file, SqlCreateTableStatement::class.java)
+        assertNotNull(statement)
+
+        val impactees = StarRocksAffectAnalyzer().determineAffectedObjects(
+            source,
+            listOf(statement!!),
+            SearchPath.of(ObjectPath.create("default_catalog", ObjectKind.DATABASE)
+                .append("dwd", ObjectKind.SCHEMA)),
+        )
+        assertFalse(impactees.hasObjects)
+    }
+
+    fun testAffectAnalyzerKeepsExplicitStarRocksCatalog() {
+        val source = LocalDataSource.temporary().also {
+            it.info.setDbms(StarRocksDbms.INSTANCE)
+        }
+        val file = PsiFileFactory.getInstance(project).createFileFromText(
+            "affect-qualified-table.sql",
+            StarRocksDialect.INSTANCE,
+            "CREATE TABLE external_catalog.dwd.orders (id BIGINT);",
+        )
+        val statement = PsiTreeUtil.findChildOfType(file, SqlCreateTableStatement::class.java)
+        assertNotNull(statement)
+
+        val impactees = StarRocksAffectAnalyzer().determineAffectedObjects(
+            source,
+            listOf(statement!!),
+            SearchPath.of(ObjectPath.create("default_catalog", ObjectKind.DATABASE)
+                .append("dwd", ObjectKind.SCHEMA)),
+        )
+        val mention = impactees.mentions.single()
+        assertEquals("external_catalog", mention.databaseName.name)
+        assertEquals("dwd", mention.schemaName.name)
+        assertEquals("orders", mention.objectNewName.name)
     }
 
     fun testColumnScriptRespectsQuoteSuppression() {

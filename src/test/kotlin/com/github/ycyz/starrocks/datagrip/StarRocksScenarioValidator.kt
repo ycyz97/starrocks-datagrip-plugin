@@ -825,6 +825,7 @@ object StarRocksScenarioValidator {
             "<typeSystem dbms=\"STARROCKS\"",
             "<definitionProvider dbms=\"STARROCKS\"",
             "<introspector dbms=\"STARROCKS\"",
+            "<sqlEffectAnalyzer dbms=\"STARROCKS\"",
             "<jdbcSourceLoader dbms=\"STARROCKS\"",
             "<jdbcMetadataWrapper dbms=\"STARROCKS\"",
             "<sql.dialectCodeStyleProvider implementation=\"com.github.ycyz.starrocks.datagrip.format.StarRocksCodeStyleProvider\"",

@@ -15,6 +15,8 @@ import com.intellij.database.util.DdlBuilder;
 import com.intellij.database.util.ObjectPath;
 import com.intellij.database.util.SearchPath;
 import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.psi.PsiElement;
+import com.intellij.sql.psi.SqlCreateTableStatement;
 
 import java.sql.SQLException;
 
@@ -55,6 +57,16 @@ public final class StarRocksDatabaseDialect extends AbstractDatabaseDialect {
     @Override
     public boolean supportsSchemaChanging() {
         return true;
+    }
+
+    @Override
+    public boolean triggersIntrospection(PsiElement element) {
+        // StarRocks temporary tables are session-scoped and are not visible to
+        // the separate metadata connection used by automatic introspection.
+        if (element instanceof SqlCreateTableStatement table && table.isTemporary()) {
+            return false;
+        }
+        return super.triggersIntrospection(element);
     }
 
     @Override

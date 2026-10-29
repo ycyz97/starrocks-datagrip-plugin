@@ -37,6 +37,8 @@
             <li>Fixed <b>Expand column list</b> (Alt+Enter) unnecessarily adding backticks to every generated column name. Plain identifiers now remain unquoted, while reserved keywords, special names, and explicitly requested quoting use StarRocks backticks.</li>
             <li>Added syntax support for static partition assignments in <code>INSERT INTO/OVERWRITE</code>, such as <code>PARTITION (p_date = '2026-10-13')</code>.</li>
             <li>Fixed false unresolved symbol warnings for new column names in <code>ALTER TABLE ... RENAME COLUMN ... TO ...</code>.</li>
+            <li>Added table-level metadata refresh for StarRocks DDL, including catalog-qualified table names.</li>
+            <li>Skipped automatic metadata synchronization for session-scoped temporary table creation.</li>
         </ul>
     ]]></change-notes>
 
@@ -53,6 +55,7 @@
     <extensions defaultExtensionNs="com.intellij.database">
         <dbms id="STARROCKS" instance="com.github.ycyz.starrocks.datagrip.database.StarRocksDbms.INSTANCE"/>
         <dialect dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksDatabaseDialect"/>
+        <sqlEffectAnalyzer dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksAffectAnalyzer"/>
         <modelFacade dbms="STARROCKS" implementationClass="com.intellij.database.dialects.generic.model.GenericModelFacade"/>
         <introspector dbms="STARROCKS" implementationClass="com.intellij.database.dialects.base.introspector.jdbc.JdbcIntrospector$Factory"/>
         <jdbcMetadataWrapper dbms="STARROCKS" implementationClass="com.github.ycyz.starrocks.datagrip.database.StarRocksMetadataWrapper$Factory"/>
