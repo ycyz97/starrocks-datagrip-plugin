@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_union</title></head><body>
+<h2>bitmap_union</h2>
+<p>Calculates the bitmap union of a set of values after grouping. Common usage scenarios include calculating PV and UV.</p>
+<h3>Syntax</h3>
+<pre><code>BITMAP BITMAP_UNION(BITMAP value)</code></pre>
+<h3>Examples</h3>
+<pre><code>select page_id, bitmap_union(user_id)
+from table
+group by page_id;</code></pre>
+<p>Use this function with bitmap_count() to obtain the UV of a web page.</p>
+<pre><code>select page_id, bitmap_count(bitmap_union(user_id))
+from table
+group by page_id;</code></pre>
+<p>If <code>user_id</code> is an integer, the above query statement is equivalent to the following:</p>
+<pre><code>select page_id, count(distinct user_id)
+from table
+group by page_id;</code></pre>
+<h3>keyword</h3>
+<p>BITMAP_UNION, BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_union.md">StarRocks documentation</a></p>
+</body></html>

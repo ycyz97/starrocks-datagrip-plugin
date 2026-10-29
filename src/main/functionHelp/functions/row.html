@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>row</title></head><body>
+<h2>row</h2>
+<p>Creates a named STRUCT or ROW value from the given values. It supports unnamed struct. You do not need to specify the field names. StarRocks automatically generates column names, such as <code>col1, col2,...</code>.</p>
+<p>This function is supported from v3.1 onwards.</p>
+<p>struct() is the alias of row().</p>
+<h3>Syntax</h3>
+<pre><code>STRUCT row(ANY val, ...)</code></pre>
+<h3>Parameters</h3>
+<p><code>val</code>: an expression of any supported type.</p>
+<p>This function is a variable argument function. You must pass at least one argument. <code>value</code> is nullable. Separate multiple values with a comma (<code>,</code>).</p>
+<h3>Return value</h3>
+<p>Returns a STRUCT value which consists of the input values.</p>
+<h3>Examples</h3>
+<pre><code>select row(1,&quot;Apple&quot;,&quot;Pear&quot;);
++-----------------------------------------+
+| row(1, 'Apple', 'Pear')                 |
++-----------------------------------------+
+| {&quot;col1&quot;:1,&quot;col2&quot;:&quot;Apple&quot;,&quot;col3&quot;:&quot;Pear&quot;} |
++-----------------------------------------+
+
+select row(&quot;Apple&quot;, NULL);
++------------------------------+
+| row('Apple', NULL)           |
++------------------------------+
+| {&quot;col1&quot;:&quot;Apple&quot;,&quot;col2&quot;:null} |
++------------------------------+
+
+select struct(1,2,3);
++------------------------------+
+| row(1, 2, 3)                 |
++------------------------------+
+| {&quot;col1&quot;:1,&quot;col2&quot;:2,&quot;col3&quot;:3} |
++------------------------------+</code></pre>
+<h3>References</h3>
+<ul>
+<li>STRUCT data type</li>
+<li>named_struct</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/struct-functions/row.md">StarRocks documentation</a></p>
+</body></html>

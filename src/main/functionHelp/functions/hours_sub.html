@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hours_sub</title></head><body>
+<h2>hours_sub</h2>
+<p>Reduces the specified date and time by a specified number of hours.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME hours_sub(DATETIME|DATE date, INT hours);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>date</code>: It must be a valid DATE or DATETIME expression.</li>
+</ul>
+<ul>
+<li><code>hours</code>: The number of hours reduced. The supported data type is INT.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATETIME value. If the date does not exist, for example, <code>2022-21-01</code>, or if the date is not a DATE or DATETIME value, NULL is returned.</p>
+<h3>Examples</h3>
+<pre><code>select hours_sub('2022-01-01 01:01:01', 1);
++-------------------------------------+
+| hours_sub('2022-01-01 01:01:01', 1) |
++-------------------------------------+
+| 2022-01-01 00:01:01                 |
++-------------------------------------+
+
+select hours_sub('2022-01-01 01:01:01', -1);
++--------------------------------------+
+| hours_sub('2022-01-01 01:01:01', -1) |
++--------------------------------------+
+| 2022-01-01 02:01:01                  |
++--------------------------------------+
+
+select hours_sub('2022-01-01', 1);
++----------------------------+
+| hours_sub('2022-01-01', 1) |
++----------------------------+
+| 2021-12-31 23:00:00        |
++----------------------------+
+
+select hours_sub('2022-01-01', -1);
++-----------------------------+
+| hours_sub('2022-01-01', -1) |
++-----------------------------+
+| 2022-01-01 01:00:00         |
++-----------------------------+
+
+Error case:
+select hours_sub('2022-21-01', -1);
++--------------------------------------+
+| hours_sub('2022-21-01', -1) |
++--------------------------------------+
+| NULL                                 |
++--------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/hours_sub.md">StarRocks documentation</a></p>
+</body></html>

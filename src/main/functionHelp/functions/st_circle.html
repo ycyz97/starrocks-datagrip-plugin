@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_circle</title></head><body>
+<h2>ST_Circle</h2>
+<p>Converts a WKT (WEll Known Text) to a circle on the sphere of the earth.</p>
+<h3>Syntax</h3>
+<pre><code>GEOMETRY ST_Circle(DOUBLE center_lng, DOUBLE center_lat, DOUBLE radius)</code></pre>
+<h3>Parameters</h3>
+<p><code>center_lng</code> indicates the longitude of the center of the circle.</p>
+<p><code>center_lat</code> indicates the latitude of the center of the circle.</p>
+<p><code>radius</code> indicates the radius of a circle, in meters. A maximum of 9999999 radius is supported.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT ST_AsText(ST_Circle(111, 64, 10000));
++--------------------------------------------+
+| st_astext(st_circle(111.0, 64.0, 10000.0)) |
++--------------------------------------------+
+| CIRCLE ((111 64), 10000)                   |
++--------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ST_CIRCLE,ST,CIRCLE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_circle.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>avg</title></head><body>
+<h2>avg</h2>
+<p>Returns the average value of selected fields.</p>
+<p>Optional field DISTINCT parameters can be used to return the weighted average.</p>
+<h3>Syntax</h3>
+<pre><code>AVG([DISTINCT] expr)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT datetime, AVG(cost_time)
+FROM log_statis
+group by datetime;
++---------------------+--------------------+
+| datetime            | avg(`cost_time`)   |
++---------------------+--------------------+
+| 2019-07-03 21:01:20 | 25.827794561933533 |
++---------------------+--------------------+
+
+MySQL &gt; SELECT datetime, AVG(distinct cost_time)
+FROM log_statis
+group by datetime;
++---------------------+---------------------------+
+| datetime            | avg(DISTINCT `cost_time`) |
++---------------------+---------------------------+
+| 2019-07-04 02:23:24 |        20.666666666666668 |
++---------------------+---------------------------+
+</code></pre>
+<h3>keyword</h3>
+<p>AVG</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/avg.md">StarRocks documentation</a></p>
+</body></html>

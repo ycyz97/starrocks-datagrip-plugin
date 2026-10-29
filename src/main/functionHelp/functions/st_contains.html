@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_contains</title></head><body>
+<h2>ST_Contains</h2>
+<p>Returns whether a polygon contains a point in its interior. A point on the exterior boundary or on a hole boundary is not contained.</p>
+<h3>Syntax</h3>
+<pre><code>ST_Contains(GEOGRAPHY polygon, GEOGRAPHY point)
+ST_Contains(GEOMETRY polygon, GEOMETRY point)
+ST_Contains(VARCHAR shape1, VARCHAR shape2)</code></pre>
+<p>The native overloads accept an XY <code>POINT</code> as the second argument and an XY <code>POLYGON</code> or <code>MULTIPOLYGON</code> as the first. Both <code>GEOMETRY</code> arguments must have matching descriptors. Mixed native <code>GEOGRAPHY</code>/<code>GEOMETRY</code> calls are rejected. <code>NULL</code> propagates, and an <code>EMPTY</code> input returns <code>false</code>.</p>
+<p>The <code>VARCHAR</code> signature is the existing legacy overload and remains unchanged.</p>
+<h3>Examples</h3>
+<pre><code>SELECT ST_Contains(
+    ST_GeomFromText('POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))', 'EPSG:3857'),
+    ST_GeomFromText('POINT (5 5)', 'EPSG:3857'));
+-- true
+
+SELECT ST_Contains(
+    ST_GeogFromText('POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'),
+    ST_GeogFromText('POINT (0 5)'));
+-- false: the point is on the boundary</code></pre>
+<h3>Keywords</h3>
+<p>ST_CONTAINS,ST,CONTAINS</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_contains.md">StarRocks documentation</a></p>
+</body></html>

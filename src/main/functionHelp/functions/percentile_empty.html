@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>percentile_empty</title></head><body>
+<h2>percentile_empty</h2>
+<p>Constructs a PERCENTILE value, which is used to fill in null values for data loading using Stream Load or INSERT INTO.</p>
+<h3>Syntax</h3>
+<pre><code>PERCENTILE_EMPTY();</code></pre>
+<h3>Parameters</h3>
+<p>None</p>
+<h3>Return value</h3>
+<p>Returns a PERCENTILE value.</p>
+<h3>Examples</h3>
+<p>Create a table. The <code>percent</code> column is a PERCENTILE column.</p>
+<pre><code>CREATE TABLE `aggregate_tbl` (
+  `site_id` largeint(40) NOT NULL COMMENT &quot;id of site&quot;,
+  `date` date NOT NULL COMMENT &quot;time of event&quot;,
+  `city_code` varchar(20) NULL COMMENT &quot;city_code of user&quot;,
+  `pv` bigint(20) SUM NULL DEFAULT &quot;0&quot; COMMENT &quot;total page views&quot;,
+  `percent` PERCENTILE PERCENTILE_UNION COMMENT &quot;others&quot;
+) ENGINE=OLAP
+AGGREGATE KEY(`site_id`, `date`, `city_code`)
+COMMENT &quot;OLAP&quot;
+DISTRIBUTED BY HASH(`site_id`)
+PROPERTIES (&quot;replication_num&quot; = &quot;3&quot;);</code></pre>
+<p>Insert data into the table.</p>
+<pre><code>INSERT INTO aggregate_tbl VALUES
+(5, '2020-02-23', 'city_code', 555, percentile_empty());</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/percentile-functions/percentile_empty.md">StarRocks documentation</a></p>
+</body></html>

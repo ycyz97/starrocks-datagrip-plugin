@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>md5sum_numeric</title></head><body>
+<h2>md5sum_numeric</h2>
+<p>Calculates the 128-bit checksum of multiple strings. The checksum is represented by a decimal string of digits.</p>
+<h3>Syntax</h3>
+<pre><code>LARGEINT md5sum_numeric(VARCHAR expr,...);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the string to calculate. It must be of the VARCHAR type.</p>
+<h3>Return value</h3>
+<p>Returns a checksum of the LARGEINT type. If the input is empty, an error is returned.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select md5sum_numeric(&quot;starrocks&quot;);
++-----------------------------------------+
+| md5sum_numeric('starrocks')             |
++-----------------------------------------+
+| 328761383472799310362963866384446095221 |
++-----------------------------------------+
+1 row in set (0.01 sec)
+
+mysql&gt; select md5sum_numeric(&quot;starrocks&quot;,&quot;star&quot;);
++-----------------------------------------+
+| md5sum_numeric('starrocks', 'star')     |
++-----------------------------------------+
+| 163436627872604162110984707546327199448 |
++-----------------------------------------+
+1 row in set (0.01 sec)
+
+mysql&gt; select md5sum_numeric(null);
++-----------------------------------------+
+| md5sum_numeric(NULL)                    |
++-----------------------------------------+
+| 281949768489412648962353822266799178366 |
++-----------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/crytographic-functions/md5sum_numeric.md">StarRocks documentation</a></p>
+</body></html>

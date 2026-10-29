@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>negative</title></head><body>
+<h2>negative</h2>
+<p>Returns the negative of input <code>arg</code>.</p>
+<h3>Syntax</h3>
+<pre><code>negative(arg)</code></pre>
+<h3>Parameter</h3>
+<p><code>arg</code> supports the following data types:</p>
+<ul>
+<li>BIGINT</li>
+<li>DOUBLE</li>
+<li>DECIMALV2</li>
+<li>DECIMAL32</li>
+<li>DECIMAL64</li>
+<li>DECIMAL128</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the same data type as the input.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select negative(3);
++-------------+
+| negative(3) |
++-------------+
+|          -3 |
++-------------+
+1 row in set (0.00 sec)
+
+mysql&gt; select negative(cast(3.14 as decimalv2));
++--------------------------------------+
+| negative(CAST(3.14 AS DECIMAL(9,0))) |
++--------------------------------------+
+|                                -3.14 |
++--------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/negative.md">StarRocks documentation</a></p>
+</body></html>

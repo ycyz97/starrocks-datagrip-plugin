@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>field</title></head><body>
+<h2>field</h2>
+<p>Returns the index (position) of a value in a list of values.</p>
+<p>This function is supported from v3.5.</p>
+<h3>Syntax</h3>
+<pre><code>INT field(VARCHAR val, VARCHAR val1, val2, ...);</code></pre>
+<ul>
+<li><code>val</code>: The value to search for in the list.</li>
+<li><code>val1</code>, <code>val2</code>, ...: The values in the list.</li>
+</ul>
+<h3>Usage notes</h3>
+<ul>
+<li>If the specified value is not found in the list of values, this function will return <code>0</code>. If the specified value is NULL, this function will return <code>0</code>.</li>
+<li>If all arguments to the function are strings, all arguments are compared as strings. If all arguments are numbers, they are compared as numbers. Otherwise, the arguments are compared as DOUBLE.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>MYSQL &gt; select field('a', 'b', 'a', 'd');
++---------------------------+
+| field('a', 'b', 'a', 'd') |
++---------------------------+
+|                         2 |
++---------------------------+</code></pre>
+<h3>keyword</h3>
+<p>FIELD</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/field.md">StarRocks documentation</a></p>
+</body></html>

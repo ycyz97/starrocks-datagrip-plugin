@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>min</title></head><body>
+<h2>min</h2>
+<p>Returns the minimum value of the expr expression.</p>
+<h3>Syntax</h3>
+<pre><code>MIN(expr)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select min(scan_rows)
+from log_statis
+group by datetime;
++------------------+
+| min(`scan_rows`) |
++------------------+
+|                0 |
++------------------+</code></pre>
+<h3>keyword</h3>
+<p>MIN</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/min.md">StarRocks documentation</a></p>
+</body></html>

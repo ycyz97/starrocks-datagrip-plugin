@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>percentile_union</title></head><body>
+<h2>percentile_union</h2>
+<p>Aggregates PERCENTILE data.</p>
+<h3>Syntax</h3>
+<pre><code>percentile_union(expr);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: The supported data type is PERCENTILE.</p>
+<h3>Return value</h3>
+<p>Returns a PERCENTILE value.</p>
+<h3>Examples</h3>
+<p>Example 1: Use percentile data in materialized views.</p>
+<p>Create a table.</p>
+<pre><code>CREATE TABLE sales_records(
+    record_id int,
+    seller_id int,
+    store_id int,
+    sale_date date,
+    sale_amt bigint
+) distributed BY hash(record_id)
+PROPERTIES (&quot;replication_num&quot; = &quot;3&quot;);</code></pre>
+<p>Create a materialized view based on the <code>sale_amt</code> column of the table.</p>
+<pre><code>create materialized view mv as
+select store_id, percentile_union(percentile_hash(sale_amt))
+from sales_records
+group by store_id;</code></pre>
+<p>Example 2: Load PERCENTILE data.</p>
+<p>Create an Aggregate table that contains a PERCENTILE column <code>sale_amt_per</code>.</p>
+<pre><code>CREATE TABLE sales_records(
+    record_id int,
+    seller_id int,
+    store_id int,
+    sale_amt_per percentile percentile_union
+) ENGINE=OLAP
+AGGREGATE KEY(`record_id`, `seller_id`, `store_id`)
+COMMENT &quot;OLAP&quot;
+DISTRIBUTED BY HASH(`record_id`)
+PROPERTIES (
+    &quot;replication_num&quot; = &quot;3&quot;,
+    &quot;storage_format&quot; = &quot;DEFAULT&quot;
+);</code></pre>
+<p>Query data from <code>sale_amt_per</code>.</p>
+<pre><code>select percentile_approx_raw(percentile_union(sale_amt_per), 0.99) from sales_records;</code></pre>
+<p>Load data that contains PERCENTILE data into the <code>sales_records</code> table.</p>
+<pre><code>curl --location-trusted -u root
+    -H &quot;columns: record_id, seller_id, store_id,tmp, sale_amt_per =percentile_hash(tmp)&quot;
+    -H &quot;column_separator:,&quot;
+    -T a http://&lt;ip:port&gt;/api/test/sales_records/_stream_load</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/percentile-functions/percentile_union.md">StarRocks documentation</a></p>
+</body></html>

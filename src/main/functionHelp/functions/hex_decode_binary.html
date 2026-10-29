@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hex_decode_binary</title></head><body>
+<h2>hex_decode_binary</h2>
+<p>Decodes a hex encoded string to a binary.</p>
+<p>This function is supported from v3.0.</p>
+<h3>Syntax</h3>
+<pre><code>hex_decode_binary(str);</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the string to convert. The supported data type is VARCHAR.</p>
+<p>An empty binary is returned if any of the following situations occur:</p>
+<ul>
+<li>The length of the string is 0 or the number of characters in the string is an odd number.</li>
+<li>The string contains characters other than <code>[0-9]</code>, <code>[a-z]</code>, and <code>[A-Z]</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the VARBINARY type.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select hex(hex_decode_binary(hex(&quot;Hello StarRocks&quot;)));
++------------------------------------------------+
+| hex(hex_decode_binary(hex('Hello StarRocks'))) |
++------------------------------------------------+
+| 48656C6C6F2053746172526F636B73                 |
++------------------------------------------------+
+
+mysql&gt; select hex_decode_binary(NULL);
++--------------------------------------------------+
+| hex_decode_binary(NULL)                          |
++--------------------------------------------------+
+| NULL                                             |
++--------------------------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>HEX_DECODE_BINARY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/hex_decode_binary.md">StarRocks documentation</a></p>
+</body></html>

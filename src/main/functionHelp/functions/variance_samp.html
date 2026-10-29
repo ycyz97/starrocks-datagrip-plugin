@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>variance_samp</title></head><body>
+<h2>var_samp,variance_samp</h2>
+<p>Returns the sample variance of an expression. Since v2.5.10, this function can also be used as a window function.</p>
+<h3>Syntax</h3>
+<pre><code>VAR_SAMP(expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the expression. If it is a table column, it must evaluate to TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, or DECIMAL.</p>
+<h3>Return value</h3>
+<p>Returns a DOUBLE value.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select var_samp(scan_rows)
+from log_statis
+group by datetime;
++-----------------------+
+| var_samp(`scan_rows`) |
++-----------------------+
+|    5.6227132145741789 |
++-----------------------+</code></pre>
+<h3>keyword</h3>
+<p>VAR_SAMP,VARIANCE_SAMP,VAR,SAMP,VARIANCE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/var_samp.md">StarRocks documentation</a></p>
+</body></html>

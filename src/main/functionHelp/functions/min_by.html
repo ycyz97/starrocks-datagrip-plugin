@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>min_by</title></head><body>
+<h2>min_by</h2>
+<p>Returns the value of <code>x</code> associated with the minimum value of <code>y</code>.</p>
+<p>For example, <code>SELECT min_by(subject, exam_result) FROM exam;</code> is to return the subject that has the lowest exam score.</p>
+<p>This function is supported from v2.5.</p>
+<h3>Syntax</h3>
+<pre><code>min_by(x,y)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>x</code>: an expression of any type.</li>
+<li><code>y</code>: an expression of a type that can be ordered.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value that has the same type as <code>x</code>.</p>
+<h3>Usage notes</h3>
+<ul>
+<li><code>y</code> must be a sortable type. If you use an unsortable type of <code>y</code>, such as <code>bitmap</code> or <code>hll</code>, an error is returned.</li>
+<li>If <code>y</code> contains a null value, the row that corresponds to the null value is ignored.</li>
+<li>If more than one value of <code>x</code> has the same minimum value of <code>y</code>, this function returns the first value of <code>x</code> encountered.</li>
+</ul>
+<h3>Examples</h3>
+<p>1. Create a table <code>exam</code>.</p>
+<pre><code>    CREATE TABLE exam (
+        subject_id INT,
+        subject STRING,
+        exam_result INT
+    ) DISTRIBUTED BY HASH(`subject_id`);</code></pre>
+<p>2. Insert values into this table and query data from this table.</p>
+<pre><code>    insert into exam values
+    (1,'math',90),
+    (2,'english',70),
+    (3,'physics',95),
+    (4,'chemistry',85),
+    (5,'music',95),
+    (6,'biology',null);
+
+    select * from exam order by subject_id;
+    +------------+-----------+-------------+
+    | subject_id | subject   | exam_result |
+    +------------+-----------+-------------+
+    |          1 | math      |          90 |
+    |          2 | english   |          70 |
+    |          3 | physics   |          95 |
+    |          4 | chemistry |          85 |
+    |          5 | music     |          95 |
+    |          6 | biology   |        null |
+    +------------+-----------+-------------+
+    6 rows in set (0.03 sec)</code></pre>
+<p>3. Obtain the subject that has the lowest score.<br>The subject <code>english</code> that has the lowest score <code>70</code> is returned.</p>
+<pre><code>    SELECT min_by(subject, exam_result) FROM exam;
+    +------------------------------+
+    | min_by(subject, exam_result) |
+    +------------------------------+
+    | english                      |
+    +------------------------------+
+    1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/min_by.md">StarRocks documentation</a></p>
+</body></html>

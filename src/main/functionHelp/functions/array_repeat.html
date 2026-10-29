@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_repeat</title></head><body>
+<h2>array_repeat</h2>
+<p><code>array_repeat</code> returns an array containing a given element repeated a specified number of times.</p>
+<h3>Syntax</h3>
+<pre><code>array_repeat(element, count)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>element</code>: The element to be repeated can be any data type supported by StarRocks.</li>
+</ul>
+<ul>
+<li><code>count</code>: The number of repetitions, of type INT.</li>
+</ul>
+<h3>Return value</h3>
+<p>The data type of the return value is the ARRAY type of element.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>When count is less than 1, an empty array is returned.</li>
+<li>When the element parameter is NULL, the result is an array consisting of count NULLs.</li>
+<li>When the count parameter is NULL, the result is NULL.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1:</p>
+<pre><code>select array_repeat(1,5) as res;</code></pre>
+<pre><code>+-------------+
+| res         |
++-------------+
+| [1,1,1,1,1] |
++-------------+</code></pre>
+<p>Example 2:</p>
+<pre><code>select  array_repeat([1,2],3) as res;</code></pre>
+<pre><code>+---------------------+
+| res                 |
++---------------------+
+| [[1,2],[1,2],[1,2]] |
++---------------------+</code></pre>
+<p>Example 3:</p>
+<pre><code>select array_repeat(1,-1) as res;</code></pre>
+<pre><code>+------+
+| res  |
++------+
+| []   |
++------+</code></pre>
+<p>Example 4:</p>
+<pre><code>select  array_repeat(null,3) as res;</code></pre>
+<pre><code>+------+
+| res  |
++------+
+| NULL |
++------+</code></pre>
+<p>Example 5:</p>
+<pre><code>CREATE TABLE IF NOT EXISTS test (COLA INT, COLB INT) PROPERTIES (&quot;replication_num&quot;=&quot;1&quot;);
+INSERT INTO test (COLA, COLB) VALUES (1, 3), (NULL, 3), (2, NULL);
+select array_repeat(COLA,COLB) from test;</code></pre>
+<pre><code>+--------------------------+
+| array_repeat(COLA, COLB) |
++--------------------------+
+| [1,1,1]                  |
+| [null,null,null]         |
+| NULL                     |
++--------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_repeat.md">StarRocks documentation</a></p>
+</body></html>

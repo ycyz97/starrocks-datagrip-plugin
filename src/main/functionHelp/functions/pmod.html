@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>pmod</title></head><body>
+<h2>pmod</h2>
+<p>Returns the positive remainder of <code>dividend</code> divided by<code>divisor</code>.</p>
+<h3>Syntax</h3>
+<pre><code>pmod(dividend, divisor)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>dividend</code>: the number to be divided.</li>
+<li><code>divisor</code>: the number that divides.</li>
+</ul>
+<p>Both <code>arg1</code> and <code>arg2</code> support the following data types:</p>
+<ul>
+<li>BIGINT</li>
+<li>DOUBLE</li>
+</ul>
+<p>&gt; <b>NOTE</b><br>&gt;<br>&gt; <code>dividend</code> and <code>divisor</code> must agree in the data type. StarRocks performs an implicit conversion if they do not agree in the data type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the same data type as the <code>dividend</code>. StarRocks returns NULL if <code>divisor</code> is specified as 0.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select pmod(3.14,3.14);
++------------------+
+| pmod(3.14, 3.14) |
++------------------+
+|                0 |
++------------------+
+
+mysql&gt; select pmod(3,6);
++------------+
+| pmod(3, 6) |
++------------+
+|          3 |
++------------+
+
+mysql&gt; select pmod(11,5);
++-------------+
+| pmod(11, 5) |
++-------------+
+|           1 |
++-------------+
+
+mysql&gt; select pmod(-11,5);
++--------------+
+| pmod(-11, 5) |
++--------------+
+|            4 |
++--------------+
+
+mysql&gt; SELECT pmod(11,-5);
++--------------+
+| pmod(11, -5) |
++--------------+
+|           -4 |
++--------------+
+
+mysql&gt; SELECT pmod(-11,-5);
++---------------+
+| pmod(-11, -5) |
++---------------+
+|            -1 |
++---------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/pmod.md">StarRocks documentation</a></p>
+</body></html>

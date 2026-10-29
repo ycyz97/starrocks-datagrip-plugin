@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>uuid_v7</title></head><body>
+<h2>uuid_v7</h2>
+<p>Returns a time-ordered UUID v7 of the VARCHAR type. UUID v7 is defined in RFC 9562 and provides better database performance compared to random UUIDs (v4) because it maintains temporal ordering, which improves index locality and reduces fragmentation.</p>
+<p>The UUID is 36 characters in length and contains 5 hexadecimal numbers connected with four hyphens in the <code>xxxxxxxx-xxxx-7xxx-xxxx-xxxxxxxxxxxx</code> format, where the version field is always 7.</p>
+<p>This function is non-deterministic. Two calls to this function generate two different UUIDs.</p>
+<h3>Syntax</h3>
+<pre><code>uuid_v7()</code></pre>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; SELECT uuid_v7();
++--------------------------------------+
+| uuid_v7()                            |
++--------------------------------------+
+| 019ba290-15ce-7f13-86b4-ebc97d2f72c0 |
++--------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<h3>UUID v7 Format</h3>
+<p>UUID v7 follows RFC 9562 specification with the following structure:</p>
+<ul>
+<li><b>48 bits</b>: Unix timestamp in milliseconds (time-ordered component).</li>
+<li><b>4 bits</b>: Version field, constant value <code>7</code>.</li>
+<li><b>12 bits</b>: Random data</li>
+<li><b>2 bits</b>: Variant field (RFC 4122)</li>
+<li><b>62 bits</b>: Random data</li>
+</ul>
+<p>This structure ensures that UUIDs generated later will sort after earlier ones, improving index performance.</p>
+<h3>Benefits</h3>
+<p>1. <b>Time-ordered</b>: UUIDs generated later will sort after earlier ones.<br>2. <b>Improved Index Performance</b>: Better locality in B-tree indexes.<br>3. <b>Reduced Fragmentation</b>: Sequential inserts cause less page splits.<br>4. <b>Unique</b>: Random bits ensure uniqueness even within the same millisecond.</p>
+<h3>Comparison with UUID v4</h3>
+<pre><code>| Feature | uuid() (v4) | uuid_v7() (v7) |</code></pre>
+<pre><code>|---------|-------------|----------------|</code></pre>
+<pre><code>| Ordering | Random | Time-ordered |</code></pre>
+<pre><code>| Index Performance | Poor | Good |</code></pre>
+<pre><code>| Fragmentation | High | Low |</code></pre>
+<pre><code>| Timestamp Info | No | Yes (48-bit ms) |</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/uuidv7.md">StarRocks documentation</a></p>
+</body></html>

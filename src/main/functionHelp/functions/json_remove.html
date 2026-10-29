@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>json_remove</title></head><body>
+<h2>json_remove</h2>
+<p>Removes data from a JSON document at one or more specified JSON paths and returns the modified JSON document.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>json_remove(json_object_expr, json_path[, json_path] ...)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>json_object_expr</code>: the expression that represents the JSON object. The object can be a JSON column, or a JSON object that is produced by a JSON constructor function such as PARSE_JSON.</li>
+</ul>
+<ul>
+<li><code>json_path</code>: one or more expressions that represent the paths to elements in the JSON object that should be removed. The value of each parameter is a string. For information about the JSON path syntax that is supported by StarRocks, see Overview of JSON functions and operators.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a JSON document with the specified paths removed.</p>
+<p>&gt; - If a path does not exist in the JSON document, it is ignored.<br>&gt; - If an invalid path is provided, it is ignored.<br>&gt; - If all paths are invalid or non-existent, the original JSON document is returned unchanged.</p>
+<h3>Examples</h3>
+<p>Example 1: Remove a single key from a JSON object.</p>
+<pre><code>mysql&gt; SELECT json_remove('{&quot;a&quot;: 1, &quot;b&quot;: [10, 20, 30]}', '$.a');
+
+       -&gt; {&quot;b&quot;: [10, 20, 30]}</code></pre>
+<p>Example 2: Remove multiple keys from a JSON object.</p>
+<pre><code>mysql&gt; SELECT json_remove('{&quot;a&quot;: 1, &quot;b&quot;: [10, 20, 30], &quot;c&quot;: &quot;test&quot;}', '$.a', '$.c');
+
+       -&gt; {&quot;b&quot;: [10, 20, 30]}</code></pre>
+<p>Example 3: Remove array elements from a JSON object.</p>
+<pre><code>mysql&gt; SELECT json_remove('{&quot;a&quot;: 1, &quot;b&quot;: [10, 20, 30]}', '$.b[1]');
+
+       -&gt; {&quot;a&quot;: 1, &quot;b&quot;: [10, 30]}</code></pre>
+<p>Example 4: Remove nested object properties.</p>
+<pre><code>mysql&gt; SELECT json_remove('{&quot;a&quot;: {&quot;x&quot;: 1, &quot;y&quot;: 2}, &quot;b&quot;: 3}', '$.a.x');
+
+       -&gt; {&quot;a&quot;: {&quot;y&quot;: 2}, &quot;b&quot;: 3}</code></pre>
+<p>Example 5: Attempt to remove non-existent paths (ignored).</p>
+<pre><code>mysql&gt; SELECT json_remove('{&quot;a&quot;: 1, &quot;b&quot;: 2}', '$.c', '$.d');
+
+       -&gt; {&quot;a&quot;: 1, &quot;b&quot;: 2}</code></pre>
+<p>Example 6: Remove multiple paths including non-existent ones.</p>
+<pre><code>mysql&gt; SELECT json_remove('{&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: 3}', '$.a', '$.nonexistent', '$.c');
+
+       -&gt; {&quot;b&quot;: 2}</code></pre>
+<h3>Usage notes</h3>
+<ul>
+<li>The <code>json_remove</code> function follows MySQL-compatible behavior.</li>
+<li>Invalid JSON paths are silently ignored rather than causing errors.</li>
+<li>The function supports removing multiple paths in a single operation, which is more efficient than multiple separate operations.</li>
+<li>Currently, the function supports simple object key removal (e.g., <code>$.key</code>). Support for complex nested paths and array element removal may be limited in the current implementation.</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/json_remove.md">StarRocks documentation</a></p>
+</body></html>

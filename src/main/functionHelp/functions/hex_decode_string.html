@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hex_decode_string</title></head><body>
+<h2>hex_decode_string</h2>
+<p>This function performs the opposite operation of hex().</p>
+<p>It interprets each pair of hexadecimal digits in the input string as a number and converts it to the byte represented by the number. The return value is a binary string.</p>
+<p>This function is supported from v3.0.</p>
+<h3>Syntax</h3>
+<pre><code>hex_decode_string(str);</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the string to convert. The supported data type is VARCHAR. An empty string is returned if any of the following situations occur:</p>
+<ul>
+<li>The length of the string is 0 or the number of characters in the string is an odd number.</li>
+<li>The string contains characters other than <code>[0-9]</code>, <code>[a-z]</code>, and <code>[A-Z]</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select hex_decode_string(hex(&quot;Hello StarRocks&quot;));
++-------------------------------------------+
+| hex_decode_string(hex('Hello StarRocks')) |
++-------------------------------------------+
+| Hello StarRocks                           |
++-------------------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>HEX_DECODE_STRING</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/hex_decode_string.md">StarRocks documentation</a></p>
+</body></html>

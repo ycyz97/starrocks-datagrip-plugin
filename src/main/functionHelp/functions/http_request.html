@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>http_request</title></head><body>
+<h2>http_request</h2>
+<p>Executes an HTTP request and returns the response as a JSON string. Supports both named and positional parameters.</p>
+<h3>Limits</h3>
+<pre><code>| Limit | Value |</code></pre>
+<pre><code>|-------|-------|</code></pre>
+<pre><code>| Maximum response size | 1 MB |</code></pre>
+<pre><code>| Maximum redirects | 20 |</code></pre>
+<pre><code>| Minimum timeout | 1 ms |</code></pre>
+<pre><code>| Maximum timeout | 300,000 ms (5 minutes) |</code></pre>
+<pre><code>| Supported protocols | HTTP, HTTPS only |</code></pre>
+<h3>Syntax</h3>
+<pre><code>-- Named parameters (recommended)
+http_request(
+    url =&gt; &lt;url&gt;,
+    [method =&gt; &lt;method&gt;,]
+    [body =&gt; &lt;body&gt;,]
+    [headers =&gt; &lt;headers&gt;,]
+    [timeout_ms =&gt; &lt;timeout_ms&gt;,]
+    [ssl_verify =&gt; &lt;ssl_verify&gt;,]
+    [username =&gt; &lt;username&gt;,]
+    [password =&gt; &lt;password&gt;]
+)
+
+-- Positional parameters
+http_request(&lt;url&gt;[, &lt;method&gt;[, &lt;body&gt;[, &lt;headers&gt;[, &lt;timeout_ms&gt;[, &lt;ssl_verify&gt;[, &lt;username&gt;[, &lt;password&gt;]]]]]]])</code></pre>
+<h3>Parameters</h3>
+<pre><code>| Parameter | Type | Required | Default | Description |</code></pre>
+<pre><code>|-----------|------|----------|---------|-------------|</code></pre>
+<pre><code>| `url` | VARCHAR | Yes | - | Target URL. Must be HTTP or HTTPS. |</code></pre>
+<pre><code>| `method` | VARCHAR | No | `'GET'` | HTTP method: `GET`, `POST`, `PUT`, `DELETE`, `HEAD`, `OPTIONS`. |</code></pre>
+<pre><code>| `body` | VARCHAR | No | `''` | Request body content. |</code></pre>
+<pre><code>| `headers` | VARCHAR | No | `'{}'` | Custom HTTP headers as a JSON object string. |</code></pre>
+<pre><code>| `timeout_ms` | INT | No | `30000` | Request timeout in milliseconds (1 ~ 300,000). |</code></pre>
+<pre><code>| `ssl_verify` | BOOLEAN | No | `true` | Enable SSL certificate verification. |</code></pre>
+<pre><code>| `username` | VARCHAR | No | `''` | HTTP Basic Authentication username. |</code></pre>
+<pre><code>| `password` | VARCHAR | No | `''` | HTTP Basic Authentication password. |</code></pre>
+<h3>Return value</h3>
+<p>Returns a VARCHAR containing a JSON object.</p>
+<p><b>Success:</b></p>
+<pre><code>{&quot;status&quot;: &lt;http_code&gt;, &quot;body&quot;: &lt;response_content&gt;}</code></pre>
+<p><b>Error:</b></p>
+<pre><code>{&quot;status&quot;: -1, &quot;body&quot;: null, &quot;error&quot;: &quot;&lt;error_message&gt;&quot;}</code></pre>
+<h3>Examples</h3>
+<h4>Simple GET request</h4>
+<pre><code>SELECT http_request(url =&gt; 'https://httpbin.org/get');</code></pre>
+<h4>Extract status code using json_query</h4>
+<pre><code>SELECT json_query(
+    http_request(url =&gt; 'https://httpbin.org/get'),
+    '$.status'
+) AS status_code;</code></pre>
+<h4>POST request with JSON body</h4>
+<pre><code>SELECT http_request(
+    url =&gt; 'https://httpbin.org/post',
+    method =&gt; 'POST',
+    headers =&gt; '{&quot;Content-Type&quot;: &quot;application/json&quot;}',
+    body =&gt; '{&quot;name&quot;: &quot;StarRocks&quot;, &quot;type&quot;: &quot;database&quot;}'
+);</code></pre>
+<h4>Custom headers</h4>
+<pre><code>SELECT http_request(
+    url =&gt; 'https://api.example.com/data',
+    headers =&gt; '{&quot;Authorization&quot;: &quot;Bearer token123&quot;, &quot;Accept&quot;: &quot;application/json&quot;}'
+);</code></pre>
+<h4>HTTP Basic Authentication</h4>
+<pre><code>SELECT http_request(
+    url =&gt; 'https://httpbin.org/basic-auth/user/passwd',
+    username =&gt; 'user',
+    password =&gt; 'passwd'
+);</code></pre>
+<h4>Custom timeout</h4>
+<pre><code>SELECT http_request(
+    url =&gt; 'https://slow-api.example.com/data',
+    timeout_ms =&gt; 60000
+);</code></pre>
+<h4>Named parameters in any order</h4>
+<pre><code>SELECT http_request(
+    method =&gt; 'POST',
+    timeout_ms =&gt; 5000,
+    url =&gt; 'https://httpbin.org/post',
+    body =&gt; '{&quot;key&quot;: &quot;value&quot;}'
+);</code></pre>
+<h4>Positional parameters</h4>
+<pre><code>SELECT http_request('https://httpbin.org/post', 'POST', '{&quot;key&quot;: &quot;value&quot;}');</code></pre>
+<h4>Sending Slack webhook notification</h4>
+<pre><code>SELECT http_request(
+    url =&gt; 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL',
+    method =&gt; 'POST',
+    headers =&gt; '{&quot;Content-Type&quot;: &quot;application/json&quot;}',
+    body =&gt; '{&quot;text&quot;: &quot;Alert: Daily report generated from StarRocks!&quot;}'
+);</code></pre>
+<h4>Parse nested JSON response</h4>
+<pre><code>SELECT json_query(
+    json_query(
+        http_request(url =&gt; 'https://jsonplaceholder.typicode.com/posts/1'),
+        '$.body'
+    ),
+    '$.title'
+) AS post_title;</code></pre>
+<h4>Disable SSL verification</h4>
+<pre><code>SELECT http_request(
+    url =&gt; 'https://self-signed.example.com/api',
+    ssl_verify =&gt; false
+);</code></pre>
+<p>&gt; <b>Note:</b> If <code>http_request_ssl_verification_required</code> is set to <code>true</code> by the administrator, this option will be ignored.</p>
+<h3>Security configuration</h3>
+<p>This function includes built-in SSRF (Server-Side Request Forgery) protection with DNS rebinding prevention and redirect limits (max 20 hops).</p>
+<h4>Security levels</h4>
+<pre><code>| Level | Name | Description |</code></pre>
+<pre><code>|-------|------|-------------|</code></pre>
+<pre><code>| 1 | TRUSTED | Allow all requests including private IPs. |</code></pre>
+<pre><code>| 2 | PUBLIC | Block private IPs, allow all public hosts. |</code></pre>
+<pre><code>| 3 | RESTRICTED | Require allowlist for all hosts. **(Default)** |</code></pre>
+<pre><code>| 4 | PARANOID | Block all requests. |</code></pre>
+<h4>Configuration options</h4>
+<pre><code>| Config | Type | Default | Description |</code></pre>
+<pre><code>|--------|------|---------|-------------|</code></pre>
+<pre><code>| `http_request_security_level` | INT | `3` | Security level (1-4). |</code></pre>
+<pre><code>| `http_request_host_allowlist_regexp` | VARCHAR | `''` | Regex pattern for allowed hostnames. |</code></pre>
+<pre><code>| `http_request_ip_allowlist` | VARCHAR | `''` | Comma-separated allowed IPv4 addresses. |</code></pre>
+<pre><code>| `http_request_allow_private_in_allowlist` | BOOLEAN | `false` | Allow private IPs if in allowlist. |</code></pre>
+<pre><code>| `http_request_ssl_verification_required` | BOOLEAN | `true` | Enforce SSL verification (cannot be disabled by users). |</code></pre>
+<pre><code>ADMIN SET FRONTEND CONFIG (&quot;http_request_security_level&quot; = &quot;3&quot;);
+ADMIN SET FRONTEND CONFIG (&quot;http_request_host_allowlist_regexp&quot; = &quot;api\\.example\\.com|.*\\.trusted\\.org&quot;);
+ADMIN SET FRONTEND CONFIG (&quot;http_request_ip_allowlist&quot; = &quot;203.0.113.1,198.51.100.0&quot;);</code></pre>
+<h4>Allowlist behavior</h4>
+<pre><code>| Target | Level 2 (PUBLIC) | Level 3 (RESTRICTED) |</code></pre>
+<pre><code>|--------|------------------|---------------------|</code></pre>
+<pre><code>| Public IP (not in allowlist) | Allowed | Blocked |</code></pre>
+<pre><code>| Public IP (in allowlist) | Allowed | Allowed |</code></pre>
+<pre><code>| Private IP (not in allowlist) | Blocked | Blocked |</code></pre>
+<pre><code>| Private IP (in allowlist + `allow_private=true`) | Allowed | Allowed |</code></pre>
+<h4>Blocked IP ranges (levels 2-4)</h4>
+<p><code>127.0.0.0/8</code>, <code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code>, <code>169.254.0.0/16</code>, <code>0.0.0.0/8</code>, IPv6 loopback (<code>::1</code>), link-local (<code>fe80::/10</code>), unique local (<code>fc00::/7</code>).</p>
+<h3>keyword</h3>
+<p>HTTP, REQUEST, API, CALL</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/scalar-functions/http_request.md">StarRocks documentation</a></p>
+</body></html>

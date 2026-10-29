@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>to_tera_timestamp</title></head><body>
+<h2>to_tera_timestamp</h2>
+<p>Parses a date or time string according to the specified format and converts the string to a DATETIME  value.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME to_tera_timestamp(VARCHAR str, VARCHAR format)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the time expression to convert. It must be of the VARCHAR type.</li>
+</ul>
+<ul>
+<li><code>format</code>: the time format specifier for <code>str</code>. It is used to parse and convert the input string. <code>format</code> must match <code>string</code>. Otherwise, NULL is returned. If <code>format</code> is invalid, an error is returned.</li>
+</ul>
+<p>The following table describes the format elements.</p>
+<pre><code>| **Element**           | **Description**                             |</code></pre>
+<pre><code>| --------------------- | ------------------------------------------- |</code></pre>
+<pre><code>| [ \r \n \t - / , . ;] | Punctuation characters that are ignored in conversion       |</code></pre>
+<pre><code>| dd                    | Day of month (1 - 31)                       |</code></pre>
+<pre><code>| hh                    | Hour of day (1 - 12)                        |</code></pre>
+<pre><code>| hh24                  | Hour of day (0 - 23)                        |</code></pre>
+<pre><code>| mi                    | Minute (0 - 59)                             |</code></pre>
+<pre><code>| mm                    | Month (01 - 12)                             |</code></pre>
+<pre><code>| ss                    | Second (0 - 59)                             |</code></pre>
+<pre><code>| yyyy                  | 4-digit year.                               |</code></pre>
+<pre><code>| yy                    | 2-digit year.                               |</code></pre>
+<pre><code>| am                    | Meridian indicator.                         |</code></pre>
+<pre><code>| pm                    | Meridian indicator.                         |</code></pre>
+<h3>Examples</h3>
+<pre><code>select to_tera_timestamp(&quot;1988/04/08&quot;,&quot;yyyy/mm/dd&quot;);
++-----------------------------------------------+
+| to_tera_timestamp('1988/04/08', 'yyyy/mm/dd') |
++-----------------------------------------------+
+| 1988-04-08 00:00:00                           |
++-----------------------------------------------+
+
+select to_tera_timestamp(&quot;04-08-1988&quot;,&quot;mm-dd-yyyy&quot;);
++-----------------------------------------------+
+| to_tera_timestamp('04-08-1988', 'mm-dd-yyyy') |
++-----------------------------------------------+
+| 1988-04-08 00:00:00                           |
++-----------------------------------------------+
+
+select to_tera_timestamp(&quot;04.1988,08&quot;,&quot;mm.yyyy,dd&quot;);
++-----------------------------------------------+
+| to_tera_timestamp('04.1988,08', 'mm.yyyy,dd') |
++-----------------------------------------------+
+| 1988-04-08 00:00:00                           |
++-----------------------------------------------+
+
+select to_tera_timestamp(&quot;1988/04/08 2&quot;,&quot;yyyy/mm/dd hh&quot;);
++----------------------------------------------------+
+| to_tera_timestamp('1988/04/08 2', 'yyyy/mm/dd hh') |
++----------------------------------------------------+
+| 1988-04-08 02:00:00                                |
++----------------------------------------------------+
+
+select to_tera_timestamp(&quot;1988/04/08 14&quot;,&quot;yyyy/mm/dd hh24&quot;);
++-------------------------------------------------------+
+| to_tera_timestamp('1988/04/08 14', 'yyyy/mm/dd hh24') |
++-------------------------------------------------------+
+| 1988-04-08 14:00:00                                   |
++-------------------------------------------------------+
+
+select to_tera_timestamp(&quot;1988/04/08 14:15&quot;,&quot;yyyy/mm/dd hh24:mi&quot;);
++-------------------------------------------------------------+
+| to_tera_timestamp('1988/04/08 14:15', 'yyyy/mm/dd hh24:mi') |
++-------------------------------------------------------------+
+| 1988-04-08 14:15:00                                         |
++-------------------------------------------------------------+
+
+select to_tera_timestamp(&quot;1988/04/08 2:3:4&quot;,&quot;yyyy/mm/dd hh24:mi:ss&quot;);
++----------------------------------------------------------------+
+| to_tera_timestamp('1988/04/08 2:3:4', 'yyyy/mm/dd hh24:mi:ss') |
++----------------------------------------------------------------+
+| 1988-04-08 02:03:04                                            |
++----------------------------------------------------------------+
+
+select to_tera_timestamp(&quot;1988/04/08 02 am:3:4&quot;,&quot;yyyy/mm/dd hh am:mi:ss&quot;);
++---------------------------------------------------------------------+
+| to_tera_timestamp('1988/04/08 02 am:3:4', 'yyyy/mm/dd hh am:mi:ss') |
++---------------------------------------------------------------------+
+| 1988-04-08 02:03:04                                                 |
++---------------------------------------------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>TO_TERA_TIMESTAMP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/to_tera_timestamp.md">StarRocks documentation</a></p>
+</body></html>

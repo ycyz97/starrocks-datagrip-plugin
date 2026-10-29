@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>years_sub</title></head><body>
+<h2>years_sub</h2>
+<p>Subtracts the specified number of years from the specified datetime or date.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME YEARS_SUB(DATETIME date, INT years)</code></pre>
+<h3>Parameters</h3>
+<p><code>date</code>: The original date time, of type DATETIME or DATE.</p>
+<p><code>years</code>: The number of years to subtract. The value can be negative, but date year minus years can't exceed 10000. For example, if the year of date is 2022, then years can't be less than -7979. At the same time, the years cannot exceed the year value of date, for example, if the year value of date is 2022, then years can't be greater than 2022.</p>
+<h3>Return value</h3>
+<p>The return value type is the same as the parameter <code>date</code>. Returns NULL if the result year is out of range [0, 9999].</p>
+<h3>Examples</h3>
+<pre><code>select years_sub(&quot;2022-12-20 15:50:21&quot;, 2);
++-------------------------------------+
+| years_sub('2022-12-20 15:50:21', 2) |
++-------------------------------------+
+| 2020-12-20 15:50:21                 |
++-------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/years_sub.md">StarRocks documentation</a></p>
+</body></html>

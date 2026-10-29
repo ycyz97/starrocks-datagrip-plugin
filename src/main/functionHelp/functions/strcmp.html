@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>strcmp</title></head><body>
+<h2>strcmp</h2>
+<p>This function compares two strings. Returns 0 if lhs and rhs compare equal. Return -1 if lhs appears before rhs in lexicographical order. Returns 1 if lhs appears after rhs in lexicographical order. When the argument is NULL, the result is NULL.</p>
+<h3>Syntax</h3>
+<pre><code>INT strcmp(VARCHAR lhs, VARCHAR rhs)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select strcmp(&quot;test1&quot;, &quot;test1&quot;);
++--------------------------+
+| strcmp('test1', 'test1') |
++--------------------------+
+|                        0 |
++--------------------------+
+
+mysql&gt; select strcmp(&quot;test1&quot;, &quot;test2&quot;);
++--------------------------+
+| strcmp('test1', 'test2') |
++--------------------------+
+|                       -1 |
++--------------------------+
+
+mysql&gt; select strcmp(&quot;test2&quot;, &quot;test1&quot;);
++--------------------------+
+| strcmp('test2', 'test1') |
++--------------------------+
+|                        1 |
++--------------------------+
+
+mysql&gt; select strcmp(&quot;test1&quot;, NULL);
++-----------------------+
+| strcmp('test1', NULL) |
++-----------------------+
+|                  NULL |
++-----------------------+</code></pre>
+<h3>keyword</h3>
+<p>STRCMP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/strcmp.md">StarRocks documentation</a></p>
+</body></html>

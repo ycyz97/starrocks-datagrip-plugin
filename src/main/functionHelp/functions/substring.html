@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>substring</title></head><body>
+<h2>substring, substr</h2>
+<p>Extracts characters staring from the specified position and returns a substring of specified length.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR substr(VARCHAR str, pos[, len])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: required, the string to extract characters. It must be a VARCHAR value.</li>
+<li><code>pos</code>: required, an integer that specifies the starting position. Note that the first character in a string is 1, not 0.</li>
+<li>If <code>pos</code> is 0, an empty string is returned.</li>
+<li><code>pos</code> can be a negative integer. In this case, this function extracts characters starting from the end of the string. See Example 2.</li>
+<li>If the position specified by <code>pos</code> exceeds the range of the string, an empty string is returned. See Example 3.</li>
+<li><code>len</code>: optional, a positive integer that specifies the number of characters to extract.</li>
+<li>If <code>len</code> is specified, this function extracts <code>len</code> characters starting from the position specified by <code>pos</code>.</li>
+<li>If <code>len</code> is not specified, this function extracts all the characters starting at <code>pos</code>. See Example 1.</li>
+<li>If <code>len</code> exceeds the actual length of the matching characters, all the matching characters are returned. See Example 4.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type.</p>
+<h3>Examples</h3>
+<pre><code>-- Extract all characters starting from the first character &quot;s&quot;.
+MySQL &gt; select substring(&quot;starrockscluster&quot;, 1);
++-------------------------------------+
+| substring('starrockscluster', 1)    |
++-------------------------------------+
+| starrockscluster                    |
++-------------------------------------+
+
+-- Extract the first 9 characters starting from the first character &quot;s&quot;.
+MySQL &gt; select substring(&quot;starrockscluster&quot;, 1, 9);
++-------------------------------------+
+| substring('starrockscluster', 1, 9) |
++-------------------------------------+
+| starrocks                           |
++-------------------------------------+
+
+-- The position is negative and the counting is from the end of the string.
+MySQL &gt; select substring(&quot;starrocks&quot;, -5, 5);
++-------------------------------+
+| substring('starrocks', -5, 5) |
++-------------------------------+
+| rocks                         |
++-------------------------------+
+
+-- The position exceeds the length of the string and an empty string is returned.
+MySQL &gt; select substring(&quot;apple&quot;, 8, 2);
++--------------------------------+
+| substring('apple', 8, 2)       |
++--------------------------------+
+|                                |
++--------------------------------+
+
+-- There are 5 matching characters. The length 9 exceeds the length of the matching characters and all the matching characters are returned.
+MySQL &gt; select substring(&quot;apple&quot;, 1, 9);
++--------------------------+
+| substring('apple', 1, 9) |
++--------------------------+
+| apple                    |
++--------------------------+</code></pre>
+<h3>keyword</h3>
+<p>substring,string,sub</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/substring.md">StarRocks documentation</a></p>
+</body></html>

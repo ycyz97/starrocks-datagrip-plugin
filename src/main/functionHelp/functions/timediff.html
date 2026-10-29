@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>timediff</title></head><body>
+<h2>timediff</h2>
+<p>Returns the difference between two DATETIME expressions.</p>
+<p>The return value must be of the TIME type.</p>
+<h3>Syntax</h3>
+<pre><code>TIME TIMEDIFF(DATETIME expr1, DATETIME expr2)`</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT TIMEDIFF(now(),utc_timestamp());
++----------------------------------+
+| timediff(now(), utc_timestamp()) |
++----------------------------------+
+| 08:00:00                         |
++----------------------------------+
+
+MySQL &gt; SELECT TIMEDIFF('2019-07-11 16:59:30','2019-07-11 16:59:21');
++--------------------------------------------------------+
+| timediff('2019-07-11 16:59:30', '2019-07-11 16:59:21') |
++--------------------------------------------------------+
+| 00:00:09                                               |
++--------------------------------------------------------+
+
+MySQL &gt; SELECT TIMEDIFF('2019-01-01 00:00:00', NULL);
++---------------------------------------+
+| timediff('2019-01-01 00:00:00', NULL) |
++---------------------------------------+
+| NULL                                  |
++---------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>TIMEDIFF</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/timediff.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>week</title></head><body>
+<h2>week</h2>
+<p>Returns the week number for a given date. This function works in the same way as the WEEK function in MySQL.</p>
+<p>This function is supported from v2.3.</p>
+<h3>Syntax</h3>
+<pre><code>INT WEEK(DATETIME|DATE date, INT mode)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>Date</code>: The supported data types are DATETIME and DATE.</li>
+</ul>
+<ul>
+<li><code>Mode</code>: optional. The supported data type is INT. This parameter is used to specify the logic for calculating the week number, that is, whether the week starts on Sunday or Monday, and whether the return value is in the range of 0–53 or 1–53.</li>
+</ul>
+<p>Value range: 0–7. Default value: <code>0</code>. If this parameter is not specified, mode <code>0</code> is used by default. The following table describes how this parameter works.</p>
+<pre><code>| Mode | First day of week | Range | Week 1 is the first week …    |</code></pre>
+<pre><code>| :--- | :---------------- | :---- | :---------------------------- |</code></pre>
+<pre><code>| 0    | Sunday            | 0-53  | with a Sunday in this year    |</code></pre>
+<pre><code>| 1    | Monday            | 0-53  | with 4 or more days this year |</code></pre>
+<pre><code>| 2    | Sunday            | 1-53  | with a Sunday in this year    |</code></pre>
+<pre><code>| 3    | Monday            | 1-53  | with 4 or more days this year |</code></pre>
+<pre><code>| 4    | Sunday            | 0-53  | with 4 or more days this year |</code></pre>
+<pre><code>| 5    | Monday            | 0-53  | with a Monday in this year    |</code></pre>
+<pre><code>| 6    | Sunday            | 1-53  | with 4 or more days this year |</code></pre>
+<pre><code>| 7    | Monday            | 1-53  | with a Monday in this year    |</code></pre>
+<h3>Return value</h3>
+<p>Returns a value of the INT type. Value range: 0–53. The specific range is determined based on the <code>mode</code> parameter. <code>NULL</code> is returned if the value of <code>date</code> is invalid or the input value is empty.</p>
+<h3>Examples</h3>
+<p>Calculate the week number for <code>2007-01-01</code>. <code>2007-01-01</code> is Monday on the calendar.</p>
+<ul>
+<li><code>Mode</code> is set to <code>0</code> and <code>0</code> is returned. The week starts on Sunday. <code>2007-01-01</code> is Monday and cannot be week 1. Therefore, <code>0</code> is returned.</li>
+</ul>
+<pre><code>mysql&gt; SELECT WEEK('2007-01-01', 0);
++-----------------------+
+| week('2007-01-01', 0) |
++-----------------------+
+|                     0 |
++-----------------------+
+1 row in set (0.02 sec)</code></pre>
+<ul>
+<li><code>Mode</code> is set to <code>1</code> and <code>1</code> is returned. The week starts on Monday and <code>2007-01-01</code> is Monday.</li>
+</ul>
+<pre><code>mysql&gt; SELECT WEEK('2007-01-01', 1);
++-----------------------+
+| week('2007-01-01', 1) |
++-----------------------+
+|                     1 |
++-----------------------+
+1 row in set (0.02 sec)</code></pre>
+<ul>
+<li><code>Mode</code> is set to <code>2</code> and <code>53</code> is returned. The week starts on Sunday. However, <code>2007-01-01</code> is Monday and the value range is 1–53. Therefore, <code>53</code> is returned, indicating that this is the last week of the previous year.</li>
+</ul>
+<pre><code>mysql&gt; SELECT WEEK('2007-01-01', 2);
++-----------------------+
+| week('2007-01-01', 2) |
++-----------------------+
+|                    53 |
++-----------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/week.md">StarRocks documentation</a></p>
+</body></html>

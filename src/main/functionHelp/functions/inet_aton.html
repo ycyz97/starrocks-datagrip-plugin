@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>inet_aton</title></head><body>
+<h2>inet_aton</h2>
+<p>Takes a string containing an IPv4 address in the format A.B.C.D. Returns a BIGINT number representing the corresponding IPv4 address in big endian.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT inet_aton(VARCHAR ipv4)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select inet_aton('192.168.1.1');
++--------------------------------------+
+| inet_aton('192.168.1.1') |
++--------------------------------------+
+| 3232235777                           |
++--------------------------------------+
+
+mysql&gt; select stringIp, inet_aton(stringIp) from ipv4;
++-----------------+----------------------------+
+|stringIp         | inet_aton(stringIp)        |
++-----------------+----------------------------+
+| 0.0.0.0         | 0                          |
+| 255.255.255.255 | 4294967295                 |
+| invalid         | NULL                       |
++-----------------+----------------------------+ </code></pre>
+<h3>keyword</h3>
+<p>INET_ATON</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/inet_aton.md">StarRocks documentation</a></p>
+</body></html>

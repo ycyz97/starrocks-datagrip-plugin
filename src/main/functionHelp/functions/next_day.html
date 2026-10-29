@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>next_day</title></head><body>
+<h2>next_day</h2>
+<p>Returns the date of the first specified day of week (DOW) that occurs after the input date (DATE or DATETIME). For example, <code>next_day('2023-04-06', 'Monday')</code> returns the date of the next Monday that occurred after '2023-04-06'.</p>
+<p>This function is supported from v3.1. It is the opposite of previous_day.</p>
+<h3>Syntax</h3>
+<pre><code>DATE next_day(DATETIME|DATE date_expr, VARCHAR dow)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>date_expr</code>: the input date. It must be a valid DATE or DATETIME expression.</li>
+<li><code>dow</code>: the day of week. Valid values include a number of abbreviations which are case-sensitive:</li>
+</ul>
+<pre><code>| DOW_FULL  | DOW_2 | DOW_3 |</code></pre>
+<pre><code>| --------- | ----- |:-----:|</code></pre>
+<pre><code>| Sunday    | Su    | Sun   |</code></pre>
+<pre><code>| Monday    | Mo    | Mon   |</code></pre>
+<pre><code>| Tuesday   | Tu    | Tue   |</code></pre>
+<pre><code>| Wednesday | We    | Wed   |</code></pre>
+<pre><code>| Thursday  | Th    | Thu   |</code></pre>
+<pre><code>| Friday    | Fr    | Fri   |</code></pre>
+<pre><code>| Saturday  | Sa    | Sat   |</code></pre>
+<h3>Return value</h3>
+<p>Returns a DATE value.</p>
+<p>Any invalid <code>dow</code> will cause an error. <code>dow</code> is case-sensitive.</p>
+<p>Returns NULL if an invalid date or a NULL argument is passed in.</p>
+<h3>Examples</h3>
+<pre><code>-- Return the date of the next Monday that occurred after 2023-04-06. 2023-04-06 is Thursday and the date of the next Monday is 2023-04-10.
+
+MySQL &gt; select next_day('2023-04-06', 'Monday');
++----------------------------------+
+| next_day('2023-04-06', 'Monday') |
++----------------------------------+
+| 2023-04-10                       |
++----------------------------------+
+
+MySQL &gt; select next_day('2023-04-06', 'Tue');
++-------------------------------+
+| next_day('2023-04-06', 'Tue') |
++-------------------------------+
+| 2023-04-11                    |
++-------------------------------+
+
+MySQL &gt; select next_day('2023-04-06 20:13:14', 'Fr');
++---------------------------------------+
+| next_day('2023-04-06 20:13:14', 'Fr') |
++---------------------------------------+
+| 2023-04-07                            |
++---------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>NEXT_DAY, NEXT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/next_day.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hours_add</title></head><body>
+<h2>hours_add</h2>
+<p>Adds hours to a date or datetime.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME hours_add(DATETIME|DATE date, INT hours);</code></pre>
+<h3>Parameters</h3>
+<p><code>date</code>: Base date or datetime.</p>
+<p><code>hours</code>: Hours to be added.</p>
+<h3>Return value</h3>
+<p>Returns a DATETIME value.</p>
+<p>NULL is returned when any of the input parameters is NULL.</p>
+<h3>Examples</h3>
+<pre><code>select hours_add('2022-01-01 01:01:01', 2);
++-------------------------------------+
+| hours_add('2022-01-01 01:01:01', 2) |
++-------------------------------------+
+| 2022-01-01 03:01:01                 |
++-------------------------------------+
+
+select hours_add('2022-01-01 01:01:01', -1);
++--------------------------------------+
+| hours_add('2022-01-01 01:01:01', -1) |
++--------------------------------------+
+| 2022-01-01 00:01:01                  |
++--------------------------------------+
+
+select hours_add('2022-01-01', 1);
++----------------------------+
+| hours_add('2022-01-01', 1) |
++----------------------------+
+| 2022-01-01 01:00:00        |
++----------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/hours_add.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_union_count</title></head><body>
+<h2>bitmap_union_count</h2>
+<p>Returns the union of a set of bitmap values and returns the cardinality of the union. This function is supported from v2.3.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT bitmap_union_count(BITMAP value)</code></pre>
+<h4>Parameters</h4>
+<p><code>value</code>: a set of bitmap values. The supported data type is BITMAP.</p>
+<h3>Return value</h3>
+<p>Returns a value of the BIGINT type.</p>
+<h3>Examples</h3>
+<p>Calculate the unique views (UVs) of a web page. If <code>user_id</code> is of the INT type, the latter two queries are equivalent.</p>
+<pre><code>mysql&gt; select * from test
++---------+---------+
+| page_id | user_id |
++---------+---------+
+|       1 |       1 |
+|       1 |       2 |
+|       2 |       1 |
++---------+---------+
+
+mysql&gt; select page_id,count(distinct user_id) from test group by page_id;
++---------+-------------------------+
+| page_id | count(DISTINCT user_id) |
++---------+-------------------------+
+|       1 |                       2 |
+|       2 |                       1 |
++---------+-------------------------+
+
+mysql&gt; select page_id,bitmap_union_count(to_bitmap(user_id)) from test group by page_id;
++---------+----------------------------------------+
+| page_id | bitmap_union_count(to_bitmap(user_id)) |
++---------+----------------------------------------+
+|       1 |                                      2 |
+|       2 |                                      1 |
++---------+----------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_union_count.md">StarRocks documentation</a></p>
+</body></html>

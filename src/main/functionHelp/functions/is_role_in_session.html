@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>is_role_in_session</title></head><body>
+<h2>is_role_in_session</h2>
+<p>Verifies whether a role (or a nested role) is active in the current session.</p>
+<p>This function is supported from v3.1.4 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN is_role_in_session(VARCHAR role_name);</code></pre>
+<h3>Parameters</h3>
+<p><code>role_name</code>: the role you want to verify (can also be a nested role). Supported data type is VARCHAR.</p>
+<h3>Return value</h3>
+<p>Returns a BOOLEAN value. <code>1</code> indicates the role is active in the current session. <code>0</code> indicates the opposite.</p>
+<h3>Examples</h3>
+<p>1. Create roles and a user.</p>
+<pre><code>   -- Create three roles.
+   create role r1;
+   create role r2;
+   create role r3;
+
+   -- Create user u1.
+   create user u1;
+
+   -- Pass roles r2 and r3 to r1, and grant r1 to user u1. This way, user u1 has three roles: r1, r2, and r3.
+   grant r3 to role r2;
+   grant r2 to role r1;
+   grant r1 to user u1;
+
+   -- Switch to user u1 and perform operations as u1.
+   execute as u1 with no revert;</code></pre>
+<p>2. Verify whether <code>r1</code> is active. The result shows this role is not active.</p>
+<pre><code>   select is_role_in_session(&quot;r1&quot;);
+   +--------------------------+
+   | is_role_in_session('r1') |
+   +--------------------------+
+   |                        0 |
+   +--------------------------+</code></pre>
+<p>3. Run the SET ROLE command to activate <code>r1</code> and use <code>is_role_in_session</code> to verify whether the role is active. The result shows <code>r1</code> is active and roles <code>r2</code> and <code>r3</code> that are nested in <code>r1</code> are also active.</p>
+<pre><code>   set role &quot;r1&quot;;
+
+   select is_role_in_session(&quot;r1&quot;);
+   +--------------------------+
+   | is_role_in_session('r1') |
+   +--------------------------+
+   |                        1 |
+   +--------------------------+
+
+   select is_role_in_session(&quot;r2&quot;);
+   +--------------------------+
+   | is_role_in_session('r2') |
+   +--------------------------+
+   |                        1 |
+   +--------------------------+
+
+   select is_role_in_session(&quot;r3&quot;);
+   +--------------------------+
+   | is_role_in_session('r3') |
+   +--------------------------+
+   |                        1 |
+   +--------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/is_role_in_session.md">StarRocks documentation</a></p>
+</body></html>

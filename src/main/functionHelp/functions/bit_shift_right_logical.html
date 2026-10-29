@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bit_shift_right_logical</title></head><body>
+<h2>bit_shift_right_logical</h2>
+<p>Shifts the binary representation of a numeric expression to the right by a specified number of bits.</p>
+<p>This function performs a <b>logical right shift,</b> during which the bit length does not change, the low bit is dropped, and 0 is appended to the high bit despite whether the original bit is positive or negative. <b>Logical</b> shifts are unsigned shifts. For example, shifting <code>10101</code> by one bit results in <code>00101</code>.</p>
+<p>bit_shift_right() and bit_shift_right_logical() return the same result for a positive value.</p>
+<h3>Syntax</h3>
+<pre><code>bit_shift_right_logical(value, shift)</code></pre>
+<h3>Parameters</h3>
+<p><code>value</code>: the value or numeric expression to shift. Supported data types are TINYINT, SMALLINT, INT, BIGINT, and LARGEINT.</p>
+<p><code>shift</code>: the number of bits to shift. The supported data type is BIGINT.</p>
+<h3>Return value</h3>
+<p>Returns a value of the same type as <code>value</code>.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>If any input parameter is NULL, NULL is returned.</li>
+<li>If <code>shift</code> is less than 0, 0 is returned.</li>
+<li>Shifting a <code>value</code> by <code>0</code> always results in the original <code>value</code>.</li>
+<li>Shifting <code>0</code> by a <code>shift</code> always results in <code>0</code>.</li>
+<li>If the data type of <code>value</code> is numeric but not an integer, that value will be cast to an integer. See Examples.</li>
+<li>If the data type of <code>value</code> is a string, the value will be cast to an integer if possible. For example, the string &quot;2.3&quot; will be cast to 2. If the value cannot be cast to an integer, the value will be treated as NULL. See Examples.</li>
+</ul>
+<h3>Examples</h3>
+<p>Use this function to shift numeric values.</p>
+<pre><code>SELECT bit_shift_right_logical(2, 1);
++-------------------------------+
+| bit_shift_right_logical(2, 1) |
++-------------------------------+
+|                             1 |
++-------------------------------+
+
+SELECT bit_shift_right_logical(2.2, 1);
++---------------------------------+
+| bit_shift_right_logical(2.2, 1) |
++---------------------------------+
+|                               1 |
++---------------------------------+
+
+SELECT bit_shift_right_logical(&quot;2&quot;, 1);
++---------------------------------+
+| bit_shift_right_logical('2', 1) |
++---------------------------------+
+|                               1 |
++---------------------------------+
+
+SELECT bit_shift_right_logical(cast('-2' AS INTEGER(32)), 1);
++-----------------------------------------------+
+| bit_shift_right_logical(CAST('-2' AS INT), 1) |
++-----------------------------------------------+
+|                                    2147483647 |
++-----------------------------------------------+</code></pre>
+<h3>References</h3>
+<ul>
+<li>bit_shift_left</li>
+<li>bit_shift_right</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bit-functions/bit_shift_right_logical.md">StarRocks documentation</a></p>
+</body></html>

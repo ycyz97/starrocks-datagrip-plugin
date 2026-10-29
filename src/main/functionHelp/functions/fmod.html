@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>fmod</title></head><body>
+<h2>fmod</h2>
+<p>Returns the floating point remainder of the division ( <code>dividend</code>/<code>divisor</code> ). It is a modulo function.</p>
+<h3>Syntax</h3>
+<pre><code>fmod(dividend,devisor);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>dividend</code>:  DOUBLE or FLOAT is supported.</li>
+</ul>
+<ul>
+<li><code>devisor</code>: DOUBLE or FLOAT is supported.</li>
+</ul>
+<p>&gt; <b>Note</b><br>&gt;<br>&gt; The data type of <code>devisor</code> needs to be the same as the data type of <code>dividend</code>. Otherwise, StarRocks performs implicit conversion to convert the data type.</p>
+<h3>Return value</h3>
+<p>The data type and sign of output need to be the same as the data type and sign of <code>dividend</code>. If <code>divisor</code> is <code>0</code>, <code>NULL</code> is returned.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select fmod(3.14,3.14);
++------------------+
+| fmod(3.14, 3.14) |
++------------------+
+|                0 |
++------------------+
+
+mysql&gt; select fmod(11.5,3);
++---------------+
+| fmod(11.5, 3) |
++---------------+
+|           2.5 |
++---------------+
+
+mysql&gt; select fmod(3,6);
++------------+
+| fmod(3, 6) |
++------------+
+|          3 |
++------------+
+
+mysql&gt; select fmod(3,0);
++------------+
+| fmod(3, 0) |
++------------+
+|       NULL |
++------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/fmod.md">StarRocks documentation</a></p>
+</body></html>

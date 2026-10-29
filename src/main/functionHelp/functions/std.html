@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>std</title></head><body>
+<h2>std</h2>
+<p>Returns the standard deviation of an expression. Since v2.5.10, this function can also be used as a window function.</p>
+<h3>Syntax</h3>
+<pre><code>STD(expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the expression. If it is a table column, it must evaluate to TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, or DECIMAL.</p>
+<h3>Return value</h3>
+<p>Returns a DOUBLE value.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select * from std_test;
++------+------+
+| col0 | col1 |
++------+------+
+|    0 |    0 |
+|    1 |    2 |
+|    2 |    4 |
+|    3 |    6 |
+|    4 |    8 |
++------+------+</code></pre>
+<p>Calculate the standard deviation of <code>col0</code> and <code>col1</code>.</p>
+<pre><code>MySQL &gt; select std(col0) as std_of_col0, std(col1) as std_of_col1 from std_test;
++--------------------+--------------------+
+| std_of_col0        | std_of_col1        |
++--------------------+--------------------+
+| 1.4142135623730951 | 2.8284271247461903 |
++--------------------+--------------------+</code></pre>
+<h3>keyword</h3>
+<p>STD</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/std.md">StarRocks documentation</a></p>
+</body></html>

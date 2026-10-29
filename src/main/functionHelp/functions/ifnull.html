@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>ifnull</title></head><body>
+<p>Returns a fallback value when the first expression is <code>NULL</code>.</p>
+<p><b>Syntax:</b> <code>IFNULL(expr1, expr2)</code></p>
+<p><b>Parameters:</b> <code>expr1</code> is the value to test; <code>expr2</code> is returned when it is <code>NULL</code>.</p>
+<p><b>Returns:</b> <code>expr1</code> when it is not <code>NULL</code>; otherwise <code>expr2</code>.</p>
+<pre><code>SELECT IFNULL(NULL, 'unknown'); -- unknown</code></pre>
+</body></html>

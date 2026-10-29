@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>square</title></head><body>
+<h2>square</h2>
+<p>Calculates the square of a value.</p>
+<h3>Syntax</h3>
+<pre><code>square(arg)</code></pre>
+<h4>Parameters</h4>
+<p><code>arg</code>: the value whose square you want to calculate. You can specify only a numeric value. This function converts the numeric value into a DOUBLE value before it calculates the square of the value.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3>Usage notes</h3>
+<p>If you specify a non-numeric value, this function returns <code>NULL</code>.</p>
+<h3>Examples</h3>
+<p>Example 1: Calculate the square of a numeric value.</p>
+<pre><code>mysql&gt;  select square(11);
++------------+
+| square(11) |
++------------+
+|        121 |
++------------+</code></pre>
+<p>Example 2: Calculate the square of a non-numeric value. The return value is <code>NULL</code>.</p>
+<pre><code>mysql&gt;  select square('2021-01-01');
++----------------------+
+| square('2021-01-01') |
++----------------------+
+|                 NULL |
++----------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/square.md">StarRocks documentation</a></p>
+</body></html>

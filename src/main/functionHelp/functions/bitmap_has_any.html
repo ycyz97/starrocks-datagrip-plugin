@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_has_any</title></head><body>
+<h2>bitmap_has_any</h2>
+<p>Calculates whether there are intersecting elements between two Bitmap columns, and the return value is Boolean value.</p>
+<h3>Syntax</h3>
+<pre><code>B00LEAN BITMAP_HAS_ANY(BITMAP lhs, BITMAP rhs)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select bitmap_has_any(to_bitmap(1),to_bitmap(2)) cnt;
++------+
+| cnt  |
++------+
+|    0 |
++------+
+
+MySQL &gt; select bitmap_has_any(to_bitmap(1),to_bitmap(1)) cnt;
++------+
+| cnt  |
++------+
+|    1 |
++------+</code></pre>
+<h3>keyword</h3>
+<p>BITMAP_HAS_ANY,BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_has_any.md">StarRocks documentation</a></p>
+</body></html>

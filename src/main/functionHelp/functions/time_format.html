@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>time_format</title></head><body>
+<h2>time_format</h2>
+<p>Formats TIME-type values in the specified format.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR TIME_FORMAT(TIME time, VARCHAR format)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>time</code> (Required): The time value (of the TIME type) to be formatted.</li>
+<li><code>format</code> (Required): The format to use. Valid values:</li>
+</ul>
+<pre><code>%f	Microseconds (000000 to 999999)
+%H	Hour (00 to 23)
+%h	Hour (00 to 12)
+%i	Minutes (00 to 59)
+%p	AM or PM
+%S	Seconds (00 to 59)
+%s	Seconds (00 to 59)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; SELECT TIME_FORMAT(&quot;19:30:10&quot;, &quot;%h %i %s %p&quot;);
++----------------------------------------+
+| time_format('19:30:10', '%h %i %s %p') |
++----------------------------------------+
+| 12 00 00 AM                            |
++----------------------------------------+
+1 row in set (0.01 sec)
+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/time_format.md">StarRocks documentation</a></p>
+</body></html>

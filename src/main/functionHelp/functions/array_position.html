@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_position</title></head><body>
+<h2>array_position</h2>
+<p>Obtains the position of an element in an array.</p>
+<h3>Syntax</h3>
+<pre><code>array_position(any_array, any_element)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>any_array</code>: the array to be searched.</li>
+<li><code>any_element</code>: an expression that matches the element in an array.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns the position of the specified element if the element can be found in the specified array and returns 0 if the element cannot be found in the array.</p>
+<h3>Examples</h3>
+<ul>
+<li>Example 1: Obtain the position of an element in an array.</li>
+</ul>
+<pre><code>mysql&gt; select array_position([&quot;apple&quot;,&quot;orange&quot;,&quot;pear&quot;], &quot;orange&quot;);
+
++-----------------------------------------------------+
+
+| array_position(['apple','orange','pear'], 'orange') |
+
++-----------------------------------------------------+
+
+|                                                   2 |
+
++-----------------------------------------------------+
+
+1 row in set (0.01 sec)</code></pre>
+<ul>
+<li>Example 2: Obtain the position of <code>NULL</code> in an array.</li>
+</ul>
+<pre><code>mysql&gt; select array_position([1, NULL], NULL);</code></pre>
+<pre><code>+--------------------------------+
+
+| array_position([1,NULL], NULL) |
+
++--------------------------------+
+
+|                              2 |
+
++--------------------------------+
+
+1 row in set (0.00 sec)</code></pre>
+<ul>
+<li>Example 3: Obtain the position of a sub-array in a multi-dimensional array. A position can be returned only when a sub-array that consists of the same elements in the same order as the specified sub-array can be found in the multi-dimensional array.</li>
+</ul>
+<pre><code>mysql&gt; select array_position([[1,2,3], [4,5,6]], [4,5,6]);
+
++--------------------------------------------+
+
+| array_position([[1,2,3],[4,5,6]], [4,5,6]) |
+
++--------------------------------------------+
+
+|                                          2 |
+
++--------------------------------------------+
+
+1 row in set (0.00 sec)
+
+
+
+mysql&gt; select array_position([[1,2,3], [4,5,6]], [4,6,5]);
+
++--------------------------------------------+
+
+| array_position([[1,2,3],[4,5,6]], [4,6,5]) |
+
++--------------------------------------------+
+
+|                                          0 |
+
++--------------------------------------------+
+
+1 row in set (0.00 sec)</code></pre>
+<h3>Keywords</h3>
+<p>ARRAY_POSITION, ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_position.md">StarRocks documentation</a></p>
+</body></html>

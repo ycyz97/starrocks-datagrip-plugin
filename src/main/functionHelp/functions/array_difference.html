@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_difference</title></head><body>
+<h2>array_difference</h2>
+<p>Calculates the difference between every two neighboring elements of an array by subtracting each element from its following element and returns an array that consists of the differences.</p>
+<h3>Syntax</h3>
+<pre><code>array_difference(input)</code></pre>
+<h3>Parameters</h3>
+<p><code>input</code>: the array for which you want to calculate the differences between every two neighboring elements.</p>
+<h3>Return value</h3>
+<p>Returns an array with the same length as <code>input</code>. The return element type is determined by the input element type as follows:</p>
+<pre><code>| Input element type | Return element type |</code></pre>
+<pre><code>| --- | --- |</code></pre>
+<pre><code>| `BOOLEAN`, `TINYINT`, `SMALLINT`, `INT`, or `BIGINT` | `BIGINT` |</code></pre>
+<pre><code>| `LARGEINT` | `LARGEINT` |</code></pre>
+<pre><code>| `FLOAT` or `DOUBLE` | `DOUBLE` |</code></pre>
+<pre><code>| `DECIMAL(P, S)`, where `P &lt;= 38` | `DECIMAL(min(P + 1, 38), S)` |</code></pre>
+<p><code>ARRAY&lt;DECIMAL256&gt;</code> (<code>P &gt; 38</code>) is not supported.</p>
+<h3>Examples</h3>
+<p>Example 1:</p>
+<pre><code>mysql&gt; SELECT array_difference([342, 32423, 213, 23432]);
++-----------------------------------------+
+| array_difference([342,32423,213,23432]) |
++-----------------------------------------+
+| [0,32081,-32210,23219]                  |
++-----------------------------------------+</code></pre>
+<p>Example 2:</p>
+<pre><code>mysql&gt; SELECT array_difference([342, 32423, 213, null, 23432]);
++----------------------------------------------+
+| array_difference([342,32423,213,NULL,23432]) |
++----------------------------------------------+
+| [0,32081,-32210,null,null]                   |
++----------------------------------------------+</code></pre>
+<p>Example 3:</p>
+<pre><code>mysql&gt; SELECT array_difference([1.2, 2.3, 3.2, 4324242.55]);
++--------------------------------------------+
+| array_difference([1.2,2.3,3.2,4324242.55]) |
++--------------------------------------------+
+| [0,1.1,0.9,4324239.35]                     |
++--------------------------------------------+</code></pre>
+<p>Example 4:</p>
+<pre><code>mysql&gt; SELECT array_difference([false, true, false]);
++----------------------------------------+
+| array_difference([FALSE, TRUE, FALSE]) |
++----------------------------------------+
+| [0,1,-1]                               |
++----------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_difference.md">StarRocks documentation</a></p>
+</body></html>

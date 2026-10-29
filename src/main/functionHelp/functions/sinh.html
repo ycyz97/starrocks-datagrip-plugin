@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>sinh</title></head><body>
+<h2>sinh</h2>
+<p>Computes the hyperbolic sine of the argument.</p>
+<p>This function is supported from v3.0.</p>
+<h3>Syntax</h3>
+<pre><code>DOUBLE sinh(DOUBLE arg)</code></pre>
+<h4>Parameters</h4>
+<p><code>arg</code>: You can specify only a numeric value. This function converts the numeric value into a DOUBLE value before it computes the hyperbolic sine of the value.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3>Usage notes</h3>
+<p>If you specify a non-numeric value, this function returns <code>NULL</code>.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select sinh(-1);
++---------------------+
+| sinh(-1)            |
++---------------------+
+| -1.1752011936438014 |
++---------------------+
+
+mysql&gt; select sinh(0);
++---------+
+| sinh(0) |
++---------+
+|       0 |
++---------+
+
+mysql&gt; select sinh(1);
++--------------------+
+| sinh(1)            |
++--------------------+
+| 1.1752011936438014 |
++--------------------+
+
+mysql&gt; select sinh(&quot;&quot;);
++----------+
+| sinh('') |
++----------+
+|     NULL |
++----------+</code></pre>
+<h3>keyword</h3>
+<p>SINH</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/sinh.md">StarRocks documentation</a></p>
+</body></html>

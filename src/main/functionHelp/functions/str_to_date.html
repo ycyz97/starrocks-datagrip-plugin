@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>str_to_date</title></head><body>
+<h2>str_to_date</h2>
+<p>Converts a string into a DATETIME value according to the specified format. If the conversion fails, NULL is returned.</p>
+<p>The format must be consistent with that described in date_format.</p>
+<p>This function is inverse to date_format.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME STR_TO_DATE(VARCHAR str, VARCHAR format)</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the time expression you want to convert. It must be of the VARCHAR type.</p>
+<p><code>format</code>: the format used to return the value. For the supported format, see date_format.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DATETIME type. If <code>format</code> specifies a date, a DATE value is returned.</p>
+<p>NULL is returned if <code>str</code> or <code>format</code> is NULL.</p>
+<h3>Examples</h3>
+<p>Example 1: Convert the input into a DATETIME value.</p>
+<pre><code>MySQL &gt; select str_to_date('2014-12-21 12:34:56', '%Y-%m-%d %H:%i:%s');
++---------------------------------------------------------+
+| str_to_date('2014-12-21 12:34:56', '%Y-%m-%d %H:%i:%s') |
++---------------------------------------------------------+
+| 2014-12-21 12:34:56                                     |
++---------------------------------------------------------+</code></pre>
+<p>Example 2: Convert the input into a DATE value.</p>
+<pre><code>MySQL &gt; select str_to_date('2014-12-21 12:34:56', '%Y-%m-%d');
++--------------------------------------------------------------+
+| str_to_date('2014-12-21 12:34:56', '%Y-%m-%d')               |
++--------------------------------------------------------------+
+| 2014-12-21                                                   |
++--------------------------------------------------------------+</code></pre>
+<p>Example 3: Convert the input &quot;200442 Monday&quot; into a DATE value.</p>
+<pre><code>MySQL &gt; select str_to_date('200442 Monday', '%X%V %W');
++-----------------------------------------+
+| str_to_date('200442 Monday', '%X%V %W') |
++-----------------------------------------+
+| 2004-10-18                              |
++-----------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>STR_TO_DATE,STR,TO,DATE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/str_to_date.md">StarRocks documentation</a></p>
+</body></html>

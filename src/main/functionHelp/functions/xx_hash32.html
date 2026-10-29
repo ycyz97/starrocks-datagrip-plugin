@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>xx_hash32</title></head><body>
+<h2>xx_hash32</h2>
+<p>Returns the 32-bit XXH32 hash value of the input string.</p>
+<h3>Syntax</h3>
+<pre><code>INT XX_HASH32(VARCHAR input, ...)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select xx_hash32(null);
++-----------------+
+| xx_hash32(NULL) |
++-----------------+
+|            NULL |
++-----------------+</code></pre>
+<pre><code>MySQL &gt; select xx_hash32(&quot;hello&quot;);
++--------------------+
+| xx_hash32('hello') |
++--------------------+
+|          -83855367 |
++--------------------+</code></pre>
+<pre><code>MySQL &gt; select xx_hash32(&quot;hello&quot;, &quot;world&quot;);
++-----------------------------+
+| xx_hash32('hello', 'world') |
++-----------------------------+
+|                  -920844969 |
++-----------------------------+</code></pre>
+<h3>Related functions</h3>
+<ul>
+<li><code>xx_hash64</code></li>
+<li><code>xx_hash3_64</code></li>
+</ul>
+<h3>keyword</h3>
+<p>XX_HASH32,HASH,XXH32,xxHash</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/hash-functions/xx_hash32.md">StarRocks documentation</a></p>
+</body></html>

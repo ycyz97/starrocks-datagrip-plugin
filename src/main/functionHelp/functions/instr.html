@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>instr</title></head><body>
+<h2>instr</h2>
+<p>This function returns the position where str first appeared in substr (start counting from 1 and measured in characters). If str is not found in substr, then this function will return 0.</p>
+<h3>Syntax</h3>
+<pre><code>INT instr(VARCHAR str, VARCHAR substr)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select instr(&quot;abc&quot;, &quot;b&quot;);
++-------------------+
+| instr('abc', 'b') |
++-------------------+
+|                 2 |
++-------------------+
+
+MySQL &gt; select instr(&quot;abc&quot;, &quot;d&quot;);
++-------------------+
+| instr('abc', 'd') |
++-------------------+
+|                 0 |
++-------------------+</code></pre>
+<h3>keyword</h3>
+<p>INSTR</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/instr.md">StarRocks documentation</a></p>
+</body></html>

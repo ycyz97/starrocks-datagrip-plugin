@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_join</title></head><body>
+<h2>array_join</h2>
+<p>Concatenates the elements of an array into a string.</p>
+<h3>Syntax</h3>
+<pre><code>array_join(array, sep[, null_replace_str])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>array</code>: the array whose elements you want to concatenate. Only the ARRAY data type is supported.</li>
+</ul>
+<ul>
+<li><code>sep</code>: the delimiter that is used to separate the concatenated array elements. Only the VARCHAR data type is supported.</li>
+</ul>
+<ul>
+<li><code>null_replace_str</code>: the string that is used to substitute <code>NULL</code> values. Only the VARCHAR data type is supported.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR data type.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>The value of the <code>array</code> parameter must be a one-dimensional array.</li>
+</ul>
+<ul>
+<li>The <code>array</code> parameter does not support DECIMAL values.</li>
+</ul>
+<ul>
+<li>If you set the <code>sep</code> parameter to <code>NULL</code>, the return value is <code>NULL</code>.</li>
+</ul>
+<ul>
+<li>If you do not specify the <code>null_replace_str</code> parameter, <code>NULL</code> values are discarded.</li>
+</ul>
+<ul>
+<li>If you set the <code>null_replace_str</code> parameter to <code>NULL</code>, the return value is <code>NULL</code>.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Concatenate the elements of an array. In this example, the <code>NULL</code> value in the array is discarded, and the concatenated array elements are separated by underscores (<code>_</code>).</p>
+<pre><code>mysql&gt; select array_join([1, 3, 5, null], '_');
+
++-------------------------------+
+
+| array_join([1,3,5,NULL], '_') |
+
++-------------------------------+
+
+| 1_3_5                         |
+
++-------------------------------+</code></pre>
+<p>Example 2: Concatenate the elements of an array. In this example, the <code>NULL</code> value in the array is substituted with <code>NULL</code> strings, and the concatenated array elements are separated by underscores (<code>_</code>).</p>
+<pre><code>mysql&gt; select array_join([1, 3, 5, null], '_', 'NULL');
+
++---------------------------------------+
+
+| array_join([1,3,5,NULL], '_', 'NULL') |
+
++---------------------------------------+
+
+| 1_3_5_NULL                            |
+
++---------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_join.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>regexp</title></head><body>
+<h2>regexp</h2>
+<p>Checks whether a given expression matches the regular expression specified by <code>pattern</code>. If yes, 1 is returned. Otherwise, 0 is returned. NULL is returned if any of the input parameter is NULL.</p>
+<p>regexp() supports more complex matching conditions than like().</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN regexp(VARCHAR expr, VARCHAR pattern);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr</code>: the string expression. The supported data type is VARCHAR.</li>
+</ul>
+<ul>
+<li><code>pattern</code>: the pattern to match. The supported data type is VARCHAR.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BOOLEAN value.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select regexp(&quot;abc123&quot;,&quot;abc*&quot;);
++--------------------------+
+| regexp('abc123', 'abc*') |
++--------------------------+
+|                        1 |
++--------------------------+
+1 row in set (0.06 sec)
+
+select regexp(&quot;abc123&quot;,&quot;xyz*&quot;);
++--------------------------+
+| regexp('abc123', 'xyz*') |
++--------------------------+
+|                        0 |
++--------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>regexp, regular</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/like-predicate-functions/regexp.md">StarRocks documentation</a></p>
+</body></html>

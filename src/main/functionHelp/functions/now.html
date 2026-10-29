@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>now</title></head><body>
+<h2>now, current_timestamp, localtime, localtimestamp</h2>
+<p>Returns the current date and time.</p>
+<p>From 3.1.6 onwards, this function can accept a precision input (<code>p</code>), which represents the number of digits to retain after seconds. A maximum of 6 digits can be retained (accurate to the microsecond). The digits after <code>p</code> are padded with 0. If <code>p</code> is not specified, a DATETIME value accurate to the second is returned.</p>
+<p>The following example returns date and time values when different precision is specified.</p>
+<pre><code>mysql &gt; select now(),now(1),now(2),now(3),now(4),now(5),now(6)\G
+*************************** 1. row ***************************
+ now(): 2023-12-08 13:46:45
+now(1): 2023-12-08 13:46:45.100000
+now(2): 2023-12-08 13:46:45.110000
+now(3): 2023-12-08 13:46:45.115000
+now(4): 2023-12-08 13:46:45.115800
+now(5): 2023-12-08 13:46:45.115840
+now(6): 2023-12-08 13:46:45.115843</code></pre>
+<p>This function may return different results for different time zones. For more information, see Configure a time zone.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME NOW()
+DATETIME NOW(INT p)</code></pre>
+<h3>Parameters</h3>
+<p><code>p</code>: optional, the specified precision, that is, the number of digits to retain after seconds. It must be an INT value within the range of [1,6]. <code>select now(0)</code> is equivalent to <code>select now()</code>.</p>
+<h3>Return value</h3>
+<ul>
+<li>If <code>p</code> is not specified, this function returns a DATETIME value accurate to the second.</li>
+<li>If <code>p</code> is specified, this function returns a date and time value of the specified precision.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select now();
++---------------------+
+| now()               |
++---------------------+
+| 2019-05-27 15:58:25 |
++---------------------+
+
+MySQL &gt; select now(),now(1),now(2),now(3),now(4),now(5),now(6)\G
+*************************** 1. row ***************************
+ now(): 2023-12-08 13:46:45
+now(1): 2023-12-08 13:46:45.100000
+now(2): 2023-12-08 13:46:45.110000
+now(3): 2023-12-08 13:46:45.115000
+now(4): 2023-12-08 13:46:45.115800
+now(5): 2023-12-08 13:46:45.115840
+now(6): 2023-12-08 13:46:45.115843</code></pre>
+<h3>keyword</h3>
+<p>NOW, now</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/now.md">StarRocks documentation</a></p>
+</body></html>

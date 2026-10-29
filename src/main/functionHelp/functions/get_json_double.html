@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>get_json_double</title></head><body>
+<h2>get_json_double</h2>
+<p>This function analyzes and gets the floating point value from a specified path in json string. json_path must start with <code>$</code> and use <code>.</code> as the path separator.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<p>If the path includes <code>.</code>, it could be circled by <code>&quot;</code> and <code>&quot;</code>.</p>
+<p><code>[ ]</code> is used as the array subscripts which start from 0.</p>
+<p>Content in the path should not contain <code>&quot;</code> , <code>[</code> and <code>]</code>.</p>
+<p>If the format of json_string or json_path is wrong, this function will return NULL.</p>
+<h3>Syntax</h3>
+<pre><code>DOUBLE get_json_double(VARCHAR json_str, VARCHAR json_path)</code></pre>
+<h3>Examples</h3>
+<p>1. Get the value whose key is &quot;k1&quot;</p>
+<pre><code>    MySQL &gt; SELECT get_json_double('{&quot;k1&quot;:1.3, &quot;k2&quot;:&quot;2&quot;}', &quot;$.k1&quot;);
+    +-------------------------------------------------+
+    | get_json_double('{&quot;k1&quot;:1.3, &quot;k2&quot;:&quot;2&quot;}', '$.k1') |
+    +-------------------------------------------------+
+    |                                             1.3 |
+    +-------------------------------------------------+</code></pre>
+<p>2. Get the second element in the array whose key is &quot;my.key&quot;</p>
+<pre><code>    MySQL &gt; SELECT get_json_double('{&quot;k1&quot;:&quot;v1&quot;, &quot;my.key&quot;:[1.1, 2.2, 3.3]}', '$.&quot;my.key&quot;[1]');
+    +---------------------------------------------------------------------------+
+    | get_json_double('{&quot;k1&quot;:&quot;v1&quot;, &quot;my.key&quot;:[1.1, 2.2, 3.3]}', '$.&quot;my.key&quot;[1]') |
+    +---------------------------------------------------------------------------+
+    |                                                                       2.2 |
+    +---------------------------------------------------------------------------+</code></pre>
+<p>3. Get the first element in the array whose path is k1.key -&gt; k2.</p>
+<pre><code>    MySQL &gt; SELECT get_json_double('{&quot;k1.key&quot;:{&quot;k2&quot;:[1.1, 2.2]}}', '$.&quot;k1.key&quot;.k2[0]');
+    +---------------------------------------------------------------------+
+    | get_json_double('{&quot;k1.key&quot;:{&quot;k2&quot;:[1.1, 2.2]}}', '$.&quot;k1.key&quot;.k2[0]') |
+    +---------------------------------------------------------------------+
+    |                                                                 1.1 |
+    +---------------------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>GET_JSON_DOUBLE,GET,JSON,DOUBLE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/get_json_double.md">StarRocks documentation</a></p>
+</body></html>

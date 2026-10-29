@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>get_json_string</title></head><body>
+<p>Extracts a string value from a JSON document using a JSON path.</p>
+<p><b>Syntax:</b> <code>GET_JSON_STRING(json_doc, json_path)</code></p>
+<p><b>Parameters:</b> <code>json_doc</code> is a JSON string; <code>json_path</code> identifies the value to extract.</p>
+<p><b>Returns:</b> The extracted string, or <code>NULL</code> when the path does not resolve to a string.</p>
+<pre><code>SELECT GET_JSON_STRING('{"store_id":"s1"}', '$.store_id'); -- s1</code></pre>
+</body></html>

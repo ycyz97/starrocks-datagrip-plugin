@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>upper</title></head><body>
+<h2>upper</h2>
+<p>Converts a string to upper-case.</p>
+<h3>Syntax</h3>
+<pre><code>upper(str)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the string to convert. If <code>str</code> is not a string type, it will try implicit cast first.</li>
+</ul>
+<h3>Return values</h3>
+<p>Return an upper-case string.</p>
+<h3>Examples</h3>
+<pre><code>MySQL [test]&gt; select C_String, upper(C_String) from ex_iceberg_tbl;
++-------------------+-------------------+
+| C_String          | upper(C_String)   |
++-------------------+-------------------+
+| Hello, StarRocks! | HELLO, STARROCKS! |
+| Hello, World!     | HELLO, WORLD!     |
++-------------------+-------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/upper.md">StarRocks documentation</a></p>
+</body></html>

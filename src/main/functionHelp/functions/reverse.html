@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>reverse</title></head><body>
+<h2>reverse</h2>
+<p>Reverses a string or array. Returns a string or array with the characters in the string or array elements in reverse order.</p>
+<h3>Syntax</h3>
+<pre><code>reverse(param)</code></pre>
+<h3>Parameters</h3>
+<p><code>param</code>: the string or array to reverse. It can be of the VARCHAR, CHAR, or ARRAY type.</p>
+<p>Currently, this function supports only one-dimensional arrays and the array elements cannot be of the DECIMAL type. This function supports the following types of array elements: BOOLEAN, TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, VARCHAR, DECIMALV2, DATETIME, DATE, and JSON. <b>JSON is supported from 2.5.</b></p>
+<h3>Return value</h3>
+<p>The return type is the same as <code>param</code>.</p>
+<h3>Examples</h3>
+<p>Example 1: Reverse a string.</p>
+<pre><code>MySQL &gt; SELECT REVERSE('hello');
++------------------+
+| REVERSE('hello') |
++------------------+
+| olleh            |
++------------------+
+1 row in set (0.00 sec)</code></pre>
+<p>Example 2: Reverse an array.</p>
+<pre><code>MYSQL&gt; SELECT REVERSE([4,1,5,8]);
++--------------------+
+| REVERSE([4,1,5,8]) |
++--------------------+
+| [8,5,1,4]          |
++--------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/reverse.md">StarRocks documentation</a></p>
+</body></html>

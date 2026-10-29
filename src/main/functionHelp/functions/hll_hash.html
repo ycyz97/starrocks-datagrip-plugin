@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hll_hash</title></head><body>
+<h2>hll_hash</h2>
+<p>Converts a value to an hll type. Typically used in imports to map a value in the source data to an HLL column type in the StarRocks table.</p>
+<h3>Syntax</h3>
+<pre><code>HLL_HASH(column_name)</code></pre>
+<h3>Parameters</h3>
+<p><code>column_name</code>: The name of the generated HLL column.</p>
+<h3>Return value</h3>
+<p>Returns a value of the HLL type.</p>
+<h3>Example</h3>
+<pre><code>mysql&gt; select hll_cardinality(hll_hash(&quot;a&quot;));
++--------------------------------+
+| hll_cardinality(hll_hash('a')) |
++--------------------------------+
+|                              1 |
++--------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/scalar-functions/hll_hash.md">StarRocks documentation</a></p>
+</body></html>

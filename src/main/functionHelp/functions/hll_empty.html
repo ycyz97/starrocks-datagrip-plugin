@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hll_empty</title></head><body>
+<h2>hll_empty</h2>
+<p>Generates an empty HLL column to supplement the default values when inserting or loading data.</p>
+<h3>Syntax</h3>
+<pre><code>HLL_EMPTY()</code></pre>
+<h3>Return value</h3>
+<p>Returns an empty HLL.</p>
+<h3>Examples</h3>
+<p>Supplement the default values when inserting data.</p>
+<pre><code>insert into hllDemo(k1,v1) values(10,hll_empty());</code></pre>
+<p>Supplement the default values when loading data.</p>
+<pre><code>curl --location-trusted -u &lt;username&gt;:&lt;password&gt; \
+    -H &quot;columns: temp1, temp2, col1=hll_hash(temp1), col2=hll_empty()&quot; \
+    -T example7.csv -XPUT \
+    http://&lt;fe_host&gt;:&lt;fe_http_port&gt;/api/test_db/table7/_stream_load</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/scalar-functions/hll_empty.md">StarRocks documentation</a></p>
+</body></html>

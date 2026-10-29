@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>map_from_arrays</title></head><body>
+<h2>map_from_arrays</h2>
+<p>Creates a MAP value from the given pair of key item array and value item array.</p>
+<p>This function is supported from v3.1 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>MAP map_from_arrays(ARRAY keys, ARRAY values)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>keys</code>: uses to construct the keys of the result MAP. Make sure the elements of keys are unique.</li>
+<li><code>values</code>: used to construct the values of the result MAP.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a MAP that is constructed from the input keys and values.</p>
+<ul>
+<li>Keys and values must have the same length, otherwise it will return an error.</li>
+<li>If key or value is NULL, this function returns NULL.</li>
+<li>The returned MAP value has distinct keys.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>select map_from_arrays([1, 2], ['Star', 'Rocks']);
++--------------------------------------------+
+| map_from_arrays([1, 2], ['Star', 'Rocks']) |
++--------------------------------------------+
+| {1:&quot;Star&quot;,2:&quot;Rocks&quot;}                       |
++--------------------------------------------+</code></pre>
+<pre><code>select map_from_arrays([1, 2], NULL);
++-------------------------------+
+| map_from_arrays([1, 2], NULL) |
++-------------------------------+
+| NULL                          |
++-------------------------------+
+
+select map_from_arrays([1,3,null,2,null],['ab','cdd',null,null,'abc']);
++--------------------------------------------------------------------------+
+| map_from_arrays([1, 3, NULL, 2, NULL], ['ab', 'cdd', NULL, NULL, 'abc']) |
++--------------------------------------------------------------------------+
+| {1:&quot;ab&quot;,3:&quot;cdd&quot;,2:null,null:&quot;abc&quot;}                                       |
++--------------------------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/map-functions/map_from_arrays.md">StarRocks documentation</a></p>
+</body></html>

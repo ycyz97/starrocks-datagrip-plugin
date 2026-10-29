@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_empty</title></head><body>
+<h2>bitmap_empty</h2>
+<p>Returns an empty bitmap. It is mainly used to fill in the default value during insert or stream load. For example:</p>
+<pre><code>cat data | curl --location-trusted -u user:passwd -T - \
+    -H &quot;columns: dt,page,v1,v2=bitmap_empty()&quot; \
+    http://host:8410/api/test/testDb/_stream_load</code></pre>
+<h3>Syntax</h3>
+<pre><code>BITMAP BITMAP_EMPTY()</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select bitmap_count(bitmap_empty());
++------------------------------+
+| bitmap_count(bitmap_empty()) |
++------------------------------+
+|                            0 |
++------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>BITMAP_EMPTY,BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_empty.md">StarRocks documentation</a></p>
+</body></html>

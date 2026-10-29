@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_contains_seq</title></head><body>
+<h2>array_contains_seq</h2>
+<p>Checks whether all the elements of array2 appear in array1 in the same exact order. Therefore, the function will return 1, if and only if <code>array1 = prefix + array2 + suffix</code>.</p>
+<p>For example:</p>
+<ul>
+<li><code>select array_contains_seq([1,2,3,4], [1,2,3]);</code> returns 1.</li>
+<li><code>select array_contains_seq([1,2,3,4], [4,3]);</code> returns 0.</li>
+</ul>
+<p>This function is supported from v3.3 onwards.</p>
+<h3>Syntax</h3>
+<p>~~~Haskell<br>BOOLEAN array_contains_seq(arr1, arr2)<br>~~~</p>
+<h3>Parameters</h3>
+<p><code>arr</code>: the two arrays to compare. This syntax checks whether <code>arr2</code> is a subset of <code>arr1</code> and in the same exact order.</p>
+<p>The data types of elements in the two arrays must be the same. For the data types of array elements supported by StarRocks, see ARRAY.</p>
+<h3>Return value</h3>
+<p>Returns a value of the BOOLEAN type.</p>
+<ul>
+<li><code>1</code> is returned if <code>arr2</code> is a subset of <code>arr1</code> and the elements in <code>arr2</code> observe the same order as those in <code>arr1</code>. Otherwise, <code>0</code> is returned.</li>
+<li>An empty array is a subset of any array. Therefore, <code>1</code> is returned if <code>arr2</code> is empty but <code>arr1</code> is a valid array.</li>
+<li>NULL is returned if any input array is NULL.</li>
+<li>Nulls in arrays are processed as normal values. For example, <code>SELECT array_contains_seq([1, 2, NULL, 3, 4], [2,3])</code> will return 0. However, <code>SELECT array_contains_seq([1, 2, NULL, 3, 4], [2,NULL,3])</code> will return 1.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>
+MySQL &gt; select array_contains_seq([1,2,3,4], [1,2,3]);
++---------------------------------------------+
+| array_contains_seq([1, 2, 3, 4], [1, 2, 3]) |
++---------------------------------------------+
+|                                           1 |
++---------------------------------------------+
+
+MySQL &gt; select array_contains_seq([1,2,3,4], [3,2]);
++------------------------------------------+
+| array_contains_seq([1, 2, 3, 4], [3, 2]) |
++------------------------------------------+
+|                                        0 |
++------------------------------------------+
+
+MySQL &gt; select array_contains_seq([1, 2, NULL, 3, 4], ['a']);
++-----------------------------------------------+
+| array_contains_all([1, 2, NULL, 3, 4], ['a']) |
++-----------------------------------------------+
+|                                             0 |
++-----------------------------------------------+
+
+MySQL &gt; select array_contains_seq([1,2,3,4,null], null);
++------------------------------------------+
+| array_contains([1, 2, 3, 4, NULL], NULL) |
++------------------------------------------+
+|                                     NULL |
++------------------------------------------+
+
+MySQL &gt; select array_contains_seq([1,2,3,4], []);
++--------------------------------------+
+| array_contains_seq([1, 2, 3, 4], []) |
++--------------------------------------+
+|                                    1 |
++--------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_contains_seq.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>sm3</title></head><body>
+<h2>sm3</h2>
+<p>Uses the SM3 digest algorithm to encrypt a string into a 256-bit hexadecimal string. Every 32 bits are separated by a space.</p>
+<p>Digest algorithms have a broad range of use cases in digital signature, message authentication, and data integrity check. The SM3 algorithm is an enhancement of SHA-256.</p>
+<h3>Syntax</h3>
+<pre><code>SM3(str);</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the string to encrypt. It must be of the VARCHAR type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type. If the input is NULL, NULL is returned. If the input is empty, an error is returned.</p>
+<p>This function accepts only one string. More than one input string causes an error.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select sm3('l');
++-------------------------------------------------------------------------+
+| sm3('l')                                                                |
++-------------------------------------------------------------------------+
+| 1dec1a7a 94236240 49db411e 2c32c62d c0c93856 8208ac3a 09d395eb 2468b445 |
++-------------------------------------------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/crytographic-functions/sm3.md">StarRocks documentation</a></p>
+</body></html>

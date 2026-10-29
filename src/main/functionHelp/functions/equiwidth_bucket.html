@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>equiwidth_bucket</title></head><body>
+<h2>equiwidth_bucket</h2>
+<p>Calculate the equi-width histogram bucket.</p>
+<h3>Syntax</h3>
+<pre><code>equiwidth_bucket(value, min, max, buckets) </code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>value</code>: row value, must be within the <code>[min, max]</code></li>
+<li><code>min</code>: min value of the histogram</li>
+<li><code>max</code>: max value of the histogram</li>
+<li><code>buckets</code>: number of histogram buckets</li>
+</ul>
+<h3>Example</h3>
+<pre><code>select r, equiwidth_bucket(r, 0, 10, 20) as x from table(generate_series(0, 10)) as s(r);</code></pre>
+<pre><code>0	0
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/equiwidth_bucket.md">StarRocks documentation</a></p>
+</body></html>

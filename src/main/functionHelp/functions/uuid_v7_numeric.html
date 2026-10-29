@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>uuid_v7_numeric</title></head><body>
+<h2>uuid_v7_numeric</h2>
+<p>Returns a time-ordered UUID v7 of the LARGEINT type. UUID v7 is defined in RFC 9562 and provides better database performance compared to random UUIDs (v4) because it maintains temporal ordering, which improves index locality and reduces fragmentation.</p>
+<p>This function returns the UUID v7 as a 128-bit integer instead of a string format, which can be more efficient for storage and comparison operations.</p>
+<p>This function is non-deterministic. Two calls to this function generate two different UUIDs.</p>
+<h3>Syntax</h3>
+<pre><code>uuid_v7_numeric()</code></pre>
+<h3>Return value</h3>
+<p>Returns a value of the LARGEINT type (128-bit integer).</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; SELECT uuid_v7_numeric();
++---------------------------------------+
+| uuid_v7_numeric()                     |
++---------------------------------------+
+| 2088748395792837468371928374619283746 |
++---------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<h3>Benefits</h3>
+<p>1. <b>Time-ordered</b>: UUID values generated later will be larger than earlier ones.<br>2. <b>Improved Index Performance</b>: Better locality in B-tree indexes.<br>3. <b>Reduced Fragmentation</b>: Sequential inserts cause fewer page splits.<br>4. <b>Unique</b>: Random bits ensure uniqueness even within the same millisecond.<br>5. <b>Efficient Storage</b>: Numeric representation can be more compact than string format.</p>
+<h3>Comparison with uuid_numeric</h3>
+<pre><code>| Feature | uuid_numeric() (v4) | uuid_v7_numeric() (v7) |</code></pre>
+<pre><code>|---------|---------------------|------------------------|</code></pre>
+<pre><code>| Ordering | Random | Time-ordered |</code></pre>
+<pre><code>| Index Performance | Poor | Good |</code></pre>
+<pre><code>| Fragmentation | High | Low |</code></pre>
+<pre><code>| Timestamp Info | No | Yes (48-bit ms) |</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/uuid_v7_numeric.md">StarRocks documentation</a></p>
+</body></html>

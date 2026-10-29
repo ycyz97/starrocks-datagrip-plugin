@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bool_or</title></head><body>
+<h2>bool_or</h2>
+<p>Returns true if at least one row for <code>expr</code> is true. Otherwise, returns false. <code>boolor_agg</code> is an alias for this function.</p>
+<h3>Syntax</h3>
+<pre><code>bool_or(expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: The expression must evaluate to a boolean value, that is, true or false.</p>
+<h3>Return value</h3>
+<p>Returns a boolean value. An error is returned if <code>expr</code> does not exist.</p>
+<h3>Usage notes</h3>
+<p>This function ignores NULL values.</p>
+<h3>Examples</h3>
+<p>1. Create a table named <code>employees</code>.</p>
+<pre><code>    CREATE TABLE IF NOT EXISTS employees (
+        region_num    TINYINT,
+        id            BIGINT,
+        is_manager    BOOLEAN
+        )
+        DISTRIBUTED BY HASH(region_num);</code></pre>
+<p>2. Insert data into <code>employees</code>.</p>
+<pre><code>    INSERT INTO employees VALUES
+    (3,432175, TRUE),
+    (4,567832, FALSE),
+    (3,777326, FALSE),
+    (5,342611, TRUE),
+    (2,403882, FALSE);</code></pre>
+<p>3. Query data from <code>employees</code>.</p>
+<pre><code>    MySQL &gt; select * from employees;
+    +------------+--------+------------+
+    | region_num | id     | is_manager |
+    +------------+--------+------------+
+    |          3 | 432175 |          1 |
+    |          4 | 567832 |          0 |
+    |          3 | 777326 |          0 |
+    |          5 | 342611 |          1 |
+    |          2 | 403882 |          0 |
+    +------------+--------+------------+
+    5 rows in set (0.01 sec)</code></pre>
+<p>4. Use this function to check for managers in each region.</p>
+<pre><code>Example 1: Check if there is at least one manager in each region.</code></pre>
+<pre><code>    MySQL &gt; SELECT region_num, bool_or(is_manager) from employees
+    group by region_num;
+
+    +------------+---------------------+
+    | region_num | bool_or(is_manager) |
+    +------------+---------------------+
+    |          3 |                   1 |
+    |          4 |                   0 |
+    |          5 |                   1 |
+    |          2 |                   0 |
+    +------------+---------------------+
+    4 rows in set (0.01 sec)</code></pre>
+<h3>keyword</h3>
+<p>BOOL_OR, bool_or, boolor_agg</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/bool_or.md">StarRocks documentation</a></p>
+</body></html>

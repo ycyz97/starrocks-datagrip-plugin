@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>sleep</title></head><body>
+<h2>sleep</h2>
+<p>Delays the execution of an operation for a specified period of time (in seconds) and returns a BOOLEAN value to indicate whether the sleep is completed without interruption. <code>1</code> is returned if the sleep is completed without interruption. Otherwise, <code>0</code> is returned.</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN sleep(INT x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: the duration for which you want to delay the execution of an operation. It must be of the INT type. Unit: seconds. If the input is is NULL, NULL is returned immediately without sleeping.</p>
+<h3>Return value</h3>
+<p>Returns a value of the BOOLEAN type.</p>
+<h3>Examples</h3>
+<pre><code>select sleep(3);
++----------+
+| sleep(3) |
++----------+
+|        1 |
++----------+
+1 row in set (3.00 sec)
+
+select sleep(NULL);
++-------------+
+| sleep(NULL) |
++-------------+
+|        NULL |
++-------------+
+1 row in set (0.00 sec)</code></pre>
+<h3>Keywords</h3>
+<p>SLEEP, sleep</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/sleep.md">StarRocks documentation</a></p>
+</body></html>

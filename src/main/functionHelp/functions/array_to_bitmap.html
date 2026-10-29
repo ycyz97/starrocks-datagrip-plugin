@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_to_bitmap</title></head><body>
+<h2>array_to_bitmap</h2>
+<p>Converts an array into BITMAP values. This function is supported from v2.3.</p>
+<h3>Syntax</h3>
+<pre><code>BITMAP array_to_bitmap(array)</code></pre>
+<h3>Parameters</h3>
+<p><code>array</code>: Elements in an array can be of the BIGINT, INT, TINYINT, or SMALLINT type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the BITMAP type.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>If the data type of elements in the input array is invalid, such as STRING or DECIMAL, an error is returned.</li>
+</ul>
+<ul>
+<li>If an empty array is entered, an empty BITMAP value is returned.</li>
+</ul>
+<ul>
+<li>If <code>NULL</code> is entered, <code>NULL</code> is returned.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Convert an array into BITMAP values. This function must be nested in <code>bitmap_to_array</code> because BITMAP values cannot be displayed.</p>
+<pre><code>MySQL &gt; select bitmap_to_array(array_to_bitmap([1,2,3]));
++-------------------------------------------+
+| bitmap_to_array(array_to_bitmap([1,2,3])) |
++-------------------------------------------+
+| [1,2,3]                                   |
++-------------------------------------------+</code></pre>
+<p>Example 2: Enter an empty array and an empty array is returned.</p>
+<pre><code>MySQL &gt; select bitmap_to_array(array_to_bitmap([]));
++--------------------------------------+
+| bitmap_to_array(array_to_bitmap([])) |
++--------------------------------------+
+| []                                   |
++--------------------------------------+</code></pre>
+<p>Example 3: Enter <code>NULL</code> and <code>NULL</code> is returned.</p>
+<pre><code>MySQL &gt; select array_to_bitmap(NULL);
++-----------------------+
+| array_to_bitmap(NULL) |
++-----------------------+
+| NULL                  |
++-----------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_to_bitmap.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>week_iso</title></head><body>
+<h2>week_iso</h2>
+<p>Returns the ISO standard week of the year for the specified date as an integer within the range of <code>1</code> to <code>53</code>.</p>
+<h3>Syntax</h3>
+<pre><code>INT WEEK_ISO(DATETIME date)</code></pre>
+<h3>Parameters</h3>
+<p><code>date</code>: the date you want to convert. It must be of the DATE or DATETIME type.</p>
+<h3>Examples</h3>
+<p>The following example returns the ISO standard week of the year for the date <code>2008-02-20 00:00:00</code>:</p>
+<pre><code>MySQL &gt; select week_iso ('2008-02-20 00:00:00');
++-----------------------------------+
+| week_iso('2008-02-20 00:00:00')   |
++-----------------------------------+
+|                                 8 |
++-----------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>WEEK_ISO</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/week_iso.md">StarRocks documentation</a></p>
+</body></html>

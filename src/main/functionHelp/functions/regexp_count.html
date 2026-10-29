@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>regexp_count</title></head><body>
+<p>import Tip from '../../../_assets/commonMarkdown/quickstart-shared-nothing-tip.mdx';</p>
+<h2>regexp_count</h2>
+<p>Counts the number of times a pattern occurs in a string. It returns the number of occurrences of the regular expression pattern in the target string.</p>
+<h3>Syntax</h3>
+<pre><code>INT regexp_count(VARCHAR str, VARCHAR pattern)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: The string to search in. Supported data type is VARCHAR. If the input is NULL, NULL is returned.</li>
+</ul>
+<ul>
+<li><code>pattern</code>: The regular expression pattern to search for. Supported data type is VARCHAR. If the pattern is NULL, NULL is returned.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns an INT representing the count of occurrences. Returns 0 if no matches are found or if the input string is empty.</p>
+<h3>Examples</h3>
+<p>&lt;Tip /&gt;</p>
+<pre><code>-- Count occurrences of digits
+SELECT regexp_count('abc123def456', '[0-9]');</code></pre>
+<pre><code>+---------------------------------------+
+| regexp_count('abc123def456', '[0-9]') |
++---------------------------------------+
+|                                     6 |
++---------------------------------------+</code></pre>
+<pre><code>-- Count occurrences of dots
+SELECT regexp_count('test.com test.net test.org', '\\.');</code></pre>
+<pre><code>+---------------------------------------------------+
+| regexp_count('test.com test.net test.org', '\\.') |
++---------------------------------------------------+
+|                                                 3 |
++---------------------------------------------------+</code></pre>
+<pre><code>-- Count occurrences of whitespace sequences
+SELECT regexp_count('a b  c   d', '\\s+');</code></pre>
+<pre><code>+----------------------------------------+
+| regexp_count('a b  c   d', '\\s+')     |
++----------------------------------------+
+|                                      3 |
++----------------------------------------+</code></pre>
+<pre><code>-- Count occurrences of a repeated pattern
+SELECT regexp_count('ababababab', 'ab');</code></pre>
+<pre><code>+------------------------------------+
+| regexp_count('ababababab', 'ab')   |
++------------------------------------+
+|                                  5 |
++------------------------------------+</code></pre>
+<pre><code>-- Using with NULL and empty values
+SELECT
+  regexp_count('', '.') AS empty_str,
+  regexp_count(NULL, '.') AS null_str,
+  regexp_count('abc', NULL) AS null_pattern;</code></pre>
+<pre><code>+------------+----------+--------------+
+| empty_str  | null_str | null_pattern |
++------------+----------+--------------+
+|          0 |     NULL |         NULL |
++------------+----------+--------------+</code></pre>
+<pre><code>-- Count occurrence of Unicode/Chinese characters
+SELECT regexp_count('abc中文def', '[\\p{Han}]+');</code></pre>
+<pre><code>+-----------------------------------------------+
+| regexp_count('abc中文def', '[\\p{Han}]+')     |
++-----------------------------------------------+
+|                                             1 |
++-----------------------------------------------+</code></pre>
+<h4>With table data</h4>
+<pre><code>CREATE TABLE sample_text (
+  str VARCHAR(65533) NULL,
+  regex VARCHAR(65533) NULL
+);
+
+INSERT INTO sample_text VALUES
+  ('abc123def456', '[0-9]'),
+  ('test.com test.net test.org', '\\.'),
+  ('a b  c   d', '\\s+'),
+  ('ababababab', 'ab');
+
+SELECT str, regex, regexp_count(str, regex) AS count
+FROM sample_text
+ORDER BY str;</code></pre>
+<pre><code>+-----------------------------+------+-------+
+| str                         | regex| count |
++-----------------------------+------+-------+
+| a b  c   d                  | \s+  |     3 |
+| abc123def456                | [0-9]|     6 |
+| ababababab                  | ab   |     5 |
+| test.com test.net test.org  | \.   |     3 |
++-----------------------------+------+-------+</code></pre>
+<h3>keyword</h3>
+<p>REGEXP_COUNT,REGEXP,COUNT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/like-predicate-functions/regexp_count.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>stddev_pop</title></head><body>
+<h2>stddev,stddev_pop,std</h2>
+<p>Returns the population standard deviation of the expr expression. Since v2.5.10, this function can also be used as a window function.</p>
+<h3>Syntax</h3>
+<pre><code>STDDEV(expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the expression. If it is a table column, it must evaluate to TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, or DECIMAL.</p>
+<h3>Return value</h3>
+<p>Returns a DOUBLE value. The formula is as follows, where <code>n</code> represents the row count of the table:</p>
+<p>!image</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; SELECT stddev(lo_quantity), stddev_pop(lo_quantity) from lineorder;
++---------------------+-------------------------+
+| stddev(lo_quantity) | stddev_pop(lo_quantity) |
++---------------------+-------------------------+
+|   14.43100708360797 |       14.43100708360797 |
++---------------------+-------------------------+</code></pre>
+<h3>See also</h3>
+<p>stddev_samp</p>
+<h3>keyword</h3>
+<p>STDDEV,STDDEV_POP,POP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/stddev.md">StarRocks documentation</a></p>
+</body></html>

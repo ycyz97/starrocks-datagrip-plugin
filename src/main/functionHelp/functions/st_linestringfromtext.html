@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_linestringfromtext</title></head><body>
+<h2>ST_LineFromText,ST_LineStringFromText</h2>
+<p>Converts a WKT (Well Known Text) to a memory representation in the form of Line.</p>
+<h3>Syntax</h3>
+<pre><code>GEOMETRY ST_LineFromText(VARCHAR wkt)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT ST_AsText(ST_LineFromText(&quot;LINESTRING (1 1, 2 2)&quot;));
++---------------------------------------------------------+
+| st_astext(st_linefromtext('LINESTRING (1 1, 2 2)'))     |
++---------------------------------------------------------+
+| LINESTRING (1 1, 2 2)                                   |
++---------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ST_LINEFROMTEXT,ST_LINESTRINGFROMTEXT,ST,LINEFROMTEXT,LINESTRINGFROMTEXT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_linefromtext.md">StarRocks documentation</a></p>
+</body></html>

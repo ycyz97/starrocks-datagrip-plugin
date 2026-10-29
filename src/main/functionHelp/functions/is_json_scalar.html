@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>is_json_scalar</title></head><body>
+<h2><code>is_json_scalar</code></h2>
+<p>Returns whether a JSON value is a scalar (not an object or array).</p>
+<h3>Aliases</h3>
+<p>None</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN is_json_scalar(JSON)</code></pre>
+<h4>Parameters</h4>
+<p><code>json</code> : A value of JSON type. The function examines the parsed JSON value and determines if it is a scalar. Valid JSON scalar types include number, string, boolean, and JSON null. If the input is SQL NULL (or the JSON column value is NULL), the function returns SQL NULL.</p>
+<h3>Return value</h3>
+<p>Returns a BOOLEAN:</p>
+<ul>
+<li>TRUE (1) if the JSON value is a scalar (number, string, boolean, or JSON null).</li>
+<li>FALSE (0) if the JSON value is a non-scalar (an object or an array).</li>
+<li>NULL if the input is SQL NULL.</li>
+</ul>
+<h3>Usage notes</h3>
+<ul>
+<li>The function operates on values of JSON type. Pass JSON expressions or <code>CAST</code> string literals to JSON: e.g., <code>CAST('{&quot;a&quot;: 1}' AS JSON)</code>.</li>
+<li><code>JSON null</code> (the literal JSON value null) is considered a scalar by this function because it is not an object or array.</li>
+<li><code>SQL NULL</code> (absence of a value) is distinct from <code>JSON null</code>; <code>SQL NULL</code> yields a NULL result.</li>
+<li>The function only inspects the top-level JSON value: object and array are non-scalar regardless of their contents.</li>
+<li>This function is implemented as <code>JsonFunctions::is_json_scalar</code>, which checks that the underlying VPack slice is not an object and not an array.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>SELECT is_json_scalar(CAST('{&quot;a&quot;: 1}' AS JSON));
++----------------------------------------------+
+| is_json_scalar(CAST('{&quot;a&quot;: 1}' AS JSON))     |
++----------------------------------------------+
+| 0                                            |
++----------------------------------------------+</code></pre>
+<pre><code>SELECT is_json_scalar(CAST('[1, 2, 3]' AS JSON));
++-----------------------------------------+
+| is_json_scalar(CAST('[1, 2, 3]' AS JSON)) |
++-----------------------------------------+
+| 0                                       |
++-----------------------------------------+</code></pre>
+<pre><code>SELECT is_json_scalar(CAST('&quot;hello&quot;' AS JSON));
++-------------------------------------------+
+| is_json_scalar(CAST('&quot;hello&quot;' AS JSON))   |
++-------------------------------------------+
+| 1                                         |
++-------------------------------------------+</code></pre>
+<pre><code>SELECT is_json_scalar(CAST('123' AS JSON));
++----------------------------------------+
+| is_json_scalar(CAST('123' AS JSON))    |
++----------------------------------------+
+| 1                                      |
++----------------------------------------+</code></pre>
+<pre><code>SELECT is_json_scalar(CAST('true' AS JSON));
++-----------------------------------------+
+| is_json_scalar(CAST('true' AS JSON))    |
++-----------------------------------------+
+| 1                                       |
++-----------------------------------------+</code></pre>
+<pre><code>SELECT is_json_scalar(CAST('null' AS JSON));
++----------------------------------------+
+| is_json_scalar(CAST('null' AS JSON))   |
++----------------------------------------+
+| 1                                      |
++----------------------------------------+</code></pre>
+<pre><code>SELECT is_json_scalar(CAST(NULL AS JSON));
++------------------------------+
+| is_json_scalar(CAST(NULL AS JSON)) |
++------------------------------+
+| NULL                         |
++------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/is_json_scalar.md">StarRocks documentation</a></p>
+</body></html>

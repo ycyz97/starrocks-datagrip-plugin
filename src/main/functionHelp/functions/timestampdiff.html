@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>timestampdiff</title></head><body>
+<h2>timestampdiff</h2>
+<p>Returns the interval from <code>datetime_expr2</code> to <code>datetime_expr1</code>. <code>datetime_expr1</code> and <code>datetime_expr2</code> must be of the DATE or DATETIME type.</p>
+<p>The unit for the integer result and the interval should be one of the following:</p>
+<p>MILLISECOND (since 3.2), SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, or YEAR.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT TIMESTAMPDIFF(unit,DATETIME datetime_expr1, DATETIME datetime_expr2)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>datetime_expr</code>: the two DATE or DATETIME expressions you want to compare.</li>
+<li><code>unit</code>: the unit of the time difference. Supported units include MILLISECOND (since 3.2), SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, and YEAR.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BIGINT value.</p>
+<h3>Examples</h3>
+<pre><code>MySQL&gt; SELECT TIMESTAMPDIFF(MONTH,'2003-02-01','2003-05-01');
++--------------------------------------------------------------------+
+| timestampdiff(MONTH, '2003-02-01 00:00:00', '2003-05-01 00:00:00') |
++--------------------------------------------------------------------+
+|                                                                  3 |
++--------------------------------------------------------------------+
+
+MySQL&gt; SELECT TIMESTAMPDIFF(YEAR,'2002-05-01','2001-01-01');
++-------------------------------------------------------------------+
+| timestampdiff(YEAR, '2002-05-01 00:00:00', '2001-01-01 00:00:00') |
++-------------------------------------------------------------------+
+|                                                                -1 |
++-------------------------------------------------------------------+
+
+MySQL&gt; SELECT TIMESTAMPDIFF(MINUTE,'2003-02-01','2003-05-01 12:05:55');
++---------------------------------------------------------------------+
+| timestampdiff(MINUTE, '2003-02-01 00:00:00', '2003-05-01 12:05:55') |
++---------------------------------------------------------------------+
+|                                                              128885 |
++---------------------------------------------------------------------+
+
+MySQL &gt; SELECT TIMESTAMPDIFF(MILLISECOND,'2003-02-01','2003-05-01');
++--------------------------------------------------------+
+| timestampdiff(MILLISECOND, '2003-02-01', '2003-05-01') |
++--------------------------------------------------------+
+|                                             7689600000 |
++--------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>TIMESTAMPDIFF</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/timestampdiff.md">StarRocks documentation</a></p>
+</body></html>

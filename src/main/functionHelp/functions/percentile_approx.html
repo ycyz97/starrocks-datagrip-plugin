@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>percentile_approx</title></head><body>
+<h2>percentile_approx</h2>
+<p>Returns the approximate value for a given percentile p, or an array of values for corresponding percentiles if p is an array. All percentile values must be in the range [0,1].</p>
+<p>Compression parameter is optional and has a setting range of [2048, 10000]. The larger the value, the higher the accuracy, the larger the memory consumption, and the longer the calculation time. If it is not specified or not beyond the range of [2048, 10000], the function runs with a default compression parameter of 10000.</p>
+<p>This function uses fixed size memory, so less memory can be used for columns with high cardinality, and can be used to calculate statistics such as tp99.</p>
+<h3>Syntax</h3>
+<pre><code>DOUBLE PERCENTILE_APPROX(expr, DOUBLE|ARRAY&lt;DOUBLE&gt; p[, DOUBLE compression])</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select `table`, percentile_approx(cost_time,0.99)
+from log_statis
+group by `table`;
++----------+--------------------------------------+
+| table    | percentile_approx(`cost_time`, 0.99) |
++----------+--------------------------------------+
+| test     |                                54.22 |
++----------+--------------------------------------+
+
+MySQL &gt; select `table`, percentile_approx(cost_time,0.99, 4096)
+from log_statis
+group by `table`;
++----------+----------------------------------------------+
+| table    | percentile_approx(`cost_time`, 0.99, 4096.0) |
++----------+----------------------------------------------+
+| test     |                                        54.21 |
++----------+----------------------------------------------+
+
+MySQL &gt; select percentile_approx(c2, [0.1, 0.5, 0.9], 10000) from t1;
++-----------------------------------------------+
+| percentile_approx(c2, [0.1, 0.5, 0.9], 10000) |
++-----------------------------------------------+
+| [4999.6005859375,25000,45000.3984375]         |
++-----------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>PERCENTILE_APPROX,PERCENTILE,APPROX</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/percentile_approx.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>quarters_sub</title></head><body>
+<h2>quarters_sub</h2>
+<p>Subtracts a specified number of quarters from the date. One quarter equals three months.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME quarters_sub(DATETIME expr1, INT expr2);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr1</code>: the specified date. It must be of the DATETIME or DATE type.</li>
+</ul>
+<ul>
+<li><code>expr2</code>: the quarters to subtract. It must be of the INT type. It can be greater, equal, or less than zero. A negative value adds quarters to <code>expr1</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATETIME value.</p>
+<h3>Examples</h3>
+<pre><code>select quarters_sub('2022-02-28 15:04:05', 1);
++----------------------------------------+
+| quarters_sub('2022-02-28 15:04:05', 1) |
++----------------------------------------+
+| 2021-11-28 15:04:05                    |
++----------------------------------------+
+
+select quarters_sub('2022-02-28', 1);
++-------------------------------+
+| quarters_sub('2022-02-28', 1) |
++-------------------------------+
+| 2021-11-28 00:00:00           |
++-------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/quarters_sub.md">StarRocks documentation</a></p>
+</body></html>

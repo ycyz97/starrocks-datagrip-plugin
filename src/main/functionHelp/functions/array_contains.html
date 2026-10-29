@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_contains</title></head><body>
+<h2>array_contains</h2>
+<p>Checks whether the array contains a certain element. If yes, it returns 1; otherwise, it returns 0.</p>
+<h3>Syntax</h3>
+<pre><code>array_contains(any_array, any_element)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select array_contains([&quot;apple&quot;,&quot;orange&quot;,&quot;pear&quot;], &quot;orange&quot;);
++-----------------------------------------------------+
+| array_contains(['apple','orange','pear'], 'orange') |
++-----------------------------------------------------+
+|                                                   1 |
++-----------------------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p>You can also check whether the array contains NULL.</p>
+<pre><code>mysql&gt; select array_contains([1, NULL], NULL);
++--------------------------------+
+| array_contains([1,NULL], NULL) |
++--------------------------------+
+|                              1 |
++--------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<p>You can check whether the multi-dimensional array contains a certain subarray. At this time, you need to ensure that the subarray elements match exactly, including the element arrangement order.</p>
+<pre><code>mysql&gt; select array_contains([[1,2,3], [4,5,6]], [4,5,6]);
++--------------------------------------------+
+| array_contains([[1,2,3],[4,5,6]], [4,5,6]) |
++--------------------------------------------+
+|                                          1 |
++--------------------------------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; select array_contains([[1,2,3], [4,5,6]], [4,6,5]);
++--------------------------------------------+
+| array_contains([[1,2,3],[4,5,6]], [4,6,5]) |
++--------------------------------------------+
+|                                          0 |
++--------------------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<h3>keyword</h3>
+<p>ARRAY_CONTAINS,ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_contains.md">StarRocks documentation</a></p>
+</body></html>

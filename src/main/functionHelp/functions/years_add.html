@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>years_add</title></head><body>
+<h2>years_add</h2>
+<h3>description</h3>
+<h4>Syntax</h4>
+<pre><code>DATETIME YEARS_ADD(DATETIME expr1,INT expr2)</code></pre>
+<p>Add a specified time interval to the date. Unit is year.</p>
+<p>The expr1 parameter is a valid datetime expression.</p>
+<p>The expr2 parameter is the years you want to add.</p>
+<h3>example</h3>
+<pre><code>select years_add('2010-11-30 23:50:50', 2);
++-------------------------------------+
+| years_add('2010-11-30 23:50:50', 2) |
++-------------------------------------+
+| 2012-11-30 23:50:50                 |
++-------------------------------------+
+
+select years_add('2010-11-30', 2);
++----------------------------+
+| years_add('2010-11-30', 2) |
++----------------------------+
+| 2012-11-30 00:00:00        |
++----------------------------+</code></pre>
+<h3>keyword</h3>
+<p>YEARS_ADD,ADD</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/years_add.md">StarRocks documentation</a></p>
+</body></html>

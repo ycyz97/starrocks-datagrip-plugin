@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_to_binary</title></head><body>
+<h2>bitmap_to_binary</h2>
+<p>Converts Bitmap values to a Binary string.</p>
+<p>bitmap_to_binary is mainly used for exporting Bitmap data. The compression effect is better than bitmap_to_base64.</p>
+<p>If you plan to export data directly to a binary file such as Parquet, this function is recommended.</p>
+<p>This function is supported from v3.0.</p>
+<h3>Syntax</h3>
+<pre><code>VARBINARY bitmap_to_binary(BITMAP bitmap)</code></pre>
+<h3>Parameters</h3>
+<p><code>bitmap</code>: the Bitmap to convert, required. If the input value is invalid, an error is returned.</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARBINARY type.</p>
+<h3>Examples</h3>
+<p>Example 1: Use this function with other bitmap functions.</p>
+<pre><code>mysql&gt; select hex(bitmap_to_binary(bitmap_from_string(&quot;0, 1, 2, 3&quot;)));
++---------------------------------------------------------+
+| hex(bitmap_to_binary(bitmap_from_string('0, 1, 2, 3'))) |
++---------------------------------------------------------+
+| 023A3000000100000000000300100000000000010002000300      |
++---------------------------------------------------------+
+1 row in set (0.01 sec)
+
+mysql&gt; select hex(bitmap_to_binary(to_bitmap(1)));
++-------------------------------------+
+| hex(bitmap_to_binary(to_bitmap(1))) |
++-------------------------------------+
+| 0101000000                          |
++-------------------------------------+
+1 row in set (0.01 sec)
+
+mysql&gt; select hex(bitmap_to_binary(bitmap_empty()));
++---------------------------------------+
+| hex(bitmap_to_binary(bitmap_empty())) |
++---------------------------------------+
+| 00                                    |
++---------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p>Example 2: Convert each value in a BITMAP column into a binary string.</p>
+<p>1. Create an Aggregate table <code>page_uv</code> where the <code>AGGREGATE KEY</code> is (<code>page_id</code>, <code>visit_date</code>). This table contains a BITMAP column <code>visit_users</code> whose values are to be aggregated.</p>
+<pre><code>        CREATE TABLE `page_uv`
+        (`page_id` INT NOT NULL,
+        `visit_date` datetime NOT NULL,
+        `visit_users` BITMAP BITMAP_UNION NOT NULL
+        ) ENGINE=OLAP
+        AGGREGATE KEY(`page_id`, `visit_date`)
+        DISTRIBUTED BY HASH(`page_id`)
+        PROPERTIES (
+        &quot;replication_num&quot; = &quot;3&quot;,
+        &quot;storage_format&quot; = &quot;DEFAULT&quot;
+        );</code></pre>
+<p>2. Insert data into this table.</p>
+<pre><code>      insert into page_uv values
+      (1, '2020-06-23 01:30:30', to_bitmap(13)),
+      (1, '2020-06-23 01:30:30', to_bitmap(23)),
+      (1, '2020-06-23 01:30:30', to_bitmap(33)),
+      (1, '2020-06-23 02:30:30', to_bitmap(13)),
+      (2, '2020-06-23 01:30:30', to_bitmap(23));
+
+      select * from page_uv order by page_id;
+      +---------+---------------------+-------------+
+      | page_id | visit_date          | visit_users |
+      +---------+---------------------+-------------+
+      |       1 | 2020-06-23 01:30:30 | NULL        |
+      |       1 | 2020-06-23 02:30:30 | NULL        |
+      |       2 | 2020-06-23 01:30:30 | NULL        |
+      +---------+---------------------+-------------+</code></pre>
+<p>3. Convert each value in the <code>visit_users</code> column into a binary-encoded string.</p>
+<pre><code>       mysql&gt; select page_id, hex(bitmap_to_binary(visit_users)) from page_uv;
+       +---------+------------------------------------------------------------+
+       | page_id | hex(bitmap_to_binary(visit_users))                         |
+       +---------+------------------------------------------------------------+
+       |       1 | 0A030000000D0000000000000017000000000000002100000000000000 |
+       |       1 | 010D000000                                                 |
+       |       2 | 0117000000                                                 |
+       +---------+------------------------------------------------------------+
+       3 rows in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_to_binary.md">StarRocks documentation</a></p>
+</body></html>

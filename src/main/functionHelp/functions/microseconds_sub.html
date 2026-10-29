@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>microseconds_sub</title></head><body>
+<h2>microseconds_sub</h2>
+<p>Subtracts a time interval from a date value. The time interval is in microseconds.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME microseconds_sub(DATETIME expr1,INT expr2);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr1</code>: the time expression. It must be of the DATETIME type.</p>
+<p><code>expr2</code>: the time interval you want to substract, in microseconds. It must be of the INT type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DATETIME type. If the input value is of the DATE type, the hour, minute, and seconds parts are processed as <code>00:00:00</code>.</p>
+<h3>Examples</h3>
+<pre><code>select microseconds_sub('2010-11-30 23:50:50', 2);
++--------------------------------------------+
+| microseconds_sub('2010-11-30 23:50:50', 2) |
++--------------------------------------------+
+| 2010-11-30 23:50:49.999998                 |
++--------------------------------------------+
+
+select microseconds_sub('2010-11-30', 2);
++-----------------------------------+
+| microseconds_sub('2010-11-30', 2) |
++-----------------------------------+
+| 2010-11-29 23:59:59.999998        |
++-----------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/microseconds_sub.md">StarRocks documentation</a></p>
+</body></html>

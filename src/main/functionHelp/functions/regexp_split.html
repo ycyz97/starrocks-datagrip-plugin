@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>regexp_split</title></head><body>
+<h2>regexp_split</h2>
+<p>Split string <code>str</code> by regexp expression <code>pattern</code>, return maximum <code>max_split</code> elements in <code>ARRAY&lt;VARCHAR&gt;</code> type.</p>
+<h3>Syntax</h3>
+<pre><code>regexp_split(str, pattern[, max_split])</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: required, the string to split, which must evaluate to a <code>VARCHAR</code> value.</p>
+<p><code>pattern</code>: required, the regexp expression pattern used to split, which must evaluate to a <code>VARCHAR</code> value.</p>
+<p><code>max_split</code>: optional, the number of maximum elements in the output value, which must evaluate to an <code>INT</code> value.</p>
+<h3>Return value</h3>
+<p>Returns an <code>ARRAY&lt;VARCHAR&gt;</code> value.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select regexp_split('StarRocks', '');
++---------------------------------------+
+| regexp_split('StarRocks', '')         |
++---------------------------------------+
+| [&quot;S&quot;,&quot;t&quot;,&quot;a&quot;,&quot;r&quot;,&quot;R&quot;,&quot;o&quot;,&quot;c&quot;,&quot;k&quot;,&quot;s&quot;] |
++---------------------------------------+
+
+mysql&gt; select regexp_split('StarRocks', '[SR]');
++-----------------------------------+
+| regexp_split('StarRocks', '[SR]') |
++-----------------------------------+
+| [&quot;&quot;,&quot;tar&quot;,&quot;ocks&quot;]                 |
++-----------------------------------+
+
+mysql&gt; select regexp_split('StarRocks', '[SR]', 1);
++--------------------------------------+
+| regexp_split('StarRocks', '[SR]', 1) |
++--------------------------------------+
+| [&quot;StarRocks&quot;]                        |
++--------------------------------------+
+
+mysql&gt; select regexp_split('StarRocks', '[SR]', 2);
++--------------------------------------+
+| regexp_split('StarRocks', '[SR]', 1) |
++--------------------------------------+
+| [&quot;&quot;,&quot;tarRocks&quot;]                      |
++--------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/regexp_split.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>regexp_extract_all</title></head><body>
+<h2>regexp_extract_all</h2>
+<p>Extracts all substrings from the target string (<code>str</code>) that matches a regular expression pattern (<code>pattern</code>) and corresponds to the regex group index specified by <code>pos</code>. This function returns an array.</p>
+<p>In regex, groups are enclosed within the parentheses () and numbered by counting their opening parentheses from left to right, starting from 1. For example, <code>([[:lower:]]+)C([[:lower:]]+)</code> is to match lowercase letters to the left or right side of the uppercase letter <code>C</code>. This pattern contains two groups: <code>([[:lower:]]+)</code> to the left of <code>C</code> is the first group and <code>([[:lower:]]+)</code> to the right of <code>C</code> is the second group.</p>
+<p>The pattern must completely match some parts of <code>str</code>. If no matches are found, an empty string is returned.</p>
+<p>This function is supported from v3.1.10.</p>
+<h3>Syntax</h3>
+<pre><code>ARRAY&lt;VARCHAR&gt; regexp_extract_all(VARCHAR str, VARCHAR pattern, BIGINT pos)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the string to be matched.</li>
+</ul>
+<ul>
+<li><code>pattern</code>: the regular expression pattern used to match substrings.</li>
+</ul>
+<ul>
+<li><code>pos</code>: <code>pattern</code> may contain multiple groups. <code>pos</code> indicates which regex group to extract.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns an ARRAY that consists of VARCHAR elements.</p>
+<h3>Examples</h3>
+<pre><code>-- Return all the letters that match group 1 in the pattern.
+MySQL &gt; SELECT regexp_extract_all('AbCdE', '([[:lower:]]+)C([[:lower:]]+)', 1);
++-------------------------------------------------------------------+
+| regexp_extract_all('AbCdE', '([[:lower:]]+)C([[:lower:]]+)', 1)   |
++-------------------------------------------------------------------+
+| ['b']                                                             |
++-------------------------------------------------------------------+
+
+-- Return all the letters that match group 2 in the pattern.
+MySQL &gt; SELECT regexp_extract_all('AbCdExCeF', '([[:lower:]]+)C([[:lower:]]+)', 2);
++---------------------------------------------------------------------+
+| regexp_extract_all('AbCdExCeF', '([[:lower:]]+)C([[:lower:]]+)', 2) |
++---------------------------------------------------------------------+
+| ['d','e']                                                           |
++---------------------------------------------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>REGEXP_EXTRACT_ALL,REGEXP,EXTRACT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/like-predicate-functions/regexp_extract_all.md">StarRocks documentation</a></p>
+</body></html>

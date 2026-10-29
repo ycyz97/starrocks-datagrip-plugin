@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>starts_with</title></head><body>
+<h2>starts_with</h2>
+<p>This function returns 1 when a string starts with a specified prefix. Otherwise, it returns 0. When the argument is NULL, the result is NULL.</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN starts_with(VARCHAR str, VARCHAR prefix)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select starts_with(&quot;hello world&quot;,&quot;hello&quot;);
++-------------------------------------+
+|starts_with('hello world', 'hello')  |
++-------------------------------------+
+| 1                                   |
++-------------------------------------+
+
+mysql&gt; select starts_with(&quot;hello world&quot;,&quot;world&quot;);
++-------------------------------------+
+|starts_with('hello world', 'world')  |
++-------------------------------------+
+| 0                                   |
++-------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>START_WITH</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/starts_with.md">StarRocks documentation</a></p>
+</body></html>

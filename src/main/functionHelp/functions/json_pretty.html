@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>json_pretty</title></head><body>
+<h2>json_pretty</h2>
+<p>Formats a JSON document into an easy-to-read, indented string format. This function is useful for debugging or displaying JSON data in a human-readable structure.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page.</p>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>json_pretty(json_object_expr)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>json_object_expr</code>: The expression that represents the JSON object. The object can be a JSON column, a string containing valid JSON, or a JSON object produced by a JSON constructor function such as PARSE_JSON.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns the formatted JSON document as a string.</p>
+<p>&gt; - Returns NULL if the argument is NULL.<br>&gt; - The returned string includes newlines and spaces for indentation.<br>&gt; - Object keys are sorted alphabetically in the output.</p>
+<h3>Examples</h3>
+<p>Example 1: Format a simple JSON object.</p>
+<pre><code>mysql&gt; SELECT json_pretty('{&quot;b&quot;: 2, &quot;a&quot;: 1}');
+       -&gt; {
+            &quot;a&quot;: 1,
+            &quot;b&quot;: 2
+          }</code></pre>
+<p>Example 2: Format a JSON array.</p>
+<pre><code>mysql&gt; SELECT json_pretty('[1, 2, 3]');
+       -&gt; [
+            1,
+            2,
+            3
+          ]</code></pre>
+<p>Example 3: Format a nested JSON structure.</p>
+<pre><code>mysql&gt; SELECT json_pretty('{&quot;level1&quot;: {&quot;level2&quot;: {&quot;level3&quot;: &quot;value&quot;}}}');
+       -&gt; {
+            &quot;level1&quot;: {
+              &quot;level2&quot;: {
+                &quot;level3&quot;: &quot;value&quot;
+              }
+            }
+          }</code></pre>
+<p>Example 4: Use with a table column containing JSON data.</p>
+<pre><code>
+mysql&gt; CREATE TABLE json_test (id INT, data JSON);
+mysql&gt; INSERT INTO json_test VALUES (1, parse_json('{&quot;name&quot;: &quot;Alice&quot;, &quot;details&quot;: {&quot;age&quot;: 25, &quot;city&quot;: &quot;NYC&quot;}}'));
+mysql&gt; SELECT json_pretty(data) FROM json_test;
+       -&gt; {
+            &quot;details&quot;: {
+              &quot;age&quot;: 25,
+              &quot;city&quot;: &quot;NYC&quot;
+            },
+            &quot;name&quot;: &quot;Alice&quot;
+          }</code></pre>
+<h3>Usage notes</h3>
+<ul>
+<li><b>Indentation:</b> The function adds standard indentation (spaces) and newlines to make the JSON structure visual.</li>
+<li><b>Key Sorting:</b> JSON object keys are sorted alphabetically in the output string. This is standard behavior for the underlying JSON processing library (VelocyPack).</li>
+<li><b>Null Handling:</b> If the input is SQL NULL, the function returns NULL.</li>
+<li><b>Data Types:</b> It supports formatting of standard JSON types including Objects, Arrays, Strings, Numbers, Booleans, and Nulls.</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/json_pretty.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_andnot</title></head><body>
+<h2>bitmap_andnot</h2>
+<p>Returns bitmap values that exist in <code>lhs</code> but do not exist in <code>rhs</code>, and returns the new bitmap.</p>
+<h3>Syntax</h3>
+<pre><code>bitmap_andnot(BITMAP lhs, BITMAP rhs)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select bitmap_to_string(bitmap_andnot(bitmap_from_string('1, 3'), bitmap_from_string('2'))) cnt;
++------+
+|cnt   |
++------+
+|1,3   |
++------+
+
+mysql&gt; select bitmap_to_string(bitmap_andnot(bitmap_from_string('1,3,5'), bitmap_from_string('1'))) cnt;
++------+
+|cnt   |
++------+
+|3,5   |
++------+</code></pre>
+<h3>keyword</h3>
+<p>BITMAP_ANDNOT, BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_andnot.md">StarRocks documentation</a></p>
+</body></html>

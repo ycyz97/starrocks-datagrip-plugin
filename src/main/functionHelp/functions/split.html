@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>split</title></head><body>
+<h2>split</h2>
+<p>This function splits a given string according to the separators, and returns the split parts in ARRAY.</p>
+<h3>Syntax</h3>
+<pre><code>ARRAY&lt;VARCHAR&gt; split(VARCHAR content, VARCHAR delimiter)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select split(&quot;a,b,c&quot;,&quot;,&quot;);
++---------------------+
+| split('a,b,c', ',') |
++---------------------+
+| [&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]       |
++---------------------+
+
+mysql&gt; select split(&quot;a,b,c&quot;,&quot;,b,&quot;);
++-----------------------+
+| split('a,b,c', ',b,') |
++-----------------------+
+| [&quot;a&quot;,&quot;c&quot;]             |
++-----------------------+
+
+mysql&gt; select split(&quot;abc&quot;,&quot;&quot;);
++------------------+
+| split('abc', '') |
++------------------+
+| [&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]    |
++------------------+</code></pre>
+<h3>keyword</h3>
+<p>SPLIT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/split.md">StarRocks documentation</a></p>
+</body></html>

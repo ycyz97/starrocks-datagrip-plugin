@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>years_diff</title></head><body>
+<h2>years_diff</h2>
+<p>Returns the year difference between two date expressions (<code>expr1</code> − <code>expr2</code>), accurate to the year.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT years_diff(DATETIME expr1,DATETIME expr2);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr1</code>: the end time. It must be of the DATETIME or DATE type.</li>
+</ul>
+<ul>
+<li><code>expr2</code>: the start time. It must be of the DATETIME or DATE type.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BIGINT value.</p>
+<p>NULL is returned if the date does not exist, for example, 2022-02-29.</p>
+<h3>Examples</h3>
+<pre><code>select years_diff('2010-11-30 23:59:59', '2000-11-1 23:59:59');
++---------------------------------------------------------+
+| years_diff('2010-11-30 23:59:59', '2000-11-1 23:59:59') |
++---------------------------------------------------------+
+|                                                      10 |
++---------------------------------------------------------+
+
+select years_diff('2010-11-30', '2000-11-1');
++---------------------------------------+
+| years_diff('2010-11-30', '2000-11-1') |
++---------------------------------------+
+|                                    10 |
++---------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/years_diff.md">StarRocks documentation</a></p>
+</body></html>

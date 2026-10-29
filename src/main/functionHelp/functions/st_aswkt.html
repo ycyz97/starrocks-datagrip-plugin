@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_aswkt</title></head><body>
+<h2>ST_AsText, ST_AsWKT</h2>
+<p>Converts a <code>GEOMETRY</code> or <code>GEOGRAPHY</code> value to WKT (Well-Known Text). <code>ST_AsWKT</code> is an alias of <code>ST_AsText</code>.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR ST_AsText(GEOMETRY geo)
+VARCHAR ST_AsText(GEOGRAPHY geography)
+VARCHAR ST_AsWKT(GEOMETRY geo)
+VARCHAR ST_AsWKT(GEOGRAPHY geography)</code></pre>
+<p>For native <code>GEOMETRY</code> and <code>GEOGRAPHY</code>, the function preserves all seven OGC geometry families, <code>EMPTY</code>, and empty children. A <code>NULL</code> input returns <code>NULL</code>. The serializer does not change the input CRS or coordinates.</p>
+<h3>Examples</h3>
+<pre><code>SELECT ST_AsText(ST_GeogFromText('GEOMETRYCOLLECTION (POINT EMPTY, LINESTRING (1 2, 3 4))'));</code></pre>
+<pre><code>GEOMETRYCOLLECTION (POINT EMPTY, LINESTRING (1 2, 3 4))</code></pre>
+<pre><code>SELECT ST_AsText(ST_GeomFromText('POINT (1000000 2000000)', 'EPSG:3857'));</code></pre>
+<pre><code>POINT (1000000 2000000)</code></pre>
+<pre><code>MySQL &gt; SELECT ST_AsText(ST_Point(24.7, 56.7));
++---------------------------------+
+| st_astext(st_point(24.7, 56.7)) |
++---------------------------------+
+| POINT (24.7 56.7)               |
++---------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ST_ASTEXT, ST_ASWKT, ST, ASTEXT, ASWKT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_astext.md">StarRocks documentation</a></p>
+</body></html>

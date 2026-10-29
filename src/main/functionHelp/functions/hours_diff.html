@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hours_diff</title></head><body>
+<h2>hours_diff</h2>
+<p>Returns the hour difference between two date expressions (<code>expr1</code> − <code>expr2</code>), accurate to the hour.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT hours_diff(DATETIME expr1, DATETIME expr2);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr1</code>: the end time. It must be of the DATETIME type.</li>
+</ul>
+<ul>
+<li><code>expr2</code>: the start time. It must be of the DATETIME type.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BIGINT value.</p>
+<p>NULL is returned if the date does not exist, for example, 2022-02-29.</p>
+<h3>Examples</h3>
+<pre><code>select hours_diff('2010-11-30 23:59:59', '2010-11-30 20:58:59');
++----------------------------------------------------------+
+| hours_diff('2010-11-30 23:59:59', '2010-11-30 20:58:59') |
++----------------------------------------------------------+
+|                                                        3 |
++----------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/hours_diff.md">StarRocks documentation</a></p>
+</body></html>

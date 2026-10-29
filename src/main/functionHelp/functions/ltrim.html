@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>ltrim</title></head><body>
+<h2>ltrim</h2>
+<p>Removes the leading spaces or specified characters from the beginning (left) of the <code>str</code> argument. Removing specified characters are supported from StarRocks 2.5.0.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR ltrim(VARCHAR str[, VARCHAR characters])</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: required, the string to trim, which must evaluate to a VARCHAR value.</p>
+<p><code>characters</code>: optional, the characters to remove, which must be a VARCHAR value. If this parameter is not specified, spaces are removed from the string by default. If this parameter is set to an empty string, an error is returned.</p>
+<h3>Return value</h3>
+<p>Returns a VARCHAR value.</p>
+<h3>Examples</h3>
+<p>Example 1: Remove spaces from the beginning of the string.</p>
+<pre><code>MySQL &gt; SELECT ltrim('   ab d');
++------------------+
+| ltrim('   ab d') |
++------------------+
+| ab d             |
++------------------+</code></pre>
+<p>Example 2: Remove specified characters from the beginning of the string.</p>
+<pre><code>MySQL &gt; SELECT ltrim(&quot;xxabcdxx&quot;, &quot;x&quot;);
++------------------------+
+| ltrim('xxabcdxx', 'x') |
++------------------------+
+| abcdxx                 |
++------------------------+</code></pre>
+<h3>References</h3>
+<ul>
+<li>trim</li>
+<li>rtrim</li>
+</ul>
+<h3>keyword</h3>
+<p>LTRIM</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/ltrim.md">StarRocks documentation</a></p>
+</body></html>

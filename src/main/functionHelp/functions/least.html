@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>least</title></head><body>
+<h2>least</h2>
+<p>Returns the smallest value from a list of one or more parameters.</p>
+<p>Generally, the return value has the same data type as the input.</p>
+<p>The comparison rules are the same as the greatest function.</p>
+<h3>Syntax</h3>
+<pre><code>LEAST(expr1,...);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr1</code>: the expression to compare. It supports the following data types:</p>
+<ul>
+<li>SMALLINT</li>
+</ul>
+<ul>
+<li>TINYINT</li>
+</ul>
+<ul>
+<li>INT</li>
+</ul>
+<ul>
+<li>BIGINT</li>
+</ul>
+<ul>
+<li>LARGEINT</li>
+</ul>
+<ul>
+<li>FLOAT</li>
+</ul>
+<ul>
+<li>DOUBLE</li>
+</ul>
+<ul>
+<li>DECIMALV2</li>
+</ul>
+<ul>
+<li>DECIMAL32</li>
+</ul>
+<ul>
+<li>DECIMAL64</li>
+</ul>
+<ul>
+<li>DECIMAL128</li>
+</ul>
+<ul>
+<li>DATETIME</li>
+</ul>
+<ul>
+<li>VARCHAR</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Return the smallest value for a single input.</p>
+<pre><code>select least(3);
++----------+
+| least(3) |
++----------+
+|        3 |
++----------+
+1 row in set (0.00 sec)</code></pre>
+<p>Example 2: Return the smallest value from a list of values.</p>
+<pre><code>select least(3,4,5,5,6);
++----------------------+
+| least(3, 4, 5, 5, 6) |
++----------------------+
+|                    3 |
++----------------------+
+1 row in set (0.01 sec)</code></pre>
+<p>Example 3: One parameter is of the DOUBLE type and a DOUBLE value is returned.</p>
+<pre><code>select least(4,4.5,5.5);
++--------------------+
+| least(4, 4.5, 5.5) |
++--------------------+
+|                4.0 |
++--------------------+</code></pre>
+<p>Example 4: The input parameters are a mix of number and string but the string can be converted into a number.  The parameters are compared as numbers.</p>
+<pre><code>select least(7,'5');
++---------------+
+| least(7, '5') |
++---------------+
+| 5             |
++---------------+
+1 row in set (0.01 sec)</code></pre>
+<p>Example 5: The input parameters are a mix of number and string but the string cannot be converted into a number. The parameters are compared as strings. The string <code>'1'</code> is less than <code>'at'</code>.</p>
+<pre><code>select least(1,'at');
++----------------+
+| least(1, 'at') |
++----------------+
+| 1              |
++----------------+</code></pre>
+<p>Example 6: The input parameters are characters.</p>
+<pre><code>mysql&gt; select least('A','B','Z');
++----------------------+
+| least('A', 'B', 'Z') |
++----------------------+
+| A                    |
++----------------------+
+1 row in set (0.00 sec)</code></pre>
+<h3>Keywords</h3>
+<p>LEAST, least</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/least.md">StarRocks documentation</a></p>
+</body></html>

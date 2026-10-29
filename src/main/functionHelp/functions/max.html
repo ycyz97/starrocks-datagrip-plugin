@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>max</title></head><body>
+<h2>max</h2>
+<p>Returns the maximum value of the expr expression.</p>
+<h3>Syntax</h3>
+<pre><code>MAX(expr)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select max(scan_rows)
+from log_statis
+group by datetime;
++------------------+
+| max(`scan_rows`) |
++------------------+
+|          4671587 |
++------------------+</code></pre>
+<h3>keyword</h3>
+<p>MAX</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/max.md">StarRocks documentation</a></p>
+</body></html>

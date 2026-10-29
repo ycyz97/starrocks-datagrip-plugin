@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>char_length</title></head><body>
+<h2>char_length</h2>
+<p>This function returns the length of a string. For multi-byte characters, it returns the number of characters. It currently only supports utf8 coding. Note: This function is also named as character_length.</p>
+<h3>Syntax</h3>
+<pre><code>INT char_length(VARCHAR str)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select char_length(&quot;abc&quot;);
++--------------------+
+| char_length('abc') |
++--------------------+
+|                  3 |
++--------------------+</code></pre>
+<h3>keyword</h3>
+<p>CHAR_LENGTH, CHARACTER_LENGTH</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/char_length.md">StarRocks documentation</a></p>
+</body></html>

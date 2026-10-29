@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>get_json_bool</title></head><body>
+<h2>get_json_bool</h2>
+<p>Parses and gets the boolean value from a specified JSON path in a JSON string.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<p>If the format of <code>json_str</code> or <code>json_path</code> is invalid, or if no matching content can be found, this function will return NULL.</p>
+<p>This function is supported from v3.3.</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN get_json_bool(VARCHAR json_str, VARCHAR json_path)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>json_str</code>: the JSON string. The supported data type is VARCHAR.</li>
+<li><code>json_path</code>: the JSON path. The supported data type is VARCHAR.</li>
+</ul>
+<ul>
+<li><code>json_path</code> must start with <code>$</code> and use <code>.</code> as the path separator. If the path includes <code>.</code>, it can be enclosed in a pair of <code>&quot;</code>.</li>
+<li><code>[ ]</code> is used as the array subscripts which starts from 0.</li>
+</ul>
+<h3>Examples</h3>
+<p>1. Get the value whose key is &quot;k1&quot;. The value is <code>true</code> and <code>1</code> is returned.</p>
+<pre><code>   MySQL &gt; SELECT get_json_bool('{&quot;k1&quot;:true, &quot;k2&quot;:&quot;false&quot;}', &quot;$.k1&quot;);
+   +----------------------------------------------------+
+   | get_json_bool('{&quot;k1&quot;:true, &quot;k2&quot;:&quot;false&quot;}', '$.k1') |
+   +----------------------------------------------------+
+   |                                                  1 |
+   +----------------------------------------------------+</code></pre>
+<p>2. Get the second element in the array whose key is &quot;my.key&quot;. The second element is <code>false</code> and <code>0</code> is returned.</p>
+<pre><code>   SELECT get_json_bool('{&quot;k1&quot;:&quot;v1&quot;, &quot;my.key&quot;:[true, false, 3]}', '$.&quot;my.key&quot;[1]');
+   +--------------------------------------------------------------------------+
+   | get_json_bool('{&quot;k1&quot;:&quot;v1&quot;, &quot;my.key&quot;:[true, false, 3]}', '$.&quot;my.key&quot;[1]') |
+   +--------------------------------------------------------------------------+
+   |                                                                        0 |
+   +--------------------------------------------------------------------------+</code></pre>
+<p>3. Get the first element in the array whose path is <code>k1.key -&gt; k2</code>. The first element is <code>false</code> and <code>0</code> is returned.</p>
+<pre><code>   MYSQL &gt; SELECT get_json_bool('{&quot;k1.key&quot;:{&quot;k2&quot;:[false, true]}}', '$.&quot;k1.key&quot;.k2[0]');
+   +----------------------------------------------------------------------+
+   | get_json_bool('{&quot;k1.key&quot;:{&quot;k2&quot;:[false, true]}}', '$.&quot;k1.key&quot;.k2[0]') |
+   +----------------------------------------------------------------------+
+   |                                                                    0 |
+   +----------------------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>GET_JSON_BOOL,GET,JSON,BOOL</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/get_json_bool.md">StarRocks documentation</a></p>
+</body></html>

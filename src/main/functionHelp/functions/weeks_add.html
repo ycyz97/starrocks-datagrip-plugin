@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>weeks_add</title></head><body>
+<h2>weeks_add</h2>
+<p>Returns the value with the number of weeks added to date.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME weeks_add(DATETIME expr1, INT expr2);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr1</code>: the original date. It must be of the <code>DATETIME</code> type.</li>
+</ul>
+<ul>
+<li><code>expr2</code>: the number of weeks. It must be of the <code>INT</code> type.</li>
+</ul>
+<h3>Return value</h3>
+<p>returns <code>DATETIME</code>.</p>
+<p><code>NULL</code> is returned if the date does not exist.</p>
+<h3>Examples</h3>
+<pre><code>select weeks_add('2022-12-20',2);
++----------------------------+
+| weeks_add('2022-12-20', 2) |
++----------------------------+
+|        2023-01-03 00:00:00 |
++----------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/weeks_add.md">StarRocks documentation</a></p>
+</body></html>

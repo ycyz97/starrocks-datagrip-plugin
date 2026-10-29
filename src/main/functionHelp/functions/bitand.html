@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitand</title></head><body>
+<h2>bitand</h2>
+<p>Returns the bitwise AND of two numeric expressions.</p>
+<h3>Syntax</h3>
+<pre><code>BITAND(x,y);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>x</code>: This expression must evaluate to any of the following data types: TINYINT, SMALLINT, INT, BIGINT, LARGEINT.</li>
+</ul>
+<ul>
+<li><code>y</code>: This expression must evaluate to any of the following data types: TINYINT, SMALLINT, INT, BIGINT, LARGEINT.</li>
+</ul>
+<p>&gt; <code>x</code> and <code>y</code> must agree in data type.</p>
+<h3>Return value</h3>
+<p>The return value has the same type as <code>x</code>. If any value is NULL, the result is NULL.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select bitand(3,0);
++--------------+
+| bitand(3, 0) |
++--------------+
+|            0 |
++--------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bit-functions/bitand.md">StarRocks documentation</a></p>
+</body></html>

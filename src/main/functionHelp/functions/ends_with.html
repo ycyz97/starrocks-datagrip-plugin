@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>ends_with</title></head><body>
+<h2>ends_with</h2>
+<p>Returns <code>true</code> if a string ends with a specified suffix. Otherwise, it returns <code>false</code>. If the argument is NULL, the result is NULL.</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN ENDS_WITH (VARCHAR str, VARCHAR suffix)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select ends_with(&quot;Hello starrocks&quot;, &quot;starrocks&quot;);
++-----------------------------------+
+| ends_with('Hello starrocks', 'starrocks') |
++-----------------------------------+
+|                                 1 |
++-----------------------------------+
+
+MySQL &gt; select ends_with(&quot;Hello starrocks&quot;, &quot;Hello&quot;);
++-----------------------------------+
+| ends_with('Hello starrocks', 'Hello') |
++-----------------------------------+
+|                                 0 |
++-----------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ENDS_WITH</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/ends_with.md">StarRocks documentation</a></p>
+</body></html>

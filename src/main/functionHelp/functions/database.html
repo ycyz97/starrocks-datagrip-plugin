@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>database</title></head><body>
+<h2>database</h2>
+<p>Returns the name of the current database. If no database is selected, an empty value is returned.</p>
+<h3>Syntax</h3>
+<pre><code>database()</code></pre>
+<h3>Parameters</h3>
+<p>This function does not require parameters.</p>
+<h3>Return value</h3>
+<p>Returns the name of the current database as a string.</p>
+<h3>Examples</h3>
+<pre><code>-- Select a destination database.
+use db_test
+
+-- Query the name of the current database.
+select database();
++------------+
+| DATABASE() |
++------------+
+| db_test    |
++------------+</code></pre>
+<h3>See also</h3>
+<p>USE: Switches to a destination database.</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/database.md">StarRocks documentation</a></p>
+</body></html>

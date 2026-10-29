@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>ds_hll_accumulate</title></head><body>
+<h2>ds_hll_accumulate</h2>
+<p>Accumulates values into a HyperLogLog sketch and returns the serialized sketch as a VARBINARY. This function is part of the DataSketches HLL family of functions for approximate distinct counting.</p>
+<p><code>ds_hll_accumulate</code> creates a serialized HyperLogLog sketch that can be combined with other sketches using <code>ds_hll_combine</code> and estimated using <code>ds_hll_estimate</code>.</p>
+<p>It is based on Apache DataSketches and provides high precision for approximate distinct counting. For more information, see HyperLogLog Sketches.</p>
+<h3>Syntax</h3>
+<pre><code>sketch ds_hll_accumulate(expr)
+sketch ds_hll_accumulate(expr, log_k)
+sketch ds_hll_accumulate(expr, log_k, tgt_type)</code></pre>
+<h4>Parameters</h4>
+<ul>
+<li><code>expr</code>: The expression to accumulate into the sketch. Can be any data type.</li>
+<li><code>log_k</code>: Integer. Range [4, 21]. Default: 17. Controls the precision and memory usage of the sketch.</li>
+<li><code>tgt_type</code>: Valid values are <code>HLL_4</code>, <code>HLL_6</code> (default) and <code>HLL_8</code>. Controls the target type of the HyperLogLog sketch.</li>
+</ul>
+<h3>Return Type</h3>
+<p>Returns a VARBINARY containing the serialized HyperLogLog sketch.</p>
+<h3>Examples</h3>
+<pre><code>-- Create test table
+CREATE TABLE t1 (
+  id BIGINT,
+  province VARCHAR(64),
+  age SMALLINT,
+  dt VARCHAR(10)
+)
+DUPLICATE KEY(id)
+DISTRIBUTED BY HASH(id) BUCKETS 3;
+
+-- Insert test data
+INSERT INTO t1 SELECT generate_series, generate_series, generate_series % 100, &quot;2024-07-24&quot;
+FROM table(generate_series(1, 1000));
+
+-- Basic usage with single argument
+SELECT ds_hll_accumulate(id) FROM t1;
+
+-- With custom log_k parameter
+SELECT ds_hll_accumulate(province, 20) FROM t1;
+
+-- With both log_k and tgt_type parameters
+SELECT ds_hll_accumulate(age, 12, &quot;HLL_6&quot;) FROM t1;
+
+-- Group by usage
+SELECT dt,
+       ds_hll_accumulate(id),
+       ds_hll_accumulate(province, 20),
+       ds_hll_accumulate(age, 12, &quot;HLL_6&quot;),
+       ds_hll_accumulate(dt)
+FROM t1
+GROUP BY dt
+ORDER BY 1
+LIMIT 3;</code></pre>
+<h3>Related Functions</h3>
+<ul>
+<li><code>ds_hll_combine</code>: Combines multiple serialized sketches into a single sketch</li>
+<li><code>ds_hll_estimate</code>: Estimates the distinct count from a serialized sketch</li>
+<li><code>ds_hll_count_distinct</code>: Direct approximate distinct counting function</li>
+</ul>
+<h3>Keywords</h3>
+<p>ds_HLL_ACCUMULATE, HLL, HYPERLOGLOG, APPROXIMATE, DISTINCT, COUNT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/ds_hll_accumulate.md">StarRocks documentation</a></p>
+</body></html>

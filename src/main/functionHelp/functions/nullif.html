@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>nullif</title></head><body>
+<h2>nullif</h2>
+<p>Returns NULL if <code>expr1</code> is equal to <code>expr2</code>. Otherwise, returns <code>expr1</code>.</p>
+<h3>Syntax</h3>
+<pre><code>nullif(expr1,expr2);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr1</code> and <code>expr2</code> must be compatible in data type.</p>
+<h3>Return value</h3>
+<p>The return value has the same type as <code>expr1</code>.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select nullif(1,2);
++--------------+
+| nullif(1, 2) |
++--------------+
+|            1 |
++--------------+
+
+mysql&gt; select nullif(1,1);
++--------------+
+| nullif(1, 1) |
++--------------+
+|         NULL |
++--------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/condition-functions/nullif.md">StarRocks documentation</a></p>
+</body></html>

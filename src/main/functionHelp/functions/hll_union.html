@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hll_union</title></head><body>
+<h2>hll_union</h2>
+<p>Returns the concatenation of a set of HLL values.</p>
+<h3>Syntax</h3>
+<pre><code>hll_union(hll)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select k1, hll_cardinality(hll_union(v1)) from tbl group by k1;
++------+----------------------------------+
+| k1   | hll_cardinality(hll_union(`v1`)) |
++------+----------------------------------+
+|    2 |                                4 |
+|    1 |                                3 |
++------+----------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/hll_union.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>to_json</title></head><body>
+<h2>to_json</h2>
+<p>Converts a Map or Struct value into a JSON string. If the input value is NULL, NULL is returned.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<p>If you want to cast values of other data types, see cast.</p>
+<p>This function is supported from v3.1 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>to_json(any_value)</code></pre>
+<h3>Parameters</h3>
+<p><code>any_value</code>: the Map or Struct expression you want to convert. If the input value is invalid, an error is returned. The value in each key-value pair of the Map or Struct value is nullable. See the last example.</p>
+<h3>Return value</h3>
+<p>Returns a JSON value.</p>
+<h3>Examples</h3>
+<pre><code>select to_json(map{1:'a',2:'b'});
++---------------------------+
+| to_json(map{1:'a',2:'b'}) |
++---------------------------+
+| {&quot;1&quot;: &quot;a&quot;, &quot;2&quot;: &quot;b&quot;}      |
++---------------------------+
+
+select to_json(row('asia','eu'));
++--------------------------------+
+| to_json(row('asia', 'eu'))     |
++--------------------------------+
+| {&quot;col1&quot;: &quot;asia&quot;, &quot;col2&quot;: &quot;eu&quot;} |
++--------------------------------+
+
+select to_json(map('a', named_struct('b', 1)));
++----------------------------------------+
+| to_json(map{'a':named_struct('b', 1)}) |
++----------------------------------------+
+| {&quot;a&quot;: {&quot;b&quot;: 1}}                        |
++----------------------------------------+
+
+select to_json(named_struct(&quot;k1&quot;, cast(null as string), &quot;k2&quot;, &quot;v2&quot;));
++-----------------------------------------------------------------------+
+| to_json(named_struct('k1', CAST(NULL AS VARCHAR(65533)), 'k2', 'v2')) |
++-----------------------------------------------------------------------+
+| {&quot;k1&quot;: null, &quot;k2&quot;: &quot;v2&quot;}                                              |
++-----------------------------------------------------------------------+</code></pre>
+<h3>See also</h3>
+<ul>
+<li>Map data type</li>
+<li>Struct data type</li>
+<li>Map functions</li>
+<li>Struct functions</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/to_json.md">StarRocks documentation</a></p>
+</body></html>

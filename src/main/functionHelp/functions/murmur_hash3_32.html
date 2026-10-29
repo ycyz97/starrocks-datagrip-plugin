@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>murmur_hash3_32</title></head><body>
+<h2>murmur_hash3_32</h2>
+<p>Returns the 32-bit murmur3 hash value of the input string.</p>
+<h3>Syntax</h3>
+<pre><code>INT MURMUR_HASH3_32(VARCHAR input, ...)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select murmur_hash3_32(null);
++-----------------------+
+| murmur_hash3_32(NULL) |
++-----------------------+
+|                  NULL |
++-----------------------+
+
+MySQL &gt; select murmur_hash3_32(&quot;hello&quot;);
++--------------------------+
+| murmur_hash3_32('hello') |
++--------------------------+
+|               1321743225 |
++--------------------------+
+
+MySQL &gt; select murmur_hash3_32(&quot;hello&quot;, &quot;world&quot;);
++-----------------------------------+
+| murmur_hash3_32('hello', 'world') |
++-----------------------------------+
+|                         984713481 |
++-----------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>MURMUR_HASH3_32,HASH</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/hash-functions/murmur_hash3_32.md">StarRocks documentation</a></p>
+</body></html>

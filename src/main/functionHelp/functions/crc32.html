@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>crc32</title></head><body>
+<h2>crc32</h2>
+<p>Returns the 32-bit cyclic redundancy check (CRC) value of a string. If the input is NULL, NULL is returned.</p>
+<p>This function is used for error detection. It uses the CRC32 algorithm to detect changes between source and target data.</p>
+<p>This function is supported from v3.3 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT crc32(VARCHAR str)</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the string for which you want to calculate the CRC32 value.</p>
+<h3>Examples</h3>
+<pre><code>mysql &gt; select crc32(&quot;starrocks&quot;);
++--------------------+
+| crc32('starrocks') |
++--------------------+
+|         2312449062 |
++--------------------+
+
+mysql &gt; select crc32(null);
++-------------+
+| crc32(NULL) |
++-------------+
+|        NULL |
++-------------+
+1 row in set (0.18 sec)</code></pre>
+<h3>Keywords</h3>
+<p>CRC32</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/crc32.md">StarRocks documentation</a></p>
+</body></html>

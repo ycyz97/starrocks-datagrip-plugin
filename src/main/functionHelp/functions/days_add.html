@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>days_add</title></head><body>
+<h2>days_add</h2>
+<p>Adds a specified number of days to a given date or date time.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME days_add(DATETIME|DATE date, INT n);</code></pre>
+<h3>Parameters</h3>
+<p><code>date</code>: a DATE or DATETIME expression.</p>
+<p><code>n</code>: the number of days to add.</p>
+<h3>Return value</h3>
+<p>Returns a DATETIME value.</p>
+<p>If any input parameter is NULL or invalid, NULL is returned.</p>
+<p>If the output date exceeds the range of [0000-01-01 00:00:00, 9999-12-31 00:00:00], NULL is returned.</p>
+<h3>Examples</h3>
+<pre><code>select days_add('2023-10-31 23:59:59', 1);
++------------------------------------+
+| days_add('2023-10-31 23:59:59', 1) |
++------------------------------------+
+| 2023-11-01 23:59:59                |
++------------------------------------+
+
+select days_add('2023-10-31 23:59:59', 1000);
++---------------------------------------+
+| days_add('2023-10-31 23:59:59', 1000) |
++---------------------------------------+
+| 2026-07-27 23:59:59                   |
++---------------------------------------+
+
+select days_add('2023-10-31', 1);
++---------------------------+
+| days_add('2023-10-31', 1) |
++---------------------------+
+| 2023-11-01 00:00:00       |
++---------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>DAY,day</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/days_add.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>convert_tz</title></head><body>
+<h2>convert_tz</h2>
+<p>Converts a DATE or DATETIME value from one time zone to another.</p>
+<p>This function may return different results for different time zones. For more information, see Configure a time zone.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME CONVERT_TZ(DATETIME|DATE dt, VARCHAR from_tz, VARCHAR to_tz)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>dt</code>: the DATE or DATETIME value to convert.</li>
+</ul>
+<ul>
+<li><code>from_tz</code>: the source time zone. VARCHAR is supported. The time zone can be represented in two formats: one is Time Zone Database (for example, Asia/Shanghai) and the other is UTC offset (for example, +08:00).</li>
+</ul>
+<ul>
+<li><code>to_tz</code>: the destination time zone. VARCHAR is supported. Its format is the same as <code>from_tz</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the DATETIME data type. If the input is a DATE value, it will be converted into a DATETIME value. This function returns NULL if any of the input parameters is invalid or NULL.</p>
+<h3>Usage notes</h3>
+<p>For Time Zone Database, see List of tz database time zones (in Wikipedia).</p>
+<h3>Examples</h3>
+<p>Example 1: Convert a datetime in Shanghai to Los_Angeles.</p>
+<pre><code>select convert_tz('2019-08-01 13:21:03', 'Asia/Shanghai', 'America/Los_Angeles');
++---------------------------------------------------------------------------+
+| convert_tz('2019-08-01 13:21:03', 'Asia/Shanghai', 'America/Los_Angeles') |
++---------------------------------------------------------------------------+
+| 2019-07-31 22:21:03                                                       |
++---------------------------------------------------------------------------+
+1 row in set (0.00 sec)                                                       |</code></pre>
+<p>Example 2: Convert a date in Shanghai to Los_Angeles.</p>
+<pre><code>select convert_tz('2019-08-01', 'Asia/Shanghai', 'America/Los_Angeles');
++------------------------------------------------------------------+
+| convert_tz('2019-08-01', 'Asia/Shanghai', 'America/Los_Angeles') |
++------------------------------------------------------------------+
+| 2019-07-31 09:00:00                                              |
++------------------------------------------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<p>Example 3: Convert a datetime in UTC+08:00 to Los_Angeles.</p>
+<pre><code>select convert_tz('2019-08-01 13:21:03', '+08:00', 'America/Los_Angeles');
++--------------------------------------------------------------------+
+| convert_tz('2019-08-01 13:21:03', '+08:00', 'America/Los_Angeles') |
++--------------------------------------------------------------------+
+| 2019-07-31 22:21:03                                                |
++--------------------------------------------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<h3>Keywords</h3>
+<p>CONVERT_TZ, timezone, time zone</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/convert_tz.md">StarRocks documentation</a></p>
+</body></html>

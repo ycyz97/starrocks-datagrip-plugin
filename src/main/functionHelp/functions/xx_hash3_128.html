@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>xx_hash3_128</title></head><body>
+<h2>xx_hash3_128</h2>
+<p>Returns the 128-bit xxhash3 hash value of the input string.</p>
+<h3>Syntax</h3>
+<pre><code>LARGEINT XX_HASH3_128(VARCHAR input, ...)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select xx_hash3_128(null);
++-------------------+
+| xx_hash3_128(NULL) |
++-------------------+
+|              NULL |
++-------------------+
+
+MySQL &gt; select xx_hash3_128(&quot;hello&quot;);
++-----------------------------------------+
+| xx_hash3_128('hello')                   |
++-----------------------------------------+
+| -98478366302105124680504504609445627880 |
++-----------------------------------------+
+
+MySQL &gt; select xx_hash3_128(&quot;hello&quot;, &quot;world&quot;);
++-----------------------------------------+
+| xx_hash3_128('hello', 'world')          |
++-----------------------------------------+
+| -45235302294609689438180196264627189905 |
++-----------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>XX_HASH3_128,HASH,xxHash3</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/hash-functions/xx_hash3_128.md">StarRocks documentation</a></p>
+</body></html>

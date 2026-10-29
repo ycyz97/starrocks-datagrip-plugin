@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>ngram_search</title></head><body>
+<h2>ngram_search</h2>
+<p>Calculate the ngram similarity of the two strings.</p>
+<p>:::info</p>
+<ul>
+<li>Currently, the character encoding only supports ASCII encoding and does not support UTF-8 encoding.</li>
+<li>The function <code>ngram_search</code> is case-sensitive. Another function <code>ngram_search_case_insensitive</code> is case-insensitive. Other than that, these two functions are the same.</li>
+</ul>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>DOUBLE ngram_search(VARCHAR haystack, VARCHAR needle, INT gram_num)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>haystack</code>: required, the first string to compare. It must be a VARCHAR value. It can be a column name or a const value. If <code>haystack</code> is a column name, and an N-Gram bloom filter index is created for that column in the table, the index can accelerate the computation speed of the <code>ngram_search</code> function.</li>
+<li><code>needle</code>: required, the second string to compare. It must be a VARCHAR value. It can only be a const value.</li>
+</ul>
+<p>:::tip</p>
+<ul>
+<li>The length of the <code>needle</code> value can not be larger than 2^15. Otherwise an error will be thrown.</li>
+<li>If the length of the <code>haystack</code> value is larger than 2^15, this function will return 0.</li>
+<li>If the length of the <code>haystack</code> or <code>needle</code> value is smaller than <code>gram_num</code>, this function will return 0.</li>
+</ul>
+<pre><code>:::</code></pre>
+<ul>
+<li><code>gram_num</code>: required, used for specifying the number of grams. The recommended value is <code>4</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value describing how similar these two strings are. The range of returned value is between 0 and 1. The larger this value, the more similar the two strings are.</p>
+<h3>Examples</h3>
+<pre><code>-- The values of haystack and needle are const values.
+mysql&gt; select ngram_search('English', 'England',4);
++---------------------------------------+
+| ngram_search('English', 'England', 4) |
++---------------------------------------+
+|                                  0.25 |
++---------------------------------------+
+
+-- The value of haystack is a column name and the value of needle is a const value.
+mysql&gt; select rowkey,ngram_search(rowkey,&quot;31dc496b-760d-6f1a-4521-050073a70000&quot;,4) as string_similarity from string_table order by string_similarity desc limit 5;
++--------------------------------------+-------------------+
+| rowkey                               | string_similarity |
++--------------------------------------+-------------------+
+| 31dc496b-760d-6f1a-4521-050073a70000 |                 1 |
+| 31dc496b-760d-6f1a-4521-050073a40000 |         0.8787879 |
+| 31dc496b-760d-6f1a-4521-05007fa70000 |         0.8787879 |
+| 31dc496b-760d-6f1a-4521-050073a30000 |         0.8787879 |
+| 31dc496b-760d-6f1a-4521-0500c3a70000 |         0.8787879 |
++--------------------------------------+-------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/ngram_search.md">StarRocks documentation</a></p>
+</body></html>

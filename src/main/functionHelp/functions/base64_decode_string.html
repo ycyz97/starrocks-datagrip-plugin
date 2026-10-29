@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>base64_decode_string</title></head><body>
+<h2>base64_decode_string</h2>
+<p>This function is the same as from_base64.<br>Decodes a Base64-encoded string. and an inverse of to_base64.</p>
+<p>This function is supported from v3.0.</p>
+<h3>Syntax</h3>
+<pre><code>base64_decode_string(str);</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the string to decode. It must be of the VARCHAR type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type. If the input is NULL or an invalid Base64 string, NULL is returned. If the input is empty, an error is returned.</p>
+<p>This function accepts only one string. More than one input string causes an error.</p>
+<h3>Examples</h3>
+<pre><code>
+mysql&gt; select base64_decode_string(to_base64(&quot;Hello StarRocks&quot;));
++----------------------------------------------------+
+| base64_decode_string(to_base64('Hello StarRocks')) |
++----------------------------------------------------+
+| Hello StarRocks                                    |
++----------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/crytographic-functions/base64_decode_string.md">StarRocks documentation</a></p>
+</body></html>

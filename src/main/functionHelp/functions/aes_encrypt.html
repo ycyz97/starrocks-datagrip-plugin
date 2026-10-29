@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>aes_encrypt</title></head><body>
+<h2>aes_encrypt</h2>
+<p>Uses the specified Advanced Encryption Standard (AES) algorithm and an encryption key to encrypt a string.</p>
+<h3>Syntax</h3>
+<pre><code>aes_encrypt(str, key_str[, init_vector][, encryption_mode][, aad_str]);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code> (Required): the string to encrypt. It must be of the VARCHAR type.</li>
+<li><code>key_str</code> (Required): the key used to encrypt <code>str</code>. It must be of the VARCHAR type.</li>
+<li><code>init_vector</code> (Optional): Initialization Vector (IV): A crucial security parameter in AES encryption that ensures identical plaintexts yield distinct ciphertexts. It is only utilized in CBC, CFB, OFB, CTR, and GCM modes. It must be of the VARCHAR type.</li>
+<li><code>encryption_mode</code> (Optional): The encryption algorithm. It must be of the VARCHAR type. Default value: <code>AES_128_ECB</code>.</li>
+</ul>
+<p>Supported algorithms:</p>
+<pre><code>| ECB         | CBC         | CFB         | CFB1        | CFB8        | CFB128        | OFB         | CTR       | GCM        |</code></pre>
+<pre><code>|-------------|-------------|-------------|-------------|-------------|---------------|-------------|-----------|------------|</code></pre>
+<pre><code>| AES_128_ECB | AES_128_CBC | AES_128_CFB | AES_128_CFB1| AES_128_CFB8| AES_128_CFB128| AES_128_OFB| AES_128_CTR| AES_128_GCM|</code></pre>
+<pre><code>| AES_192_ECB | AES_192_CBC | AES_192_CFB | AES_192_CFB1| AES_192_CFB8| AES_192_CFB128| AES_192_OFB| AES_192_CTR| AES_192_GCM|</code></pre>
+<pre><code>| AES_256_ECB | AES_256_CBC | AES_256_CFB | AES_256_CFB1| AES_256_CFB8| AES_256_CFB128| AES_256_OFB| AES_256_CTR| AES_256_GCM|</code></pre>
+<ul>
+<li><code>aad_str</code> (Optional):  Denotes Additional Authenticated Data (AAD). This is a parameter unique to authenticated encryption modes (e.g., GCM). It allows for including data that must be authenticated for integrity (preventing tampering) but does not require confidentiality (it remains unencrypted). It must be of the VARCHAR type.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type. If the input is NULL, NULL is returned.</p>
+<h3>Examples</h3>
+<p>Use this function to AES encrypt <code>starrocks</code> and convert the encrypted string into a Base64-encoded string.</p>
+<pre><code>mysql&gt; select to_base64(AES_ENCRYPT('starrocks','F3229A0B371ED2D9441B830D21A390C3'));
++-------------------------------------------------------------------------+
+| to_base64(aes_encrypt('starrocks', 'F3229A0B371ED2D9441B830D21A390C3')) |
++-------------------------------------------------------------------------+
+| uv/Lhzm74syo8JlfWarwKA==                                                |
++-------------------------------------------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<pre><code>mysql&gt; select to_base64(AES_ENCRYPT('starrocks','F3229A0B371ED2D9441B830D21A390C3', NULL, &quot;AES_128_ECB&quot;));
++----------------------------------------------------------------------------------------------+
+| to_base64(aes_encrypt('starrocks', 'F3229A0B371ED2D9441B830D21A390C3', NULL, 'AES_128_ECB')) |
++----------------------------------------------------------------------------------------------+
+| uv/Lhzm74syo8JlfWarwKA==                                                                     |
++----------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<pre><code>mysql&gt; select to_base64(AES_ENCRYPT('starrocks','F3229A0B371ED2D9441B830D21A390C3', &quot;abcdefg&quot;, &quot;AES_128_CBC&quot;));
++---------------------------------------------------------------------------------------------------+
+| to_base64(aes_encrypt('starrocks', 'F3229A0B371ED2D9441B830D21A390C3', 'abcdefg', 'AES_128_CBC')) |
++---------------------------------------------------------------------------------------------------+
+| taXlwIvir9yff94F5Uv/KA==                                                                          |
++---------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<pre><code>mysql&gt; select to_base64(AES_ENCRYPT('starrocks','F3229A0B371ED2D9441B830D21A390C3', &quot;abcdefghijklmnop&quot;, &quot;AES_128_GCM&quot;, &quot;abcdefg&quot;));
++-----------------------------------------------------------------------------------------------------------------------+
+| to_base64(aes_encrypt('starrocks', 'F3229A0B371ED2D9441B830D21A390C3', 'abcdefghijklmnop', 'AES_128_GCM', 'abcdefg')) |
++-----------------------------------------------------------------------------------------------------------------------+
+| YWJjZGVmZ2hpamtsdpJC2rnrGmvqKQv/WcoO6NuOCXvUnC8pCw==                                                                  |
++-----------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/crytographic-functions/aes_encrypt.md">StarRocks documentation</a></p>
+</body></html>

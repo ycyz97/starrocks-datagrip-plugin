@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>get_query_profile</title></head><body>
+<h2>get_query_profile</h2>
+<p>Obtains the profile of a query by using its <code>query_id</code>. This function returns empty if the <code>query_id</code> does not exist or is incorrect.</p>
+<p>To use this function, you must enable the profiling feature, that is, set the session variable <code>enable_profile</code> to <code>true</code> (<code>set enable_profile = true;</code>). If this feature is not enabled, an empty profile is returned.</p>
+<p>This function is supported from v3.0.</p>
+<p>If the FE configuration item <code>authorization_enable_query_profile_access_check</code> is set to <code>true</code>, this function returns only the profiles of queries run by the current user, unless the user has the SYSTEM-level OPERATE privilege. In that case, passing a non-constant <code>query_id</code>, or a <code>query_id</code> whose profile is not cached on the FE the session is connected to, also requires the OPERATE privilege. When <code>authorization_enable_admin_user_protection</code> is also enabled, only <code>root</code> can pass a <code>query_id</code> that is not cached on the connected FE. To read your own profile without the OPERATE privilege, obtain the id first with <code>select last_query_id();</code> and pass the returned literal, as shown in the examples below.</p>
+<h3>Syntax</h3>
+<pre><code>get_query_profile(x)</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: the query_id string. The supported data type is VARCHAR.</p>
+<h3>Return value</h3>
+<p>The query profile contains the following fields. For more information about the query profile, see Query Profile.</p>
+<pre><code>Query:
+  Summary:
+  Planner:
+  Execution Profile 7de16a85-761c-11ed-917d-00163e14d435:
+    Fragment 0:
+      Pipeline (id=2):
+        EXCHANGE_SINK (plan_node_id=18):
+        LOCAL_MERGE_SOURCE (plan_node_id=17):
+      Pipeline (id=1):
+        LOCAL_SORT_SINK (plan_node_id=17):
+        AGGREGATE_BLOCKING_SOURCE (plan_node_id=16):
+      Pipeline (id=0):
+        AGGREGATE_BLOCKING_SINK (plan_node_id=16):
+        EXCHANGE_SOURCE (plan_node_id=15):
+    Fragment 1:
+       ...
+    Fragment 2:
+       ...</code></pre>
+<h3>Examples</h3>
+<pre><code>-- Enable the profiling feature.
+set enable_profile = true;
+
+-- Run a simple query.
+select 1;
+
+-- Get the query_id of the query.
+select last_query_id();
++--------------------------------------+
+| last_query_id()                      |
++--------------------------------------+
+| bd3335ce-8dde-11ee-92e4-3269eb8da7d1 |
++--------------------------------------+
+
+-- Obtain the query profile.
+select get_query_profile('502f3c04-8f5c-11ee-a41f-b22a2c00f66b');
+
+-- Use the regexp_extract function to obtain the QueryPeakMemoryUsage in the profile that matches the specified pattern.
+select regexp_extract(get_query_profile('bd3335ce-8dde-11ee-92e4-3269eb8da7d1'), 'QueryPeakMemoryUsage: [0-9\.]* [KMGB]*', 0);
++-----------------------------------------------------------------------------------------------------------------------+
+| regexp_extract(get_query_profile('bd3335ce-8dde-11ee-92e4-3269eb8da7d1'), 'QueryPeakMemoryUsage: [0-9.]* [KMGB]*', 0) |
++-----------------------------------------------------------------------------------------------------------------------+
+| QueryPeakMemoryUsage: 3.828 KB                                                                                        |
++-----------------------------------------------------------------------------------------------------------------------+</code></pre>
+<h3>Related functions</h3>
+<ul>
+<li>last_query_id</li>
+<li>regexp_extract</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/get_query_profile.md">StarRocks documentation</a></p>
+</body></html>

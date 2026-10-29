@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>trim</title></head><body>
+<h2>trim</h2>
+<p>Removes consecutive spaces or specified characters from the beginning and end of the <code>str</code> argument. Removing specified characters are supported from StarRocks 2.5.0.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR trim(VARCHAR str[, VARCHAR characters])</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: required, the string to trim, which must evaluate to a VARCHAR value.</p>
+<p><code>characters</code>: optional, the characters to remove, which must be a VARCHAR value. If this parameter is not specified, spaces are removed from the string by default. If this parameter is set to an empty string, an error is returned.</p>
+<h3>Return value</h3>
+<p>Returns a VARCHAR value.</p>
+<h3>Examples</h3>
+<p>Example 1: Remove the five spaces from the beginning and end of the string.</p>
+<pre><code>MySQL &gt; SELECT trim(&quot;   ab c  &quot;);
++-------------------+
+| trim('   ab c  ') |
++-------------------+
+| ab c              |
++-------------------+
+1 row in set (0.00 sec)</code></pre>
+<p>Example 2: Remove specified characters from the beginning and end of the string.</p>
+<pre><code>MySQL &gt; SELECT trim(&quot;abcd&quot;, &quot;ad&quot;);
++--------------------+
+| trim('abcd', 'ad') |
++--------------------+
+| bc                 |
++--------------------+
+
+MySQL &gt; SELECT trim(&quot;xxabcdxx&quot;, &quot;x&quot;);
++-----------------------+
+| trim('xxabcdxx', 'x') |
++-----------------------+
+| abcd                  |
++-----------------------+</code></pre>
+<h3>MySQL-compatible <code>TRIM(... FROM ...)</code> syntax</h3>
+<p>In addition to <code>trim(str)</code> and <code>trim(str, characters)</code>, StarRocks supports the MySQL/SQL-standard form:</p>
+<pre><code>TRIM([{BOTH | LEADING | TRAILING}] [remstr] FROM str)</code></pre>
+<ul>
+<li><code>BOTH</code> (assumed when the specifier is omitted) trims both ends; <code>LEADING</code> trims only the start; <code>TRAILING</code> trims only the end.</li>
+<li><code>remstr</code> is an optional <b>string literal</b>. If omitted, spaces are trimmed.</li>
+<li><b><code>remstr</code> is removed as a whole substring, repeatedly</b> — it is NOT treated as a set of characters. This differs from <code>trim(str, characters)</code>, where the second argument is a character set.</li>
+</ul>
+<pre><code>MySQL &gt; SELECT TRIM(LEADING 'x' FROM 'xxxbarxxx');
++------------------------------------+
+| TRIM(LEADING 'x' FROM 'xxxbarxxx') |
++------------------------------------+
+| barxxx                             |
++------------------------------------+
+
+MySQL &gt; SELECT TRIM(TRAILING 'xyz' FROM 'barxxyzxyz');
++----------------------------------------+
+| TRIM(TRAILING 'xyz' FROM 'barxxyzxyz') |
++----------------------------------------+
+| barx                                   |
++----------------------------------------+
+
+MySQL &gt; SELECT TRIM(BOTH 'ab' FROM 'abfooab');
++--------------------------------+
+| TRIM(BOTH 'ab' FROM 'abfooab') |
++--------------------------------+
+| foo                            |
++--------------------------------+</code></pre>
+<p>Note the difference between the substring (<code>FROM</code>) form and the character-set (comma) form:</p>
+<pre><code>-- substring: removes the whole 'xyz' once, leaving 'barx'
+MySQL &gt; SELECT TRIM(TRAILING 'xyz' FROM 'barxxyz');  -- 'barx'
+
+-- character set: removes any trailing x/y/z, leaving 'bar'
+MySQL &gt; SELECT rtrim('barxxyz', 'xyz');              -- 'bar'</code></pre>
+<p>The <code>FROM</code> form is backed by the builtins <code>trim_string(str, remstr)</code>, <code>ltrim_string(str, remstr)</code>, and <code>rtrim_string(str, remstr)</code>, which can also be called directly. <code>remstr</code> must be a constant string literal.</p>
+<p>&gt; <b>NOTE</b><br>&gt;<br>&gt; <code>remstr</code> must not be NULL. Passing a NULL <code>remstr</code> to these builtins (for example <code>trim_string('abc', CAST(NULL AS STRING))</code>) returns an error rather than NULL. This is consistent with the comma form <code>trim(str, characters)</code> and differs from MySQL, which returns NULL. A NULL <code>str</code> still propagates to NULL (for example <code>TRIM('x' FROM NULL)</code> returns NULL).</p>
+<h3>References</h3>
+<ul>
+<li>ltrim</li>
+<li>rtrim</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/trim.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>translate</title></head><body>
+<h2>translate</h2>
+<p>Substitutes specified characters within a string. It works by taking a string (<code>source</code>) as the input and replaces the <code>from_string</code> characters in <code>source</code> with <code>to_string</code>.</p>
+<p>This function is supported from v3.2.</p>
+<h3>Syntax</h3>
+<pre><code>TRANSLATE(source, from_string, to_string)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>source</code>: supports the <code>VARCHAR</code> type. The source string to be translated. If a character in the <code>source</code> is not found in <code>from_string</code>, it is simply included in the result string.</li>
+</ul>
+<ul>
+<li><code>from_string</code>: supports the <code>VARCHAR</code> type. Each character in <code>from_string</code> is either replaced by its corresponding character in the <code>to_string</code>, or if there is no corresponding character (i.e. if <code>to_string</code> has fewer characters than the <code>from_string</code>, the character is excluded from the result string). See Examples 2 and 3. If a character appears multiple times in <code>from_string</code>, only its first occurrence is effective. See Example 5.</li>
+</ul>
+<ul>
+<li><code>to_string</code>: supports the <code>VARCHAR</code> type. The string used to replace characters. If more characters are specified in <code>to_string</code> than in the <code>from_string</code> argument, extra characters from <code>to_string</code> are ignored. See Example 4.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the <code>VARCHAR</code> type.</p>
+<p>Scenarios where the result is <code>NULL</code>:</p>
+<ul>
+<li>Any of the input parameters is <code>NULL</code>.</li>
+</ul>
+<ul>
+<li>The length of the result string after translation exceeds the maximum length (1048576) of <code>VARCHAR</code>.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>-- Replace 'ab' in the source string with '12'.
+mysql &gt; select translate('abcabc', 'ab', '12') as test;
++--------+
+| test   |
++--------+
+| 12c12c |
++--------+
+
+-- Replace 'mf1' in the source string with 'to'. 'to' has less characters than 'mf1' and '1' is excluded from the result string.
+mysql &gt; select translate('s1m1a1rrfcks','mf1','to') as test;
++-----------+
+| test      |
++-----------+
+| starrocks |
++-----------+
+
+-- Replace 'ab' in the source string with '1'. '1' has less characters than 'ab' and 'b' is excluded from the result string.
+mysql &gt; select translate('abcabc', 'ab', '1') as test;
++------+
+| test |
++------+
+| 1c1c |
++------+
+
+-- Replace 'ab' in the source string with '123'. '123' has more characters than 'ab' and '3' is ignored.
+mysql &gt; select translate('abcabc', 'ab', '123') as test;
++--------+
+| test   |
++--------+
+| 12c12c |
++--------+
+
+-- Replace 'aba' in the source string with '123'. 'a' appears twice and only the first occurrence of 'a' is replaced.
+mysql &gt; select translate('abcabc', 'aba', '123') as test;
++--------+
+| test   |
++--------+
+| 12c12c |
++--------+
+
+-- Use this function with repeat() and concat(). The result string exceeds the maximum length of VARCHAR and NULL is returned.
+mysql &gt; select translate(concat('bcde', repeat('a', 1024*1024-3)), 'a', 'z') as test;
++--------+
+| test   |
++--------+
+| NULL   |
++--------+
+
+-- Use this function with length(), repeat(), and concat() to calculate the length of the result string.
+mysql &gt; select length(translate(concat('bcd', repeat('a', 1024*1024-3)), 'a', 'z')) as test;
++---------+
+| test    |
++---------+
+| 1048576 |
++---------+</code></pre>
+<h3>See also</h3>
+<ul>
+<li>concat</li>
+<li>length</li>
+<li>repeat</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/translate.md">StarRocks documentation</a></p>
+</body></html>

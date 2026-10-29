@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_sum</title></head><body>
+<h2>array_sum</h2>
+<p>Sums all the elements in an array.</p>
+<p>From StarRocks 2.5, array_sum() can take a lambda expression as an argument. However, it cannot work directly with the Lambda expression. It must work on the result converted from array_map().</p>
+<h3>Syntax</h3>
+<pre><code>array_sum(array(type))
+array_sum(lambda_function, arr1,arr2...) = array_sum(array_map(lambda_function, arr1,arr2...))</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>array(type)</code>: the array you want to calculate the sum. Array elements support the following data types: BOOLEAN, TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, and DECIMALV2.</li>
+<li><code>lambda_function</code>: the lambda expression used to calculate the target array for array_sum().</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a numeric value.</p>
+<h3>Examples</h3>
+<h4>Use array_sum without lambda function</h4>
+<pre><code>mysql&gt; select array_sum([11, 11, 12]);
++-----------------------+
+| array_sum([11,11,12]) |
++-----------------------+
+| 34                    |
++-----------------------+
+
+mysql&gt; select array_sum([11.33, 11.11, 12.324]);
++---------------------------------+
+| array_sum([11.33,11.11,12.324]) |
++---------------------------------+
+| 34.764                          |
++---------------------------------+</code></pre>
+<h4>Use array_sum with lambda function</h4>
+<pre><code>-- Multiply [1,2,3] by [1,2,3] and sum the elements.
+select array_sum(array_map(x-&gt;x*x,[1,2,3]));
++---------------------------------------------+
+| array_sum(array_map(x -&gt; x * x, [1, 2, 3])) |
++---------------------------------------------+
+|                                          14 |
++---------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ARRAY_SUM,ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_sum.md">StarRocks documentation</a></p>
+</body></html>

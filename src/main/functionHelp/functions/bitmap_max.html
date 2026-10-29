@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_max</title></head><body>
+<h2>bitmap_max</h2>
+<p>Obtains the maximum value of a bitmap. If the bitmap is <code>NULL</code>, this function returns <code>NULL</code>. If the bitmap is empty, this function returns <code>NULL</code> by default.</p>
+<h3>Syntax</h3>
+<pre><code>bitmap_max(bitmap)</code></pre>
+<h3>Parameters</h3>
+<p><code>bitmap</code>: the bitmap whose maximum value you want to obtain. Only the BITMAP data type is supported. You can specify a bitmap that you construct by using functions such as bitmap_from_string.</p>
+<h3>Return value</h3>
+<p>Returns a value of the LARGEINT data type.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select bitmap_max(bitmap_from_string(&quot;0, 1, 2, 3&quot;));
++-------------------------------------------------+
+|    bitmap_max(bitmap_from_string(&quot;0, 1, 2, 3&quot;)) |
++-------------------------------------------------+
+|                         3                       |
++-------------------------------------------------+
+
+MySQL &gt; select bitmap_max(bitmap_from_string(&quot;-1, 0, 1, 2&quot;));
++-------------------------------------------------+
+|   bitmap_max(bitmap_from_string(&quot;-1, 0, 1, 2&quot;)) |
++-------------------------------------------------+
+|                      NULL                       |
++-------------------------------------------------+
+
+MySQL &gt; select bitmap_max(bitmap_empty());
++----------------------------------+
+|       bitmap_max(bitmap_empty()) |
++----------------------------------+
+|                      NULL        |
++----------------------------------+
+
+mysql&gt; select bitmap_max(bitmap_from_string(&quot;1, 16501189037412846863&quot;));
++--------------------------------------------------------------+
+| bitmap_max(bitmap_from_string('1, 16501189037412846863')) |
++--------------------------------------------------------------+
+| 16501189037412846863                                         |
++--------------------------------------------------------------+
+1 row in set (0.02 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_max.md">StarRocks documentation</a></p>
+</body></html>

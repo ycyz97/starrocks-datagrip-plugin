@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>count</title></head><body>
+<p>Counts rows or non-<code>NULL</code> values in an aggregate query.</p>
+<p><b>Syntax:</b> <code>COUNT([DISTINCT] expr)</code> or <code>COUNT(*)</code></p>
+<p><b>Parameters:</b> <code>expr</code> is the value to count. <code>DISTINCT</code> counts unique values.</p>
+<p><b>Returns:</b> The number of matching rows or values.</p>
+<pre><code>SELECT COUNT(*) AS row_count,
+       COUNT(DISTINCT user_id) AS user_count
+FROM events;</code></pre>
+</body></html>

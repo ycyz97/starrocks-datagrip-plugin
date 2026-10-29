@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>date</title></head><body>
+<h2>date</h2>
+<p>Extracts the date part of a date or datetime expression.</p>
+<h3>Syntax</h3>
+<pre><code>DATE date(DATETIME|DATE expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the date or datetime expression.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DATE type. NULL is returned if the input is NULL or invalid.</p>
+<h3>Examples</h3>
+<p>Example 1: Extract the date part of a datetime value.</p>
+<pre><code>SELECT DATE(&quot;2017-12-31 11:20:59&quot;);
++-----------------------------+
+| date('2017-12-31 11:20:59') |
++-----------------------------+
+| 2017-12-31                  |
++-----------------------------+
+1 row in set (0.05 sec)</code></pre>
+<p>Example 2: Extract the date part of a date value.</p>
+<pre><code>SELECT DATE('2017-12-31');
++--------------------+
+| date('2017-12-31') |
++--------------------+
+| 2017-12-31         |
++--------------------+
+1 row in set (0.08 sec)</code></pre>
+<p>Example 3: Extract the date part of the current timestamp.</p>
+<pre><code>SELECT DATE(current_timestamp());
++---------------------------+
+| date(current_timestamp()) |
++---------------------------+
+| 2022-11-08                |
++---------------------------+
+1 row in set (0.05 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/date.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>current_timestamp</title></head><body>
+<h2>current_timestamp</h2>
+<p>Obtains the current date and returns a value if the DATETIME type.</p>
+<p>This function is a synonym of the now() function.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME CURRENT_TIMESTAMP()
+DATETIME CURRENT_TIMESTAMP(INT p)</code></pre>
+<h3>Parameters</h3>
+<p><code>p</code>: optional, the specified precision, that is, the number of digits to retain after seconds. It must be an INT value within the range of [1,6]. <code>select current_timestamp(0)</code> is equivalent to <code>select current_timestamp()</code>.</p>
+<h3>Return value</h3>
+<ul>
+<li>If <code>p</code> is not specified, this function returns a DATETIME value accurate to the second.</li>
+<li>If <code>p</code> is specified, this function returns a date and time value of the specified precision.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Return the current time.</p>
+<pre><code>MySQL &gt; select current_timestamp();
++---------------------+
+| current_timestamp() |
++---------------------+
+| 2019-05-27 15:59:33 |
++---------------------+</code></pre>
+<p>Example 2: When you create a table, you can use this function for a column so that current time is the default value of the column.</p>
+<pre><code>CREATE TABLE IF NOT EXISTS sr_member (
+    sr_id            INT,
+    name             STRING,
+    city_code        INT,
+    reg_date         DATETIME DEFAULT current_timestamp,
+    verified         BOOLEAN
+);</code></pre>
+<h3>keyword</h3>
+<p>CURRENT_TIMESTAMP,CURRENT,TIMESTAMP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/current_timestamp.md">StarRocks documentation</a></p>
+</body></html>

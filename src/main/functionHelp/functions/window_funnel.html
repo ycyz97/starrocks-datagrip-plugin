@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>window_funnel</title></head><body>
+<h2>window_funnel</h2>
+<p>Searches for an event chain in a sliding window and calculates the maximum number of consecutive events in the event chain. This function is commonly used for analyzing conversion rate. It is supported from v2.3.</p>
+<p>This function works according to the following rules:</p>
+<ul>
+<li>It starts the count from the first event in the event chain. If the first event is found, the event counter is set to 1 and the sliding window starts. If the first event is not found, 0 is returned.</li>
+</ul>
+<ul>
+<li>In the sliding window, the counter is incremented if the events in the event chain occur in sequence. If the sliding window is exceeded, the event counter is no longer incremented.</li>
+</ul>
+<ul>
+<li>If multiple event chains match the specified condition, the longest event chain is returned.</li>
+</ul>
+<h3>Syntax</h3>
+<pre><code>BIGINT window_funnel(BIGINT window, DATE|DATETIME time, INT mode, array[cond1, cond2, ..., condN])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>window</code>: The length of the sliding window. The supported data type is BIGINT. The unit depends on the <code>time</code> parameter. If the data type of <code>time</code> is DATE, the unit is days. If the data type of <code>time</code> is DATETIME, the unit is seconds.</li>
+</ul>
+<ul>
+<li><code>time</code>: The column containing timestamps. DATE and DATETIME types are supported.</li>
+</ul>
+<ul>
+<li><code>mode</code>: The mode in which the event chain is filtered. The supported data type is INT. Value range: 0, 1, 2.</li>
+<li><code>0</code> is the default value, which indicates common funnel calculation.</li>
+<li><code>1</code> indicates the <code>DEDUPLICATION</code> mode, that is, the filtered event chain cannot have repeated events. Suppose the <code>array</code> parameter is <code>[event_type = 'A', event_type = 'B', event_type = 'C', event_type = 'D']</code> and the original event chain is &quot;A-B-C-B-D&quot;. Event B is repeated and the filtered event chain is &quot;A-B-C&quot;.</li>
+<li><code>2</code> indicates the <code>FIXED</code> mode, that is, the filtered event chain cannot have events that disrupt the specified sequence. Suppose the previous <code>array</code> parameter is used and the original event chain is &quot;A-B-D-C&quot;. Event D interrupts the sequence and the filtered event chain is &quot;A-B&quot;.</li>
+<li><code>4</code> indicates the <code>INCREASE</code> mode, which means the filtered events must have strictly increasing timestamps. Duplicate timestamp disrupts the event chain. This mode is supported since version 2.5.</li>
+</ul>
+<ul>
+<li><code>array</code>: The defined event chain. It must be an array.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the BIGINT type.</p>
+<h3>Examples</h3>
+<p><b>Example 1</b>: Calculate the maximum number of consecutive events based on <code>uid</code>. The sliding window is 1800s and the filtering mode is <code>0</code>.</p>
+<p>This example uses table <code>action</code>, in which data is sorted by <code>uid</code>.</p>
+<pre><code>mysql&gt; select * from action;
++------+------------+---------------------+
+| uid  | event_type | time                |
++------+------------+---------------------+
+| 1    | Browse     | 2020-01-02 11:00:00 |
+| 1    | Click      | 2020-01-02 11:10:00 |
+| 1    | Order      | 2020-01-02 11:20:00 |
+| 1    | Pay        | 2020-01-02 11:30:00 |
+| 1    | Browse     | 2020-01-02 11:00:00 |
+| 2    | Order      | 2020-01-02 11:00:00 |
+| 2    | Pay        | 2020-01-02 11:10:00 |
+| 3    | Browse     | 2020-01-02 11:20:00 |
+| 3    | Click      | 2020-01-02 12:00:00 |
+| 4    | Browse     | 2020-01-02 11:50:00 |
+| 4    | Click      | 2020-01-02 12:00:00 |
+| 5    | Browse     | 2020-01-02 11:50:00 |
+| 5    | Click      | 2020-01-02 12:00:00 |
+| 5    | Order      | 2020-01-02 11:10:00 |
+| 6    | Browse     | 2020-01-02 11:50:00 |
+| 6    | Click      | 2020-01-02 12:00:00 |
+| 6    | Order      | 2020-01-02 12:10:00 |
++------+------------+---------------------+
+17 rows in set (0.01 sec)</code></pre>
+<p>Execute the following statement:</p>
+<pre><code>select uid,
+       window_funnel(1800,time,0,[event_type='Browse', event_type='Click',
+        event_type='Order', event_type='Pay']) AS level
+from action
+group by uid
+order by uid;
++------+-------+
+| uid  | level |
++------+-------+
+| 1    |     4 |
+| 2    |     0 |
+| 3    |     1 |
+| 4    |     2 |
+| 5    |     2 |
+| 6    |     3 |
++------+-------+</code></pre>
+<p>Description of the results:</p>
+<ul>
+<li>The matching event chain for <code>uid = 1</code> is &quot;Browse-Click-Order-Pay&quot;, and <code>4</code> is returned. The time of the last &quot;Browse&quot; event (2020-01-02 11:00:00) does not meet the condition and is not counted.</li>
+</ul>
+<ul>
+<li>The event chain of <code>uid = 2</code> does not start from the first event &quot;Browse&quot;, and <code>0</code> is returned.</li>
+</ul>
+<ul>
+<li>The matching event chain for <code>uid = 3</code> is &quot;Browse&quot;, and <code>1</code> is returned. The &quot;Click&quot; event exceeds the 1800s time window and is not counted.</li>
+</ul>
+<ul>
+<li>The matching event chain for <code>uid = 4</code> is &quot;Browse-Click&quot;, and <code>2</code> is returned.</li>
+</ul>
+<ul>
+<li>The matching event chain for <code>uid = 5</code> is &quot;Browse-Click&quot;, and <code>2</code> is returned. The &quot;Order&quot; event (2020-01-02 11:10:00) does not belong to the event chain and is not counted.</li>
+</ul>
+<ul>
+<li>The matching event chain for <code>uid = 6</code> is &quot;Browse-Click-Order&quot;, and <code>3</code> is returned.</li>
+</ul>
+<p><b>Example 2</b>: Calculate the maximum number of consecutive events based on <code>uid</code>. The sliding window is 1800s, and filtering modes <code>0</code> and <code>1</code> are used.</p>
+<p>This example uses table <code>action1</code>, in which data is sorted by <code>time</code>.</p>
+<pre><code>mysql&gt; select * from action1 order by time;
++------+------------+---------------------+
+| uid  | event_type | time                |
++------+------------+---------------------+
+| 1    | Browse     | 2020-01-02 11:00:00 |
+| 2    | Browse     | 2020-01-02 11:00:01 |
+| 1    | Click      | 2020-01-02 11:10:00 |
+| 1    | Order      | 2020-01-02 11:29:00 |
+| 1    | Click      | 2020-01-02 11:29:50 |
+| 1    | Pay        | 2020-01-02 11:30:00 |
+| 1    | Click      | 2020-01-02 11:40:00 |
++------+------------+---------------------+
+7 rows in set (0.03 sec)</code></pre>
+<p>Execute the following statement:</p>
+<pre><code>select uid,
+       window_funnel(1800,time,0,[event_type='Browse',
+        event_type='Click', event_type='Order', event_type='Pay']) AS level
+from action1
+group by uid
+order by uid;
++------+-------+
+| uid  | level |
++------+-------+
+| 1    |     4 |
+| 2    |     1 |
++------+-------+
+2 rows in set (0.02 sec)</code></pre>
+<p>For <code>uid = 1</code>, the &quot;Click&quot; event (2020-01-02 11:29:50) is a repeated event but it is still counted because mode <code>0</code> is used. Therefore, <code>4</code> is returned.</p>
+<p>Change <code>mode</code> to <code>1</code> and execute the statement again.</p>
+<pre><code>+------+-------+
+| uid  | level |
++------+-------+
+| 1    |     3 |
+| 2    |     1 |
++------+-------+
+2 rows in set (0.05 sec)</code></pre>
+<p>The longest event chain filtered after deduplication is &quot;Browse-Click-Order&quot;, and <code>3</code> is returned.</p>
+<p><b>Example 3</b>: Calculate the maximum number of consecutive events based on <code>uid</code>. The sliding window is 1900s, and filter modes <code>0</code> and <code>2</code> are used.</p>
+<p>This example uses table <code>action2</code>, in which data is sorted by <code>time</code>.</p>
+<pre><code>mysql&gt; select * from action2 order by time;
++------+------------+---------------------+
+| uid  | event_type | time                |
++------+------------+---------------------+
+| 1    | Browse     | 2020-01-02 11:00:00 |
+| 2    | Browse     | 2020-01-02 11:00:01 |
+| 1    | Click      | 2020-01-02 11:10:00 |
+| 1    | Pay        | 2020-01-02 11:30:00 |
+| 1    | Order      | 2020-01-02 11:31:00 |
++------+------------+---------------------+
+5 rows in set (0.01 sec)</code></pre>
+<p>Execute the following statement:</p>
+<pre><code>select uid,
+       window_funnel(1900,time,0,[event_type='Browse', event_type='Click',
+        event_type='Order', event_type='Pay']) AS level
+from action2
+group by uid
+order by uid;
++------+-------+
+| uid  | level |
++------+-------+
+| 1    |     3 |
+| 2    |     1 |
++------+-------+
+2 rows in set (0.02 sec)</code></pre>
+<p><code>3</code> is returned for <code>uid = 1</code> because mode <code>0</code> is used and the &quot;Pay&quot; event (2020-01-02 11:30:00) does not disrupt the event chain.</p>
+<p>Change <code>mode</code> to <code>2</code> and execute the statement again.</p>
+<pre><code>select uid,
+       window_funnel(1900,time,2,[event_type='Browse', event_type='Click',
+        event_type='Order', event_type='Pay']) AS level
+from action2
+group by uid
+order by uid;
++------+-------+
+| uid  | level |
++------+-------+
+| 1    |     2 |
+| 2    |     1 |
++------+-------+
+2 rows in set (0.06 sec)</code></pre>
+<p><code>2</code> is returned because the &quot;Pay&quot; event disrupts the event chain and the event counter stops. The filtered event chain is &quot;Browse-Click&quot;.</p>
+<p><b>Example 4</b>: Calculate the maximum number of consecutive events based on <code>uid</code>. The sliding window is 1900s, and filter modes <code>0</code> and <code>4</code> are used.</p>
+<p>This example uses table <code>action3</code>, in which data is sorted by <code>time</code>.</p>
+<pre><code>select * from action3 order by time;
++------+------------+---------------------+
+| uid  | event_type | time                |
++------+------------+---------------------+
+| 1    | Browse     | 2020-01-02 11:00:00 |
+| 1    | Click      | 2020-01-02 11:00:01 |
+| 2    | Browse     | 2020-01-02 11:00:03 |
+| 1    | Order      | 2020-01-02 11:00:31 |
+| 2    | Click      | 2020-01-02 11:00:03 |
+| 2    | Order      | 2020-01-02 11:01:03 |
++------+------------+---------------------+
+3 rows in set (0.02 sec)</code></pre>
+<p>Execute the following statement:</p>
+<pre><code>select uid,
+       window_funnel(1900,time,0,[event_type='Browse', event_type='Click',
+        event_type='Order']) AS level
+from action3
+group by uid
+order by uid;
++------+-------+
+| uid  | level |
++------+-------+
+|    1 |     3 |
+|    2 |     3 |
++------+-------+</code></pre>
+<p><code>3</code> is returned for <code>uid = 1</code> and <code>uid = 2</code>.</p>
+<p>Change <code>mode</code> to <code>4</code> and execute the statement again.</p>
+<pre><code>select uid,
+       window_funnel(1900,time,4,[event_type='Browse', event_type='Click',
+        event_type='Order']) AS level
+from action3
+group by uid
+order by uid;
++------+-------+
+| uid  | level |
++------+-------+
+|    1 |     3 |
+|    2 |     1 |
++------+-------+
+1 row in set (0.02 sec)</code></pre>
+<p><code>1</code> is returned for <code>uid = 2</code> because mode <code>4</code> (strictly increasing) is used. &quot;Click&quot; happens at the same second as &quot;BROWSE&quot;. Therefore, &quot;Click&quot; and &quot;Order&quot; are not counted.</p>
+<h3>Keywords</h3>
+<p>window funnel, funnel, window_funnel</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/window_funnel.md">StarRocks documentation</a></p>
+</body></html>

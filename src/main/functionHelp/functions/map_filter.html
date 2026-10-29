@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>map_filter</title></head><body>
+<h2>map_filter</h2>
+<p>Filters key-value pairs in a map by applying a Boolean array or a Lambda expression to each key-value pair. The pair that evaluates to <code>true</code> is returned.</p>
+<p>This function is supported from v3.1 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>MAP map_filter(any_map, array&lt;boolean&gt;)
+MAP map_filter(lambda_func, any_map)</code></pre>
+<ul>
+<li><code>map_filter(any_map, array&lt;boolean&gt;)</code></li>
+</ul>
+<p>Evaluates key-value pairs in <code>any_map</code> one by one against <code>array&lt;boolean&gt;</code> and returns key-value pairs that evaluate to <code>true</code>.</p>
+<ul>
+<li><code>map_filter(lambda_func, any_map)</code></li>
+</ul>
+<p>Applies <code>lambda_func</code> to the key-value pairs in <code>any_map</code> one by one and returns key-value pairs whose result is <code>true</code>.</p>
+<h3>Parameters</h3>
+<ul>
+<li><code>any_map</code>: the map value.</li>
+</ul>
+<ul>
+<li><code>array&lt;boolean&gt;</code>: the Boolean array used to evaluate the map value.</li>
+</ul>
+<ul>
+<li><code>lambda_func</code>: the Lambda expression used to evaluate the map value.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a map whose data type is the same as <code>any_map</code>.</p>
+<p>If <code>any_map</code> is NULL, NULL is returned. If <code>array&lt;boolean&gt;</code> is null, an empty map is returned.</p>
+<p>If a key or value in the map value is NULL, NULL is processed as a normal value.</p>
+<p>The Lambda expression must have two parameters. The first parameter represents the key. The second parameter represents the value.</p>
+<h3>Examples</h3>
+<h4>Use <code>array&lt;boolean&gt;</code></h4>
+<p>The following example uses map_from_arrays() to generate a map value <code>{1:&quot;ab&quot;,3:&quot;cdd&quot;,2:null,null:&quot;abc&quot;}</code>. Then each key-value pair is evaluated against <code>array&lt;boolean&gt;</code> and the pair whose result is <code>true</code> is returned.</p>
+<pre><code>mysql&gt; select map_filter(col_map, array&lt;boolean&gt;[0,0,0,1,1]) from (select map_from_arrays([1,3,null,2,null],['ab','cdd',null,null,'abc']) as col_map)A;
++----------------------------------------------------+
+| map_filter(col_map, ARRAY&lt;BOOLEAN&gt;[0, 0, 0, 1, 1]) |
++----------------------------------------------------+
+| {null:&quot;abc&quot;}                                       |
++----------------------------------------------------+
+1 row in set (0.02 sec)
+
+mysql&gt; select map_filter(null, array&lt;boolean&gt;[0,0,0,1,1]);
++-------------------------------------------------+
+| map_filter(NULL, ARRAY&lt;BOOLEAN&gt;[0, 0, 0, 1, 1]) |
++-------------------------------------------------+
+| NULL                                            |
++-------------------------------------------------+
+1 row in set (0.02 sec)
+
+mysql&gt; select map_filter(col_map, null) from (select map_from_arrays([1,3,null,2,null],['ab','cdd',null,null,'abc']) as col_map)A;
++---------------------------+
+| map_filter(col_map, NULL) |
++---------------------------+
+| {}                        |
++---------------------------+
+1 row in set (0.01 sec)</code></pre>
+<h4>Use Lambda expression</h4>
+<p>The following example uses map_from_arrays() to generate a map value <code>{1:&quot;ab&quot;,3:&quot;cdd&quot;,2:null,null:&quot;abc&quot;}</code>. Then each key-value pair is evaluated against the Lambda expression and the key-value pair whose value is not null is returned.</p>
+<pre><code>
+mysql&gt; select map_filter((k,v) -&gt; v is not null,col_map) from (select map_from_arrays([1,3,null,2,null],['ab','cdd',null,null,'abc']) as col_map)A;
++------------------------------------------------+
+| map_filter((k,v) -&gt; v is not null, col_map)    |
++------------------------------------------------+
+| {1:&quot;ab&quot;,3:&quot;cdd&quot;,null:'abc'}                        |
++------------------------------------------------+
+1 row in set (0.02 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/map-functions/map_filter.md">StarRocks documentation</a></p>
+</body></html>

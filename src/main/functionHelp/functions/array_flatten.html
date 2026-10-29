@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_flatten</title></head><body>
+<h2>array_flatten</h2>
+<p><code>array_flatten</code> flattens one layer of nested arrays.</p>
+<h3>Syntax</h3>
+<pre><code>array_flatten(param)</code></pre>
+<h3>Parameters</h3>
+<p><code>param</code>: a nested array that needs to be flattened. Only nested arrays are supported, and it can be a multi-level nested array, the elements of the array can be any data type supported by StarRocks.</p>
+<h3>Return value</h3>
+<p>The data type of the return value is an array type after flattening one layer.</p>
+<h3>Examples</h3>
+<p>Example 1: Flatten a 2-level nested array.</p>
+<pre><code>mysql&gt; SELECT array_flatten([[1, 2], [1, 4]]) as res;
++-----------+
+| res       |
++-----------+
+| [1,2,1,4] |
++-----------+</code></pre>
+<p>Example 2: Flatten a 3-level nested array.</p>
+<pre><code>mysql&gt; SELECT array_flatten([[[1],[2]], [[3],[4]]]) as res;
++-------------------+
+| res               |
++-------------------+
+| [[1],[2],[3],[4]] |
++-------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_flatten.md">StarRocks documentation</a></p>
+</body></html>

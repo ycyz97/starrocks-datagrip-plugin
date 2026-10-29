@@ -22,6 +22,16 @@ val generatedKeywordCatalog = keywordRegistryGeneratedRoot.map {
 }
 val localIntellijPlatformPath = providers.gradleProperty("intellijPlatformLocalPath").orNull
 val intellijPlatformVersion = providers.gradleProperty("intellijPlatformVersion").orElse("2026.1.4")
+val starRocksFunctionHelpSource = layout.projectDirectory.dir("src/main/functionHelp")
+val starRocksFunctionHelpZip = tasks.register<org.gradle.api.tasks.bundling.Zip>("packageStarRocksFunctionHelp") {
+    group = "build"
+    description = "Packages StarRocks built-in function documentation for DataGrip quick documentation."
+    archiveFileName.set("starrocks-help.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/starrocks-help"))
+    from(starRocksFunctionHelpSource.dir("functions")) {
+        into("functions")
+    }
+}
 
 fun readStarRocksKeywordSets(source: String): Pair<Set<String>, Set<String>> {
     val reserved = sortedSetOf<String>()
@@ -103,6 +113,46 @@ intellijPlatform {
 }
 
 tasks {
+    named<ProcessResources>("processResources") {
+        dependsOn(starRocksFunctionHelpZip)
+        from(starRocksFunctionHelpZip) {
+            into("help")
+        }
+    }
+
+    register("validateStarRocksFunctionHelp") {
+        group = "verification"
+        description = "Validates the StarRocks built-in function documentation catalog."
+
+        val functionsXmlFile = layout.projectDirectory.file(
+            "src/main/resources/com/github/ycyz/starrocks/datagrip/dialect/functions.xml"
+        )
+        val requiredFunctions = Regex("<name>([^<]+)</name>")
+            .findAll(functionsXmlFile.asFile.readText())
+            .map { it.groupValues[1].trim().lowercase() }
+            .distinct()
+            .toList()
+        inputs.file(functionsXmlFile)
+        inputs.dir(starRocksFunctionHelpSource)
+
+        doLast {
+            check(starRocksFunctionHelpSource.asFile.isDirectory) {
+                "Missing StarRocks function help source directory: ${starRocksFunctionHelpSource.asFile}"
+            }
+            requiredFunctions.forEach { function ->
+                val file = starRocksFunctionHelpSource.file("functions/$function.html").asFile
+                check(file.isFile) { "Missing StarRocks function help: ${file.relativeTo(projectDir)}" }
+                val content = file.readText()
+                check("<title>$function</title>" in content) {
+                    "Function help title must match $function: ${file.relativeTo(projectDir)}"
+                }
+                check("<pre><code>" in content) {
+                    "Function help must include a SQL example: ${file.relativeTo(projectDir)}"
+                }
+            }
+        }
+    }
+
     withType<JavaCompile> {
         sourceCompatibility = "17"
         targetCompatibility = "17"
@@ -449,6 +499,11 @@ tasks {
     }
 
     named("check") {
-        dependsOn("validateGrammarSources", "validateStarRocksFixtureManifest", "validateStarRocksScenarios")
+        dependsOn(
+            "validateGrammarSources",
+            "validateStarRocksFixtureManifest",
+            "validateStarRocksScenarios",
+            "validateStarRocksFunctionHelp"
+        )
     }
 }

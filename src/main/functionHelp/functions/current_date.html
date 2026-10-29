@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>current_date</title></head><body>
+<h2>curdate,current_date</h2>
+<p>Obtains the current date and returns a value of the DATE type.</p>
+<h3>Syntax</h3>
+<pre><code>DATE CURDATE()</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; SELECT CURDATE();
++------------+
+| curdate()  |
++------------+
+| 2024-03-27 |
++------------+
+
+mysql&gt; SELECT CURRENT_DATE();
++----------------+
+| current_date() |
++----------------+
+| 2024-03-27     |
++----------------+
+
+mysql&gt; SELECT CURDATE() + 0;
++-----------------+
+| (curdate()) + 0 |
++-----------------+
+|        20240327 |
++-----------------+
+
+mysql&gt; SELECT CURDATE() +2;
++-----------------+
+| (curdate()) + 2 |
++-----------------+
+|        20240329 |
++-----------------+
+
+mysql&gt; SELECT CURDATE() - INTERVAL 5 DAY;
++----------------------------+
+| curdate() - INTERVAL 5 DAY |
++----------------------------+
+| 2024-03-22 00:00:00        |
++----------------------------+
+
+mysql&gt; SELECT QUARTER(CURDATE());
++--------------------+
+| quarter(curdate()) |
++--------------------+
+|                  1 |
++--------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/curdate.md">StarRocks documentation</a></p>
+</body></html>

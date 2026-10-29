@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>url_decode</title></head><body>
+<h2>url_decode</h2>
+<p>Translates a string back from the application/x-www-form-urlencoded format. This function is an inverse of url_encode.</p>
+<p>This functions is supported from v3.2.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR url_decode(VARCHAR str)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the string to decode. If <code>str</code> is not a string, the system will try implicit cast first.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a decoded string.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select url_decode('https%3A%2F%2Fdocs.starrocks.io%2Fdocs%2Fintroduction%2FStarRocks_intro%2F');
++------------------------------------------------------------------------------------------+
+| url_decode('https%3A%2F%2Fdocs.starrocks.io%2Fdocs%2Fintroduction%2FStarRocks_intro%2F') |
++------------------------------------------------------------------------------------------+
+| https://docs.starrocks.io/docs/introduction/StarRocks_intro/                             |
++------------------------------------------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/url_decode.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>day</title></head><body>
+<h2>day</h2>
+<p>Extracts the day part of a date or datetime expression and returns a value that ranges from 1 to 31.</p>
+<p>The <code>date</code> parameter must be of the DATE or DATETIME type.</p>
+<h3>Syntax</h3>
+<pre><code>INT DAY(DATETIME|DATE date)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select day('1987-01-31');
++----------------------------+
+| day('1987-01-31 00:00:00') |
++----------------------------+
+|                         31 |
++----------------------------+
+
+MySQL &gt; select day('1987-01-31 20:10:59');
++----------------------------+
+| day('1987-01-31 20:10:59') |
++----------------------------+
+|                         31 |
++----------------------------+</code></pre>
+<h3>keywords</h3>
+<p>DAY, day</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/day.md">StarRocks documentation</a></p>
+</body></html>

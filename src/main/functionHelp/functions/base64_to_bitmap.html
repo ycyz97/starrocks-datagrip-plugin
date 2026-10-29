@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>base64_to_bitmap</title></head><body>
+<h2>base64_to_bitmap</h2>
+<p>Before you import bitmap data into StarRocks, you need to serialize the data and encode the data as a Base64 string. When you import the Base64 string into StarRocks, you need to convert the string into bitmap data.<br>This function is used to convert Base64 strings into bitmap data.</p>
+<p>This function is supported from v2.3.</p>
+<h3>Syntax</h3>
+<pre><code>BITMAP base64_to_bitmap(VARCHAR bitmap)</code></pre>
+<h3>Parameters</h3>
+<p><code>bitmap</code>: The supported data type is VARCHAR. Before you load Bitmap data into StarRocks, you can use Java or C++ to create a BitmapValue object, add an element, serialize the data, and encode the data as a Base64 string. Then, pass the Base64 string as an input parameter into this function.</p>
+<h3>Return value</h3>
+<p>Returns a value of the BITMAP type.</p>
+<h3>Examples</h3>
+<p>Create a database named <code>bitmapdb</code> and a table named <code>bitmap</code>. Use Stream Load to import JSON data into <code>bitmap_table</code>. During this process, use base64_to_bitmap to convert the Base64 string in the JSON file into bitmap data.</p>
+<p>1. Create a database and a table in StarRocks. In this example, a Primary Key table is created.</p>
+<pre><code>    CREATE database bitmapdb;
+    USE bitmapdb;
+    CREATE TABLE `bitmap_table` (
+    `tagname` varchar(65533) NOT NULL COMMENT &quot;Tag name&quot;,
+    `tagvalue` varchar(65533) NOT NULL COMMENT &quot;Tag value&quot;,
+    `userid` bitmap NOT NULL COMMENT &quot;User ID&quot;
+    ) ENGINE=OLAP
+    PRIMARY KEY(`tagname`, `tagvalue`)
+    COMMENT &quot;OLAP&quot;
+    DISTRIBUTED BY HASH(`tagname`)
+    PROPERTIES (
+    &quot;replication_num&quot; = &quot;3&quot;,
+    &quot;storage_format&quot; = &quot;DEFAULT&quot;
+    );</code></pre>
+<p>2. Use Stream Load to import JSON data into <code>bitmap_table</code>.</p>
+<pre><code>Suppose there is a JSON file named **simpledata**. This file has the following content and `userid` is a Base64-encoded string.</code></pre>
+<pre><code>    {
+        &quot;tagname&quot;: &quot;Product&quot;, &quot;tagvalue&quot;: &quot;Insurance&quot;, &quot;userid&quot;:&quot;AjowAAABAAAAAAACABAAAAABAAIAAwA=&quot;
+    }</code></pre>
+<pre><code>Use base64_to_bitmap to convert  `userid` into a bitmap value.</code></pre>
+<pre><code>    curl --location-trusted -u &lt;username&gt;:&lt;password&gt;\
+        -H &quot;columns: c1,c2,c3,tagname=c1,tagvalue=c2,userid=base64_to_bitmap(c3)&quot;\
+        -H &quot;label:bitmap123&quot;\
+        -H &quot;format: json&quot;\
+        -H &quot;jsonpaths: [\&quot;$.tagname\&quot;,\&quot;$.tagvalue\&quot;,\&quot;$.userid\&quot;]&quot;\
+        -T simpleData http://host:port/api/bitmapdb/bitmap_table/_stream_load</code></pre>
+<p>3. Query data from <code>bitmap_table</code>.</p>
+<pre><code>    mysql&gt; select tagname,tagvalue,bitmap_to_string(userid) from bitmap_table;
+    +--------------+----------+----------------------------+
+    | tagname      | tagvalue | bitmap_to_string(`userid`) |
+    +--------------+----------+----------------------------+
+    | Product      | Insurance      | 1,2,3                |
+    +--------------+----------+----------------------------+
+    1 rows in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/base64_to_bitmap.md">StarRocks documentation</a></p>
+</body></html>

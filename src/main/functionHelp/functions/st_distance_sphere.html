@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_distance_sphere</title></head><body>
+<h2>ST_Distance_Sphere</h2>
+<p>Calculates the spherical distance between two points on the Earth in &quot;meters&quot;. The parameters inputted are longitude at X, latitude at X, longitude at Y, latitude at Y.</p>
+<h3>Syntax</h3>
+<pre><code>DOUBLE ST_Distance_Sphere(DOUBLE x_lng, DOUBLE x_lat, DOUBLE y_lng, DOUBLE x_lat)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select st_distance_sphere(116.35620117, 39.939093, 116.4274406433, 39.9020987219);
++----------------------------------------------------------------------------+
+| st_distance_sphere(116.35620117, 39.939093, 116.4274406433, 39.9020987219) |
++----------------------------------------------------------------------------+
+|                                                         7336.9135549995917 |
++----------------------------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ST_DISTANCE_SPHERE,ST,DISTANCE,SPHERE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_distance_sphere.md">StarRocks documentation</a></p>
+</body></html>

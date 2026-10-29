@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_and</title></head><body>
+<h2>bitmap_and</h2>
+<p>Calculates the intersection of two input bitmaps and returns the new bitmap.</p>
+<h3>Syntax</h3>
+<pre><code>BITMAP BITMAP_AND(BITMAP lhs, BITMAP rhs)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select bitmap_count(bitmap_and(to_bitmap(1), to_bitmap(2))) cnt;
++------+
+| cnt  |
++------+
+|    0 |
++------+
+
+MySQL &gt; select bitmap_count(bitmap_and(to_bitmap(1), to_bitmap(1))) cnt;
++------+
+| cnt  |
++------+
+|    1 |
++------+</code></pre>
+<h3>keyword</h3>
+<p>BITMAP_AND,BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_and.md">StarRocks documentation</a></p>
+</body></html>

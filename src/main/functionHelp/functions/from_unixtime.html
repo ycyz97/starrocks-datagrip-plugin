@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>from_unixtime</title></head><body>
+<h2>from_unixtime</h2>
+<p>Converts a UNIX timestamp into the required time format. The default format is <code>yyyy-MM-dd HH:mm:ss</code>. It also supports the formats in date_format.</p>
+<p>Currently, <code>string_format</code> supports the following formats:</p>
+<pre><code>%Y: Year  e.g.: 2014, 1900
+%m: Month   e.g.: 12, 09
+%d: Day  e.g.: 11, 01
+%H: Hour  e.g.: 23, 01, 12
+%i: Minute  e.g.: 05, 11
+%s: Second  e.g.: 59, 01</code></pre>
+<p>Other formats are invalid and NULL will be returned.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR from_unixtime(BIGINT unix_timestamp[, VARCHAR string_format])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>unix_timestamp</code>: the UNIX timestamp you want to convert. It must be of the BIGINT type. If the specified timestamp is less than 0 or larger than 253402243199, NULL will be returned. That is, the range for timestamp is <code>1970-01-01 00:00:00</code> to <code>9999-12-30 11:59:59</code>(varies because of timezone).</li>
+</ul>
+<ul>
+<li><code>string_format</code>: the required time format.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATETIME or DATE value of the VARCHAR type. If <code>string_format</code> specifies the DATE format, a DATE value of the VARCHAR type is returned.</p>
+<p>If the timestamp exceeds the value range or if <code>string_format</code> is invalid, NULL will be returned.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select from_unixtime(1196440219);
++---------------------------+
+| from_unixtime(1196440219) |
++---------------------------+
+| 2007-12-01 00:30:19       |
++---------------------------+
+
+MySQL &gt; select from_unixtime(1196440219, 'yyyy-MM-dd HH:mm:ss');
++--------------------------------------------------+
+| from_unixtime(1196440219, 'yyyy-MM-dd HH:mm:ss') |
++--------------------------------------------------+
+| 2007-12-01 00:30:19                              |
++--------------------------------------------------+
+
+MySQL &gt; select from_unixtime(1196440219, '%Y-%m-%d');
++-----------------------------------------+
+| from_unixtime(1196440219, '%Y-%m-%d')   |
++-----------------------------------------+
+| 2007-12-01                              |
++-----------------------------------------+
+
+MySQL &gt; select from_unixtime(1196440219, '%Y-%m-%d %H:%i:%s');
++--------------------------------------------------+
+| from_unixtime(1196440219, '%Y-%m-%d %H:%i:%s')   |
++--------------------------------------------------+
+| 2007-12-01 00:30:19                              |
++--------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>FROM_UNIXTIME,FROM,UNIXTIME</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/from_unixtime.md">StarRocks documentation</a></p>
+</body></html>

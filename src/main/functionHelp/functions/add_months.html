@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>add_months</title></head><body>
+<h2>add_months</h2>
+<p>Adds a specified number of months to a given date (DATE or DATETIME). The months_add function provides similar functionalities.</p>
+<p>The day component in the resulting month remains the same as that specified in <code>date</code>, unless the resulting month has fewer days than the day component of the given date, in which case the day will be the last day of the resulting month. For example, <code>select add_months('2022-01-31', 1);</code> returns <code>2022-02-28 00:00:00</code>. If the resulting month has more days than the day component of the given date, the result has the same day component as <code>date</code>. For example, <code>select add_months('2022-02-28', 1)</code> returns <code>2022-03-28 00:00:00</code>.</p>
+<p>Difference with Oracle: In Oracle, if <code>date</code> is the last day of the month, then the result is the last day of the resulting month.</p>
+<p>Returns NULL if an invalid date or a NULL argument is passed in.</p>
+<h3>Syntax</h3>
+<pre><code>ADD_MONTH(date, months)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>date</code>: It must be a valid date or datetime expression.</li>
+<li><code>months</code>: the months you want to add. It must be an integer. A  positive integer adds months to <code>date</code>. A negative integer subtracts months from <code>date</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATETIME value. If the date does not exist, for example, <code>2020-02-30</code>, NULL is returned.</p>
+<p>If the date is a DATE value, it will be converted into a DATETIME value.</p>
+<h3>Examples</h3>
+<pre><code>&gt; select add_months('2022-01-01', 2);
++-----------------------------+
+| add_months('2022-01-01', 2) |
++-----------------------------+
+| 2022-03-01 00:00:00         |
++-----------------------------+
+
+&gt; select add_months('2022-01-01', -5);
++------------------------------+
+| add_months('2022-01-01', -5) |
++------------------------------+
+| 2021-08-01 00:00:00          |
++------------------------------+
+
+&gt; select add_months('2022-01-31', 1);
++-----------------------------+
+| add_months('2022-01-31', 1) |
++-----------------------------+
+| 2022-02-28 00:00:00         |
++-----------------------------+
+
+&gt; select add_months('2022-01-31 17:01:02', -2);
++---------------------------------------+
+| add_months('2022-01-31 17:01:02', -2) |
++---------------------------------------+
+| 2021-11-30 17:01:02                   |
++---------------------------------------+
+
+&gt; select add_months('2022-02-28', 1);
++-----------------------------+
+| add_months('2022-02-28', 1) |
++-----------------------------+
+| 2022-03-28 00:00:00         |
++-----------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/add_months.md">StarRocks documentation</a></p>
+</body></html>

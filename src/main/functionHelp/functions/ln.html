@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>ln</title></head><body>
+<h2>ln, dlog1, log</h2>
+<p>Computes the natural (base <code>e</code>) logarithm of a number.</p>
+<h3>Syntax</h3>
+<pre><code>ln(arg)
+log(arg)
+dlog1(arg)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>arg</code>: the value whose logarithm you want to calculate. Only the DOUBLE data type is supported.</li>
+</ul>
+<p>&gt; <b>NOTE</b><br>&gt;<br>&gt; StarRocks returns NULL if <code>arg</code> is specified as a negative or 0.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3>Example</h3>
+<p>Example 1: Calculate the natural logarithm of 3.</p>
+<pre><code>mysql&gt; select ln(3);
++--------------------+
+| ln(3)              |
++--------------------+
+| 1.0986122886681098 |
++--------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; select dlog1(3);
++--------------------+
+| dlog1(3)              |
++--------------------+
+| 1.0986122886681098 |
++--------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; select log(3);
++--------------------+
+| log(3)              |
++--------------------+
+| 1.0986122886681098 |
++--------------------+
+1 row in set (0.00 sec)
+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/ln.md">StarRocks documentation</a></p>
+</body></html>

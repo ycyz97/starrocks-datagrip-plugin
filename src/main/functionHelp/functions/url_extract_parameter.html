@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>url_extract_parameter</title></head><body>
+<h2>url_extract_parameter</h2>
+<p>Extracts the value of the requested <code>name</code> parameter from the query string of a URL. Parameter extraction is handled in the manner as specified in RFC 1866#section-8.2.1. If the specified parameter name does not exist, NULL is returned.</p>
+<p>This function is supported from v3.2.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR url_extract_parameter(VARCHAR str, VARCHAR name)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the URL string to extract parameters.</li>
+<li><code>name</code>: the name of the parameter in the query string.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a VARCHAR value.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select url_extract_parameter(&quot;https://starrocks.io/doc?k1=10&amp;k2=3&amp;k1=100&quot;, &quot;k1&quot;);
++---------------------------------------------------------------------------+
+| url_extract_parameter('https://starrocks.io/doc?k1=10&amp;k2=3&amp;k1=100', 'k1') |
++---------------------------------------------------------------------------+
+| 10                                                                        |
++---------------------------------------------------------------------------+
+
+mysql&gt; select url_extract_parameter('https://starrocks.com/doc?k0=10&amp;k1=%21%23%24%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D%20%22%25%2D%2E%3C%3E%5C%5E%5F%60%7B%7C%7D%7E&amp;k2','k1');
++--------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| url_extract_parameter('https://starrocks.com/doc?k0=10&amp;k1=%21%23%24%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D%20%22%25%2D%2E%3C%3E%5C%5E%5F%60%7B%7C%7D%7E&amp;k2', 'k1') |
++--------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| !#$&amp;'()*+,/:;=?@[] &quot;%-.&lt;&gt;\^_`{|}~                                                                                                                                        |
++--------------------------------------------------------------------------------------------------------------------------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/url_extract_parameter.md">StarRocks documentation</a></p>
+</body></html>

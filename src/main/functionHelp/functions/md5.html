@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>md5</title></head><body>
+<h2>md5</h2>
+<p>Uses the MD5 Message-Digest Algorithm to calculate the 128-bit checksum of a string. The checksum is represented by a 32-character hexadecimal string.</p>
+<h3>Syntax</h3>
+<pre><code>md5(expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the string to calculate. It must be of the VARCHAR type.</p>
+<h3>Return value</h3>
+<p>Returns a checksum of the VARCHAR type, which is a 32-character hexadecimal string.</p>
+<p>If the input is NULL, NULL is returned.</p>
+<h3>Examples</h3>
+<pre><code>select md5('abc');</code></pre>
+<pre><code>+----------------------------------+
+| md5('abc')                       |
++----------------------------------+
+| 900150983cd24fb0d6963f7d28e17f72 |
++----------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<pre><code>select md5(null);</code></pre>
+<pre><code>+-----------+
+| md5(NULL) |
++-----------+
+| NULL      |
++-----------+
+1 row in set (0.00 sec)</code></pre>
+<h3>Keywords</h3>
+<p>MD5, ENCRYPTION</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/crytographic-functions/md5.md">StarRocks documentation</a></p>
+</body></html>

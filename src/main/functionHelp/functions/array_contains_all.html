@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_contains_all</title></head><body>
+<h2>array_contains_all</h2>
+<p>Checks whether <code>arr1</code> contains all the elements of <code>arr2</code>, that is, whether <code>arr2</code> is a subset of <code>arr1</code>. If yes, 1 is returned. If not, 0 is returned.</p>
+<h3>Syntax</h3>
+<p>~~~Haskell<br>BOOLEAN array_contains_all(arr1, arr2)<br>~~~</p>
+<h3>Parameters</h3>
+<p><code>arr</code>: the two arrays to compare. This syntax checks whether <code>arr2</code> is a subset of <code>arr1</code>.</p>
+<p>The data types of elements in the two arrays must be the same. For the data types of array elements supported by StarRocks, see ARRAY.</p>
+<h3>Return value</h3>
+<p>Returns a value of the BOOLEAN type.</p>
+<p>1 is returned if <code>arr2</code> is a subset of <code>arr1</code>. Otherwise, 0 is returned.</p>
+<p>If any of the two arrays is NULL, NULL is returned.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>If an array contains <code>null</code> elements, <code>null</code> is processed as a value.</li>
+</ul>
+<ul>
+<li>An empty array is a subset of any array.</li>
+</ul>
+<ul>
+<li>Elements in the two arrays can have different order.</li>
+</ul>
+<h3>Examples</h3>
+<p>1. Create a table named <code>t1</code> and insert data into this table.</p>
+<pre><code>~~~SQL</code></pre>
+<pre><code>CREATE TABLE t1 (</code></pre>
+<pre><code>c0 INT,</code></pre>
+<pre><code>c1 ARRAY&lt;INT&gt;,</code></pre>
+<pre><code>c2 ARRAY&lt;INT&gt;</code></pre>
+<pre><code>) ENGINE=OLAP</code></pre>
+<pre><code>DUPLICATE KEY(c0)</code></pre>
+<pre><code>DISTRIBUTED BY HASH(c0);</code></pre>
+<pre><code>INSERT INTO t1 VALUES</code></pre>
+<pre><code>(1,[1,2,3],[1,2]),</code></pre>
+<pre><code>(2,[1,2,3],[1,4]),</code></pre>
+<pre><code>(3,NULL,[1]),</code></pre>
+<pre><code>(4,[1,2,null],NULL),</code></pre>
+<pre><code>(5,[1,2,null],[null]),</code></pre>
+<pre><code>(6,[2,3],[]);</code></pre>
+<pre><code>~~~</code></pre>
+<p>2. Query data from this table.</p>
+<pre><code>~~~Plain</code></pre>
+<pre><code>SELECT * FROM t1 ORDER BY c0;</code></pre>
+<pre><code>+------+------------+----------+</code></pre>
+<pre><code>| c0   | c1         | c2       |</code></pre>
+<pre><code>+------+------------+----------+</code></pre>
+<pre><code>|    1 | [1,2,3]    | [1,2]    |</code></pre>
+<pre><code>|    2 | [1,2,3]    | [1,4]    |</code></pre>
+<pre><code>|    3 | NULL       | [1]      |</code></pre>
+<pre><code>|    4 | [1,2,null] | NULL     |</code></pre>
+<pre><code>|    5 | [1,2,null] | [null]   |</code></pre>
+<pre><code>|    6 | [2,3]      | []       |</code></pre>
+<pre><code>+------+------------+----------+</code></pre>
+<pre><code>~~~</code></pre>
+<p>3. Check whether each row of <code>c2</code> is a subset of the corresponding row of <code>c1</code>.</p>
+<pre><code>~~~Plaintext</code></pre>
+<pre><code>SELECT c0, c1, c2, array_contains_all(c1, c2) FROM t1 ORDER BY c0;</code></pre>
+<pre><code>+------+------------+----------+----------------------------+</code></pre>
+<pre><code>| c0   | c1         | c2       | array_contains_all(c1, c2) |</code></pre>
+<pre><code>+------+------------+----------+----------------------------+</code></pre>
+<pre><code>|    1 | [1,2,3]    | [1,2]    |                          1 |</code></pre>
+<pre><code>|    2 | [1,2,3]    | [1,4]    |                          0 |</code></pre>
+<pre><code>|    3 | NULL       | [1]      |                       NULL |</code></pre>
+<pre><code>|    4 | [1,2,null] | NULL     |                       NULL |</code></pre>
+<pre><code>|    5 | [1,2,null] | [null]   |                          1 |</code></pre>
+<pre><code>|    6 | [2,3]      | []       |                          1 |</code></pre>
+<pre><code>+------+------------+----------+----------------------------+</code></pre>
+<pre><code>~~~</code></pre>
+<p>In the output:</p>
+<p>For row 1, <code>c2</code> is a subset of <code>c1</code> and 1 is returned.</p>
+<p>For row 2, <code>c2</code> is not a subset of <code>c1</code> and 0 is returned.</p>
+<p>For row 3, <code>c1</code> is NULL and NULL is returned.</p>
+<p>For row 4, <code>c2</code> is NULL and NULL is returned.</p>
+<p>For row 5, the two arrays contain <code>null</code> and <code>null</code> is processed as a normal value, <code>1</code> is returned.</p>
+<p>For row 6, <code>c2</code> is an empty array and considered a subset of <code>c1</code>. Therefore, <code>1</code> is returned.</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_contains_all.md">StarRocks documentation</a></p>
+</body></html>

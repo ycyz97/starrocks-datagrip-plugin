@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>any_value</title></head><body>
+<h2>any_value</h2>
+<p>Obtains an arbitrary row from each aggregated group. You can use this function to optimize a query that has a <code>GROUP BY</code> clause.</p>
+<h3>Syntax</h3>
+<pre><code>ANY_VALUE(expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the expression that gets aggregated. Since v3.2, <code>expr</code> can evaluate to ARRAY, MAP, and STRUCT.</p>
+<h3>Return value</h3>
+<p>Returns an arbitrary row from each aggregated group. The return value is non-deterministic.</p>
+<h3>Examples</h3>
+<p>Create a table <code>t0</code> and insert data into this table.</p>
+<pre><code>CREATE TABLE t0(
+  a INT,
+  b BIGINT,
+  c SMALLINT,
+  d ARRAY&lt;INT&gt;,
+  e JSON,
+  f MAP&lt;INT, INT&gt;,
+  g STRUCT&lt;a STRING, b INT&gt;
+)
+DUPLICATE KEY(a)
+DISTRIBUTED BY HASH(a);
+
+INSERT INTO t0 VALUES
+(1, 1, 1, [2,3,4],parse_json('{&quot;a&quot;:1, &quot;b&quot;:true}'), map{1:1,3:4}, row(1, 2)),
+(1, 2, 1, [2,3,5],parse_json('{&quot;a&quot;:2, &quot;b&quot;:true}'), map{1:2,3:3},row(2, 2)),
+(2, 1, 1, [2,3,6],parse_json('{&quot;a&quot;:3, &quot;b&quot;:true}'), map{2:1,3:2},row(3, 2)),
+(2, 2, 2, [2,4,5],parse_json('{&quot;a&quot;:4, &quot;b&quot;:false}'),map{1:3,3:1},row(4, 2)),
+(3, 1, 1, [3,3,5],parse_json('{&quot;a&quot;:5, &quot;b&quot;:false}'),map{2:1,3:3},row(1, 2));</code></pre>
+<pre><code>mysql&gt; select * from t0 order by a;
++------+------+------+---------+----------------------+-----------+-----------------+
+| a    | b    | c    | d       | e                    | f         | g               |
++------+------+------+---------+----------------------+-----------+-----------------+
+|    1 |    1 |    1 | [2,3,4] | {&quot;a&quot;: 1, &quot;b&quot;: true}  | {1:1,3:4} | {&quot;a&quot;:&quot;1&quot;,&quot;b&quot;:2} |
+|    1 |    2 |    1 | [2,3,5] | {&quot;a&quot;: 2, &quot;b&quot;: true}  | {1:2,3:3} | {&quot;a&quot;:&quot;2&quot;,&quot;b&quot;:2} |
+|    2 |    1 |    1 | [2,3,6] | {&quot;a&quot;: 3, &quot;b&quot;: true}  | {2:1,3:2} | {&quot;a&quot;:&quot;3&quot;,&quot;b&quot;:2} |
+|    2 |    2 |    2 | [2,4,5] | {&quot;a&quot;: 4, &quot;b&quot;: false} | {1:3,3:1} | {&quot;a&quot;:&quot;4&quot;,&quot;b&quot;:2} |
+|    3 |    1 |    1 | [3,3,5] | {&quot;a&quot;: 5, &quot;b&quot;: false} | {2:1,3:3} | {&quot;a&quot;:&quot;1&quot;,&quot;b&quot;:2} |
++------+------+------+---------+----------------------+-----------+-----------------+
+5 rows in set (0.01 sec)</code></pre>
+<p>Use <code>any_value</code> for data query. For <code>a = 1</code> and <code>a = 2</code>, an arbitrary row is returned for <code>b</code>.</p>
+<pre><code>mysql&gt; select a,any_value(b),sum(c) from t0 group by a;
++------+----------------+----------+
+| a    | any_value(`b`) | sum(`c`) |
++------+----------------+----------+
+|    1 |              1 |        2 |
+|    2 |              1 |        3 |
+|    3 |              1 |        1 |
++------+----------------+----------+
+3 rows in set (0.01 sec)
+
+mysql&gt; select a,any_value(d),sum(b) from t0 group by a;
++------+--------------+--------+
+| a    | any_value(d) | sum(b) |
++------+--------------+--------+
+|    3 | [3,3,5]      |      1 |
+|    1 | [2,3,4]      |      3 |
+|    2 | [2,3,6]      |      3 |
++------+--------------+--------+
+2 rows in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/any_value.md">StarRocks documentation</a></p>
+</body></html>

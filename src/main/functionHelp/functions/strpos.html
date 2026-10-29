@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>strpos</title></head><body>
+<h2>strpos</h2>
+<p>Returns the position of the N-th substring in a string. If N is a negative number, the search will start from the end of the string. Positions start with 1. If not found, 0 is returned.</p>
+<h3>Syntax</h3>
+<pre><code>INT strpos(VARCHAR str, VARCHAR substr [, INT instance])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: The string in which to find the substring.</li>
+<li><code>substr</code>: The substring to find.</li>
+<li><code>instance</code>: The N-th substring instance to find. If this item is set to a negative value, the search will start from the end of the string. Default Value: <code>1</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns an integer. <code>0</code> is returned if the substring is not found.</p>
+<h3>Examples</h3>
+<pre><code>SELECT strpos('hello world', 'world');
++-----------------------------+
+| strpos('hello world', 'world') |
++-----------------------------+
+|                           7 |
++-----------------------------+
+
+SELECT strpos('Hello World', 'world');
++-----------------------------+
+| strpos('Hello World', 'world') |
++-----------------------------+
+|                           0 |
++-----------------------------+
+
+SELECT strpos('hello world hello', 'hello', 2);
++--------------------------------------+
+| strpos('hello world hello', 'hello', 2) |
++--------------------------------------+
+|                                   13 |
++--------------------------------------+
+
+SELECT strpos('StarRocks', 'Spark');
++----------------------------+
+| strpos('StarRocks', 'Spark') |
++----------------------------+
+|                          0 |
++----------------------------+
+
+SELECT strpos(NULL, 'test');
++--------------------+
+| strpos(NULL, 'test') |
++--------------------+
+|               NULL |
++--------------------+</code></pre>
+<h3>Keywords</h3>
+<p>STRPOS, STRING, POSITION, SUBSTRING</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/strpos.md">StarRocks documentation</a></p>
+</body></html>

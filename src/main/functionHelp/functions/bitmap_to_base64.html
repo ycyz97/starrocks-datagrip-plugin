@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_to_base64</title></head><body>
+<h2>bitmap_to_base64</h2>
+<p>Converts a bitmap to a Base64-encoded string. This function is supported from v2.5.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR bitmap_to_base64(BITMAP bitmap)</code></pre>
+<h3>Parameters</h3>
+<p><code>bitmap</code>: the bitmap to convert. This parameter is required. If the input value is invalid, an error is returned.</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type.</p>
+<h3>Examples</h3>
+<p>Example 1: Use this function with other bitmap functions.</p>
+<pre><code>select bitmap_to_base64(bitmap_from_string(&quot;0, 1, 2, 3&quot;));
++----------------------------------------------------+
+| bitmap_to_base64(bitmap_from_string('0, 1, 2, 3')) |
++----------------------------------------------------+
+| AjowAAABAAAAAAADABAAAAAAAAEAAgADAA==               |
++----------------------------------------------------+
+1 row in set (0.00 sec)
+
+
+select bitmap_to_base64(to_bitmap(1));
++--------------------------------+
+| bitmap_to_base64(to_bitmap(1)) |
++--------------------------------+
+| AQEAAAA=                       |
++--------------------------------+
+1 row in set (0.00 sec)
+
+
+select bitmap_to_base64(bitmap_empty());
++----------------------------------+
+| bitmap_to_base64(bitmap_empty()) |
++----------------------------------+
+| AA==                             |
++----------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<p>Example 2: Convert each value in a BITMAP column into Base64-encoded strings.</p>
+<p>1. Create an Aggregate table <code>page_uv</code> where the <code>AGGREGATE KEY</code> is (<code>page_id</code>, <code>visit_date</code>). This table contains a BITMAP column <code>visit_users</code> whose values are to be aggregated.</p>
+<pre><code>        CREATE TABLE `page_uv`
+        (`page_id` INT NOT NULL,
+        `visit_date` datetime NOT NULL,
+        `visit_users` BITMAP BITMAP_UNION NOT NULL
+        ) ENGINE=OLAP
+        AGGREGATE KEY(`page_id`, `visit_date`)
+        DISTRIBUTED BY HASH(`page_id`)
+        PROPERTIES (
+        &quot;replication_num&quot; = &quot;3&quot;,
+        &quot;storage_format&quot; = &quot;DEFAULT&quot;
+        );</code></pre>
+<p>2. Insert data into this table.</p>
+<pre><code>      insert into page_uv values
+      (1, '2020-06-23 01:30:30', to_bitmap(13)),
+      (1, '2020-06-23 01:30:30', to_bitmap(23)),
+      (1, '2020-06-23 01:30:30', to_bitmap(33)),
+      (1, '2020-06-23 02:30:30', to_bitmap(13)),
+      (2, '2020-06-23 01:30:30', to_bitmap(23));
+
+      select * from page_uv order by page_id;
+      +---------+---------------------+-------------+
+      | page_id | visit_date          | visit_users |
+      +---------+---------------------+-------------+
+      |       1 | 2020-06-23 01:30:30 | NULL        |
+      |       1 | 2020-06-23 02:30:30 | NULL        |
+      |       2 | 2020-06-23 01:30:30 | NULL        |
+      +---------+---------------------+-------------+</code></pre>
+<p>3. Convert each value in the <code>visit_users</code> column into a Base64-encoded string.</p>
+<pre><code>      select page_id, bitmap_to_base64(visit_users) from page_uv;
+      +---------+------------------------------------------+
+      | page_id | bitmap_to_base64(visit_users)            |
+      +---------+------------------------------------------+
+      |       1 | CgMAAAANAAAAAAAAABcAAAAAAAAAIQAAAAAAAAA= |
+      |       1 | AQ0AAAA=                                 |
+      |       2 | ARcAAAA=                                 |
+      +---------+------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_to_base64.md">StarRocks documentation</a></p>
+</body></html>

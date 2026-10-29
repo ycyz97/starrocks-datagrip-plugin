@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>minutes_add</title></head><body>
+<h2>minutes_add</h2>
+<p>Adds the specified minutes to the date, accurate to the minute.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME minutes_add(DATETIME|DATE date, INT minutes);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>date</code>: the start time. It must be of the DATETIME or DATE type.</li>
+</ul>
+<ul>
+<li><code>minutes</code>: the minutes to add. It must be of the INT type, it could be greater, equal or less than zero.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATETIME value.</p>
+<p>Returns NULL if either <code>date</code> or <code>minutes</code> is NULL.</p>
+<h3>Examples</h3>
+<pre><code>select minutes_add('2022-01-01 01:01:01', 2);
++---------------------------------------+
+| minutes_add('2022-01-01 01:01:01', 2) |
++---------------------------------------+
+| 2022-01-01 01:03:01                   |
++---------------------------------------+
+
+select minutes_add('2022-01-01 01:01:01', -1);
++----------------------------------------+
+| minutes_add('2022-01-01 01:01:01', -1) |
++----------------------------------------+
+| 2022-01-01 01:00:01                    |
++----------------------------------------+
+
+select minutes_add('2022-01-01', 1);
++------------------------------+
+| minutes_add('2022-01-01', 1) |
++------------------------------+
+| 2022-01-01 00:01:00          |
++------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/minutes_add.md">StarRocks documentation</a></p>
+</body></html>

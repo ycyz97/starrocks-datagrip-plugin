@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>to_bitmap</title></head><body>
+<h2>to_bitmap</h2>
+<p>The input is unsigned bigint with the value ranging from 0 to 18446744073709551615, and the output is bitmap containing this element. This function is mainly used for the stream load task to import integer fields into the bitmap field of the StarRocks table. For example:</p>
+<pre><code>cat data | curl --location-trusted -u user:passwd -T - \
+    -H &quot;columns: dt,page,user_id, user_id=to_bitmap(user_id)&quot; \
+    http://host:8410/api/test/testDb/_stream_load</code></pre>
+<h3>Syntax</h3>
+<pre><code>BITMAP TO_BITMAP(expr)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select bitmap_count(to_bitmap(10));
++-----------------------------+
+| bitmap_count(to_bitmap(10)) |
++-----------------------------+
+|                           1 |
++-----------------------------+
+
+select bitmap_to_string(to_bitmap(10));
++---------------------------------+
+| bitmap_to_string(to_bitmap(10)) |
++---------------------------------+
+| 10                              |
++---------------------------------+
+
+select bitmap_to_string(to_bitmap(-5));
++---------------------------------+
+| bitmap_to_string(to_bitmap(-5)) |
++---------------------------------+
+| NULL                            |
++---------------------------------+
+
+select bitmap_to_string(to_bitmap(null));
++-----------------------------------+
+| bitmap_to_string(to_bitmap(NULL)) |
++-----------------------------------+
+| NULL                              |
++-----------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>TO_BITMAP,BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/to_bitmap.md">StarRocks documentation</a></p>
+</body></html>

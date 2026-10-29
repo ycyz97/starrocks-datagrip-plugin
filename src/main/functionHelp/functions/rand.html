@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>rand</title></head><body>
+<h2>rand, random</h2>
+<p>Returns a random floating-point number between 0 (inclusive) and 1 (exclusive).</p>
+<h3>Syntax</h3>
+<pre><code>RAND(x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: optional. The data type is BIGINT. Whether `x is specified or not, this function returns a completely random number.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE type.</p>
+<h3>Examples</h3>
+<pre><code>select rand();
++--------------------+
+| rand()             |
++--------------------+
+| 0.9393535880089522 |
++--------------------+
+1 row in set (0.01 sec)
+select rand(3);
++--------------------+
+| rand(3)            |
++--------------------+
+| 0.6659865964511347 |
++--------------------+
+1 row in set (0.00 sec)</code></pre>
+<h3>Keywords</h3>
+<p>RAND, RANDOM</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/rand.md">StarRocks documentation</a></p>
+</body></html>

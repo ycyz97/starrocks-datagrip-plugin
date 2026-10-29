@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>seconds_sub</title></head><body>
+<h2>seconds_sub</h2>
+<p>Subtracts a time interval from a date value. The time interval is in seconds.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME seconds_sub(DATETIME|DATE date, INT seconds);</code></pre>
+<h3>Parameters</h3>
+<p><code>date</code>: the time expression. It must be of the DATETIME type.</p>
+<p><code>seconds</code>: the time interval you want to substract, in seconds. It must be of the INT type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DATETIME type.</p>
+<p>If the input value is of the DATE type, the hour, minute, and seconds parts are processed as <code>00:00:00</code>.</p>
+<h3>Examples</h3>
+<pre><code>select seconds_sub('2022-01-01 01:01:01', 2);
++---------------------------------------+
+| seconds_sub('2022-01-01 01:01:01', 2) |
++---------------------------------------+
+| 2022-01-01 01:00:59                   |
++---------------------------------------+
+
+select seconds_sub('2022-01-01 01:01:01', -1);
++----------------------------------------+
+| seconds_sub('2022-01-01 01:01:01', -1) |
++----------------------------------------+
+| 2022-01-01 01:01:02                    |
++----------------------------------------+
+
+select seconds_sub('2022-01-01', 1);
++------------------------------+
+| seconds_sub('2022-01-01', 1) |
++------------------------------+
+| 2021-12-31 23:59:59          |
++------------------------------+v</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/seconds_sub.md">StarRocks documentation</a></p>
+</body></html>

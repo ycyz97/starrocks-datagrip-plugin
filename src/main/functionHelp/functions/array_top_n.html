@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_top_n</title></head><body>
+<h2>array_top_n</h2>
+<p>Sorts the elements of a given array in their natural descending order, and returns the top-n elements in an array. If n is larger than the length of the input array, the length of the returned array will be the same as the input instead of n.</p>
+<h3>Syntax</h3>
+<pre><code>array_top_n(array, count)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>array</code>: The array from which to extract the top-n elements. The array can contain elements of any comparable data type supported by StarRocks.</li>
+</ul>
+<ul>
+<li><code>count</code>: The number of top elements to return. It must be a non-negative integer.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns an array containing the top-n elements from the input array, sorted in descending order. The data type of the return value is the same ARRAY type as the input array.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>Elements are sorted in descending order according to their natural ordering.</li>
+<li>If <code>count</code> is 0 or negative, an empty array is returned.</li>
+<li>If <code>count</code> is larger than the array size, the entire array, sorted in descending order, is returned.</li>
+<li>If the input <code>array</code> or <code>count</code> is NULL, the result is NULL.</li>
+<li>NULL elements within the array are considered smaller than any non-NULL value and will appear at the end if included in the result.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Get the top 3 elements from an integer array.</p>
+<pre><code>mysql&gt; SELECT array_top_n([1, 100, 2, 5, 3], 3);
++-----------------------------------+
+| array_top_n([1,100,2,5,3], 3)    |
++-----------------------------------+
+| [100,5,3]                         |
++-----------------------------------+</code></pre>
+<p>Example 2: Get the top 5 elements from an array of two integers (<code>count</code> is larger than the array length).</p>
+<pre><code>mysql&gt; SELECT array_top_n([1, 100], 5);
++--------------------------+
+| array_top_n([1,100], 5)  |
++--------------------------+
+| [100,1]                  |
++--------------------------+</code></pre>
+<p>Example 3: Get the top 3 elements from a string array.</p>
+<pre><code>mysql&gt; SELECT array_top_n(['a', 'zzz', 'zz', 'b', 'g', 'f'], 3);
++----------------------------------------------------+
+| array_top_n(['a','zzz','zz','b','g','f'], 3)      |
++----------------------------------------------------+
+| ['zzz','zz','g']                                   |
++----------------------------------------------------+</code></pre>
+<p>Example 4: Call the function when <code>count</code> is 0.</p>
+<pre><code>mysql&gt; SELECT array_top_n([1, 2, 3], 0);
++--------------------------+
+| array_top_n([1,2,3], 0)  |
++--------------------------+
+| []                       |
++--------------------------+</code></pre>
+<p>Example 5: Get the top 3 elements from an integer array where NULL is one of the elements.</p>
+<pre><code>mysql&gt; SELECT array_top_n([1, NULL, 3, 2], 3);
++---------------------------------+
+| array_top_n([1,null,3,2], 3)   |
++---------------------------------+
+| [3,2,1]                         |
++---------------------------------+</code></pre>
+<p>Example 6: Call the function with table data.</p>
+<pre><code>mysql&gt; CREATE TABLE IF NOT EXISTS test (id INT, arr ARRAY&lt;INT&gt;) PROPERTIES (&quot;replication_num&quot;=&quot;1&quot;);
+mysql&gt; INSERT INTO test VALUES (1, [5, 2, 8, 1, 9]), (2, [10, 3, 7]);
+mysql&gt; SELECT id, array_top_n(arr, 2) FROM test;
++------+----------------------+
+| id   | array_top_n(arr, 2)  |
++------+----------------------+
+|    1 | [9,8]                |
+|    2 | [10,7]               |
++------+----------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_top_n.md">StarRocks documentation</a></p>
+</body></html>

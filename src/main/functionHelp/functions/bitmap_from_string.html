@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_from_string</title></head><body>
+<h2>bitmap_from_string</h2>
+<p>Converts a string into a BITMAP. The string is composed of a set of UINT64 numbers separated by commas. For example, the &quot;0, 1, 2&quot; string will be converted into a Bitmap, in which bits 0, 1 and 2 are set. If the input field is invalid, NULL will be returned.</p>
+<p>This function deduplicates the input string during the conversion. It must be used with other functions, such as bitmap_to_string to return results on terminals.</p>
+<h3>Syntax</h3>
+<pre><code>BITMAP BITMAP_FROM_STRING(VARCHAR input)</code></pre>
+<h3>Return value</h3>
+<p>Returns a BITMAP value. If the input string is invalid, NULL is returned. If the input string is empty, an empty value is returned.</p>
+<h3>Examples</h3>
+<pre><code>-- The input is empty and an empty value is returned.
+MySQL &gt; select bitmap_to_string(bitmap_empty());
++----------------------------------+
+| bitmap_to_string(bitmap_empty()) |
++----------------------------------+
+|                                  |
++----------------------------------+
+
+-- `0,1,2` is returned.
+MySQL &gt; select bitmap_to_string(bitmap_from_string(&quot;0, 1, 2&quot;));
++-------------------------------------------------+
+| bitmap_to_string(bitmap_from_string('0, 1, 2')) |
++-------------------------------------------------+
+| 0,1,2                                           |
++-------------------------------------------------+
+
+-- `-1` is an invalid input and NULL is returned.
+
+MySQL &gt; select bitmap_to_string(bitmap_from_string(&quot;-1, 0, 1, 2&quot;));
++-----------------------------------+
+| bitmap_from_string('-1, 0, 1, 2') |
++-----------------------------------+
+| NULL                              |
++-----------------------------------+
+
+-- 2^64 is an invalid input and NULL is returned.
+MySQL &gt; select bitmap_to_string(bitmap_from_string(&quot;0, 18446744073709551616&quot;));
++-----------------------------------------------------------------+
+| bitmap_to_string(bitmap_from_string('0, 18446744073709551616')) |
++-----------------------------------------------------------------+
+| NULL                                                            |
++-----------------------------------------------------------------+
+
+-- The input string is deduplicated.
+
+MySQL &gt; select bitmap_to_string(bitmap_from_string(&quot;0, 1, 1&quot;));
++-------------------------------------------------+
+| bitmap_to_string(bitmap_from_string('0, 1, 1')) |
++-------------------------------------------------+
+| 0,1                                             |
++-------------------------------------------------+</code></pre>
+<h3>keywords</h3>
+<p>BITMAP_FROM_STRING,BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_from_string.md">StarRocks documentation</a></p>
+</body></html>

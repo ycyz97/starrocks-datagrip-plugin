@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>column_compressed_size</title></head><body>
+<h2>column_size &amp; column_compressed_size</h2>
+<p>These functions return the size information of table columns for storage analysis and optimization. Both functions work with the <code>[_META_]</code> hint to inspect segment file metadata.</p>
+<h3>column_size</h3>
+<p>Returns the decompressed size of a column in bytes.</p>
+<h4>Syntax</h4>
+<pre><code>-- Do not omit the brackets [] in the hint.
+SELECT column_size(column_name) FROM table_name [_META_];</code></pre>
+<h4>Parameters</h4>
+<ul>
+<li><code>column_name</code>: The name of the column for which you want to get the decompressed size.</li>
+</ul>
+<h4>Return value</h4>
+<p>Returns the decompressed size of the column in bytes as a BIGINT value.</p>
+<h3>column_compressed_size</h3>
+<p>Returns the compressed size of a column in bytes.</p>
+<h4>Syntax</h4>
+<pre><code>-- Do not omit the brackets [] in the hint.
+SELECT column_compressed_size(column_name) FROM table_name [_META_];</code></pre>
+<h4>Parameters</h4>
+<ul>
+<li><code>column_name</code>: The name of the column for which you want to get the compressed size.</li>
+</ul>
+<h4>Return value</h4>
+<p>Returns the compressed size of the column in bytes as a BIGINT value.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>Both functions must be used with the <code>[_META_]</code> hint to access metadata information.</li>
+<li>The functions scan the metadata of underlying segment files using the META_SCAN operator.</li>
+<li>For complex data types (JSON, ARRAY, MAP, STRUCT), the functions recursively calculate the size of all sub-columns.</li>
+<li><code>column_size</code> returns the uncompressed column size.</li>
+<li><code>column_compressed_size</code> returns the compressed on-disk size.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>-- Get both decompressed and compressed sizes of columns
+SELECT
+    column_size(name) as name_decompressed_size,
+    column_compressed_size(name) as name_compressed_size,
+    column_size(description) as desc_decompressed_size,
+    column_compressed_size(description) as desc_compressed_size
+FROM products [_META_];</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/column_size_functions.md">StarRocks documentation</a></p>
+</body></html>

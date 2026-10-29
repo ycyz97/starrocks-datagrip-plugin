@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>json_contains</title></head><body>
+<h2>json_contains</h2>
+<p>Checks whether a JSON document contains a specific value or subdocument. If the target JSON document contains the candidate JSON value, the JSON_CONTAINS function returns <code>1</code>. Otherwise, the JSON_CONTAINS function returns <code>0</code>.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>json_contains(json_target, json_candidate)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>json_target</code>: the expression that represents the target JSON document. The document can be a JSON column, or a JSON object that is produced by a JSON constructor function such as PARSE_JSON.</li>
+</ul>
+<ul>
+<li><code>json_candidate</code>: the expression that represents the candidate JSON value or subdocument to search for within the target. The value can be a JSON column, or a JSON object that is produced by a JSON constructor function such as PARSE_JSON.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BOOLEAN value.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>For scalar values (strings, numbers, booleans, null), the function returns true if the values are equal.</li>
+<li>For JSON objects, the function returns true if the target object contains all key-value pairs from the candidate object.</li>
+<li>For JSON arrays, the function returns true if the target array contains all elements from the candidate array, or if the candidate is a single value contained in the target array.</li>
+<li>The function performs deep containment checking for nested structures.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Check if a JSON object contains a specific key-value pair.</p>
+<pre><code>mysql&gt; SELECT json_contains(PARSE_JSON('{&quot;a&quot;: 1, &quot;b&quot;: 2}'), PARSE_JSON('{&quot;a&quot;: 1}'));
+
+       -&gt; 1</code></pre>
+<p>Example 2: Check if a JSON object contains a key-value pair that doesn't exist.</p>
+<pre><code>mysql&gt; SELECT json_contains(PARSE_JSON('{&quot;a&quot;: 1, &quot;b&quot;: 2}'), PARSE_JSON('{&quot;c&quot;: 3}'));
+
+       -&gt; 0</code></pre>
+<p>Example 3: Check if a JSON array contains specific elements.</p>
+<pre><code>mysql&gt; SELECT json_contains(PARSE_JSON('[1, 2, 3, 4]'), PARSE_JSON('[2, 3]'));
+
+       -&gt; 1</code></pre>
+<p>Example 4: Check if a JSON array contains a single scalar value.</p>
+<pre><code>mysql&gt; SELECT json_contains(PARSE_JSON('[1, 2, 3, 4]'), PARSE_JSON('2'));
+
+       -&gt; 1</code></pre>
+<p>Example 5: Check if a JSON array contains elements that don't exist.</p>
+<pre><code>mysql&gt; SELECT json_contains(PARSE_JSON('[1, 2, 3, 4]'), PARSE_JSON('[5, 6]'));
+
+       -&gt; 0</code></pre>
+<p>Example 6: Check containment with nested JSON structures.</p>
+<pre><code>mysql&gt; SELECT json_contains(PARSE_JSON('{&quot;users&quot;: [{&quot;id&quot;: 1, &quot;name&quot;: &quot;John&quot;}, {&quot;id&quot;: 2, &quot;name&quot;: &quot;Jane&quot;}]}'),
+                           PARSE_JSON('{&quot;users&quot;: [{&quot;id&quot;: 1}]}'));
+
+       -&gt; 0</code></pre>
+<p>Note: In the last example, the result is 0 because array containment requires exact element matching, not partial object matching within arrays.</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/json_contains.md">StarRocks documentation</a></p>
+</body></html>

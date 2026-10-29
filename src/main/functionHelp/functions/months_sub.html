@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>months_sub</title></head><body>
+<h2>months_sub</h2>
+<p>Subtracts specified months from the date.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME months_sub(DATETIME expr1, INT expr2);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr1</code>: the specified date. It must be of the DATETIME or DATE type.</li>
+</ul>
+<ul>
+<li><code>expr2</code>: the month to subtract. It must be INT type.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATETIME value.</p>
+<h3>Examples</h3>
+<pre><code>select months_sub('2022-02-28 15:04:05', 1);
++--------------------------------------+
+| months_sub('2022-02-28 15:04:05', 1) |
++--------------------------------------+
+| 2022-01-28 15:04:05                  |
++--------------------------------------+
+
+select months_sub('2022-02-28', 1);
++-----------------------------+
+| months_sub('2022-02-28', 1) |
++-----------------------------+
+| 2022-01-28 00:00:00         |
++-----------------------------+
+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/months_sub.md">StarRocks documentation</a></p>
+</body></html>

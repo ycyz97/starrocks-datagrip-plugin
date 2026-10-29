@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>unix_timestamp</title></head><body>
+<h2>unix_timestamp</h2>
+<p>Converts a DATE or DATETIME value into a UNIX timestamp.</p>
+<p>If no parameter is specified, this function converts the current time into a UNIX timestamp.</p>
+<p>The <code>date</code> parameter must be of the DATE or DATETIME type.</p>
+<p>For time before 1970-01-01 00:00:00 or after 2038-01-19 11:14:07, this function returns 0.</p>
+<p>For more information about the date format, see date_format.</p>
+<p>This function may return different results for different time zones. For more information, see Configure a time zone.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT UNIX_TIMESTAMP()
+BIGINT UNIX_TIMESTAMP(DATETIME date)
+BIGINT UNIX_TIMESTAMP(DATETIME date, STRING fmt)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select unix_timestamp();
++------------------+
+| unix_timestamp() |
++------------------+
+|       1558589570 |
++------------------+
+
+MySQL &gt; select unix_timestamp('2007-11-30 10:30:19');
++---------------------------------------+
+| unix_timestamp('2007-11-30 10:30:19') |
++---------------------------------------+
+|                            1196389819 |
++---------------------------------------+
+
+MySQL &gt; select unix_timestamp('2007-11-30 10:30-19', '%Y-%m-%d %H:%i-%s');
++---------------------------------------+
+| unix_timestamp('2007-11-30 10:30-19') |
++---------------------------------------+
+|                            1196389819 |
++---------------------------------------+
+
+MySQL &gt; select unix_timestamp('2007-11-30 10:30%3A19', '%Y-%m-%d %H:%i%%3A%s');
++---------------------------------------+
+|unix_timestamp('2007-11-30 10:30%3A19')|
++---------------------------------------+
+|                            1196389819 |
++---------------------------------------+
+
+MySQL &gt; select unix_timestamp('1969-01-01 00:00:00');
++---------------------------------------+
+| unix_timestamp('1969-01-01 00:00:00') |
++---------------------------------------+
+|                                     0 |
++---------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>UNIX_TIMESTAMP,UNIX,TIMESTAMP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/unix_timestamp.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>intersect_count</title></head><body>
+<h2>intersect_count</h2>
+<p>A function to find the intersection size (number of same elements) of two Bitmap values, without requiring the data distribution to be orthogonal. The first parameter is the Bitmap column, the second parameter is the dimension column used for filtering, and the third parameter is a variable-length parameter, meaning that different values of the filtering dimension column are taken.</p>
+<p>If there is no intersection, 0 is returned.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT INTERSECT_COUNT(bitmap_column, column_to_filter, filter_values)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>bitmap_column</code>: the bitmap column to be computed.</li>
+<li><code>column_to_filter</code>: the name of the column to be intersected.</li>
+<li><code>filter_values</code>: the different values of the filtered dimension columns.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the BIGINT type.</p>
+<h3>Example</h3>
+<p>Create an Aggregate table with a Bitmap column <code>user_id</code> and insert data.</p>
+<pre><code>CREATE TABLE `tbl` (
+  `dt` date NULL COMMENT &quot;&quot;,
+  `user_id` bitmap BITMAP_UNION NULL COMMENT &quot;&quot;
+
+) ENGINE=OLAP
+AGGREGATE KEY(`dt`)
+COMMENT &quot;OLAP&quot;
+DISTRIBUTED BY HASH(`dt`);
+
+INSERT INTO `tbl` VALUES
+('2020-10-01', to_bitmap(2)),
+('2020-10-01', to_bitmap(3)),
+('2020-10-01', to_bitmap(5)),
+('2020-10-02', to_bitmap(2)),
+('2020-10-02', to_bitmap(3)),
+('2020-10-02', to_bitmap(4)),
+('2020-10-03', to_bitmap(1)),
+('2020-10-03', to_bitmap(5)),
+('2020-10-03', to_bitmap(6));
+
+SELECT dt, bitmap_to_string(user_id) from tbl;
++------------+---------------------------+
+| dt         | bitmap_to_string(user_id) |
++------------+---------------------------+
+| 2020-10-02 | 2,3,4                     |
+| 2020-10-03 | 1,5,6                     |
+| 2020-10-01 | 2,3,5                     |
++------------+---------------------------+</code></pre>
+<p>Calculate the number of same <code>user_id</code> corresponding to <code>'2020-10-01'</code> and <code>'2020-10-02'</code>. Two same elements (2 and 3) are found and the number <code>2</code> is returned.</p>
+<pre><code>mysql&gt;  select intersect_count(user_id, dt, '2020-10-01', '2020-10-02')
+        from tbl
+        where dt in ('2020-10-01', '2020-10-02');
++----------------------------------------------------------+
+| intersect_count(user_id, dt, '2020-10-01', '2020-10-02') |
++----------------------------------------------------------+
+|                                                        2 |
++----------------------------------------------------------+</code></pre>
+<p>Calculate the number of same <code>user_id</code> corresponding to <code>'2020-10-01'</code> and <code>'2020-10-03'</code>. One element <code>5</code> is found and the number <code>1</code> is returned.</p>
+<pre><code>mysql&gt;  select intersect_count(user_id, dt, '2020-10-01', '2020-10-03')
+        from tbl
+        where dt in ('2020-10-01', '2020-10-03');
++----------------------------------------------------------+
+| intersect_count(user_id, dt, '2020-10-01', '2020-10-03') |
++----------------------------------------------------------+
+|                                                        1 |
++----------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/intersect_count.md">StarRocks documentation</a></p>
+</body></html>

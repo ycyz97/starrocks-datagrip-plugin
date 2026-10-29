@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>isnull</title></head><body>
+<h2>isnull</h2>
+<p>Checks whether the value is <code>NULL</code>, returns <code>1</code> if it is <code>NULL</code>, and returns <code>0</code> if it is not <code>NULL</code>.</p>
+<h3>Syntax</h3>
+<pre><code>ISNULL(v)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>v</code>: the value to check. All date types is supported.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns 1 if it is <code>NULL</code>, and returns 0 if it is not <code>NULL</code>.</p>
+<h3>Example</h3>
+<pre><code>MYSQL &gt; SELECT c1, isnull(c1) FROM t1;
++------+--------------+
+| c1   | `c1` IS NULL |
++------+--------------+
+| NULL |            1 |
+|    1 |            0 |
++------+--------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/isnull.md">StarRocks documentation</a></p>
+</body></html>

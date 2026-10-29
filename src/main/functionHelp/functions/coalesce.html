@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>coalesce</title></head><body>
+<p>Returns the first non-<code>NULL</code> value in the argument list.</p>
+<p><b>Syntax:</b> <code>COALESCE(expr1, expr2 [, ...])</code></p>
+<p><b>Parameters:</b> Arguments should have compatible types.</p>
+<p><b>Returns:</b> The first non-<code>NULL</code> argument, or <code>NULL</code> when all arguments are <code>NULL</code>.</p>
+<pre><code>SELECT COALESCE(NULL, NULL, 'fallback'); -- fallback</code></pre>
+</body></html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>makedate</title></head><body>
+<h2>makedate</h2>
+<p>Creates and returns a date based on the given year and day of year values.</p>
+<p>This function is supported from v3.1.</p>
+<h3>Syntax</h3>
+<pre><code>DATE makedate(INT year, INT dayOfYear);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>year</code>: It ranges from 0 to 9999. NULL is returned if this range is exceeded. The supported data type is INT.</li>
+<li><code>dayOfYear</code>: the day of year. The supported data type is INT. In order to maintain the same semantics as the function dayofyear, if this number is greater than 366 or is 366 in a non-leap year, it is not a day of year.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns the date on the dayOfYear-th day of the given year.</p>
+<ul>
+<li><code>year</code> must be in the range of [0,9999]. Otherwise, NULL is returned.</li>
+<li><code>dayOfYear</code> must be between 1 and the number of days in the current year (365 in normal years, 366 in leap years). Otherwise, NULL is returned.</li>
+<li>The result is also NULL if either input parameter is NULL.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select makedate(2023,0);
++-------------------+
+| makedate(2023, 0) |
++-------------------+
+| NULL              |
++-------------------+
+
+mysql&gt; select makedate(2023,32);
++--------------------+
+| makedate(2023, 32) |
++--------------------+
+| 2023-02-01         |
++--------------------+
+
+mysql&gt; select makedate(2023,365);
++---------------------+
+| makedate(2023, 365) |
++---------------------+
+| 2023-12-31          |
++---------------------+
+
+mysql&gt; select makedate(2023,366);
++---------------------+
+| makedate(2023, 366) |
++---------------------+
+| NULL                |
++---------------------+
+
+mysql&gt; select makedate(9999,365);
++---------------------+
+| makedate(9999, 365) |
++---------------------+
+| 9999-12-31          |
++---------------------+
+
+mysql&gt; select makedate(10000,1);
++--------------------+
+| makedate(10000, 1) |
++--------------------+
+| NULL               |
++--------------------+</code></pre>
+<h3>keyword</h3>
+<p>MAKEDATE,MAKE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/makedate.md">StarRocks documentation</a></p>
+</body></html>

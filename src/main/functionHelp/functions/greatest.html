@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>greatest</title></head><body>
+<h2>greatest</h2>
+<p>Returns the largest value from a list of one or more parameters.</p>
+<p>Generally, the return value has the same data type as the input.</p>
+<p>The parameters are compared based on the following rules:</p>
+<ul>
+<li>NULL is returned if any of the input parameters is NULL.</li>
+</ul>
+<ul>
+<li>If at least one parameter is of the DOUBLE type, all the parameters are compared as DOUBLE values. The same rule applies to the DECIMAL and FLOAT data types.</li>
+</ul>
+<ul>
+<li>If the parameters are a mix of numbers and strings but the strings can be converted into numbers, the parameters are compared as numbers. If the strings cannot be converted into numbers, the parameters are compared as strings.</li>
+</ul>
+<ul>
+<li>If the parameters are characters, they are compared based on the alphabetical order of the first letter.</li>
+</ul>
+<h3>Syntax</h3>
+<pre><code>GREATEST(expr1,...);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr1</code>: the expression to compare. It supports the following data types:</p>
+<ul>
+<li>SMALLINT</li>
+</ul>
+<ul>
+<li>TINYINT</li>
+</ul>
+<ul>
+<li>INT</li>
+</ul>
+<ul>
+<li>BIGINT</li>
+</ul>
+<ul>
+<li>LARGEINT</li>
+</ul>
+<ul>
+<li>FLOAT</li>
+</ul>
+<ul>
+<li>DOUBLE</li>
+</ul>
+<ul>
+<li>DECIMALV2</li>
+</ul>
+<ul>
+<li>DECIMAL32</li>
+</ul>
+<ul>
+<li>DECIMAL64</li>
+</ul>
+<ul>
+<li>DECIMAL128</li>
+</ul>
+<ul>
+<li>DATETIME</li>
+</ul>
+<ul>
+<li>VARCHAR</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Return the largest value for a single input.</p>
+<pre><code>mysql&gt; select greatest(3);
++-------------+
+| greatest(3) |
++-------------+
+|           3 |
++-------------+
+1 row in set (0.01 sec)</code></pre>
+<p>Example 2: Return the largest value from a list of values.</p>
+<pre><code>mysql&gt; select greatest(3,4,5,5,6);
++-------------------------+
+| greatest(3, 4, 5, 5, 6) |
++-------------------------+
+|                       6 |
++-------------------------+
+1 row in set (0.00 sec)</code></pre>
+<p>Example 3: One parameter is of the DOUBLE type and a DOUBLE value is returned.</p>
+<pre><code>mysql&gt; select greatest(7,4.5);
++------------------+
+| greatest(7, 4.5) |
++------------------+
+|              7.0 |
++------------------+
+1 row in set (0.05 sec)</code></pre>
+<p>Example 4: The input parameters are a mix of number and string but the string can be converted into a number. The parameters are compared as numbers.</p>
+<pre><code>mysql&gt; select greatest(7,'9');
++------------------+
+| greatest(7, '9') |
++------------------+
+| 9                |
++------------------+
+1 row in set (0.04 sec)</code></pre>
+<p>Example 5: The input parameters are a mix of number and string but the string cannot be converted into a number. The parameters are compared as strings. The string <code>'1'</code> is less than <code>'at'</code>.</p>
+<pre><code>select greatest(1,'at');
++-------------------+
+| greatest(1, 'at') |
++-------------------+
+| at                |
++-------------------+</code></pre>
+<p>Example 6: The input parameters are characters. The letter <code>Z</code> has the largest value.</p>
+<pre><code>mysql&gt; select greatest('A','B','Z');
++-------------------------+
+| greatest('A', 'B', 'Z') |
++-------------------------+
+| Z                       |
++-------------------------+
+1 row in set (0.00 sec)</code></pre>
+<h3>Keywords</h3>
+<p>GREATEST, greatest</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/greatest.md">StarRocks documentation</a></p>
+</body></html>

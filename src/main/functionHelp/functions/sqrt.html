@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>sqrt</title></head><body>
+<h2>sqrt, dsqrt</h2>
+<p>Calculates the square root of a value. dsqrt is same as sqrt.</p>
+<h3>Syntax</h3>
+<pre><code>DOUBLE SQRT(DOUBLE x);
+DOUBLE DSQRT(DOUBLE x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: You can specify only a numeric value. This function converts the numeric value into a DOUBLE value before calculation.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3>Usage notes</h3>
+<p>If you specify a non-numeric value, this function returns <code>NULL</code>.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select sqrt(3.14);
++-------------------+
+| sqrt(3.14)        |
++-------------------+
+| 1.772004514666935 |
++-------------------+
+1 row in set (0.01 sec)
+
+
+mysql&gt; select dsqrt(3.14);
++-------------------+
+| dsqrt(3.14)       |
++-------------------+
+| 1.772004514666935 |
++-------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/sqrt.md">StarRocks documentation</a></p>
+</body></html>

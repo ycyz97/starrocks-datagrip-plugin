@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>percentile_disc</title></head><body>
+<h2>percentile_disc</h2>
+<p>Returns a percentile value based on a discrete distribution of the input column <code>expr</code>. If the exact percentile value cannot be found, this function returns the larger value between the two closest values.</p>
+<p>This function is supported from v2.5 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>PERCENTILE_DISC (expr, percentile) </code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr</code>: the column for which you want to calculate the percentile value. The column can be of any data type that is sortable.</li>
+<li><code>percentile</code>: the percentile of the value you want to find. It must be a constant floating-point number between 0 and 1. For example, if you want to find the median value, set this parameter to <code>0.5</code>. If you want to find the value at the 70th percentile, specify 0.7.</li>
+</ul>
+<h3>Return value</h3>
+<p>The data type of the return value is the same as <code>expr</code>.</p>
+<h3>Usage notes</h3>
+<p>NULL values are ignored in the calculation.</p>
+<h3>Examples</h3>
+<p>Create table <code>exam</code> and insert data into this table.</p>
+<pre><code>CREATE TABLE exam (
+    subject STRING,
+    score INT
+)
+DISTRIBUTED BY HASH(`subject`);
+
+INSERT INTO exam VALUES
+('chemistry',80),
+('chemistry',100),
+('chemistry',null),
+('math',60),
+('math',70),
+('math',85),
+('physics',75),
+('physics',80),
+('physics',85),
+('physics',99);</code></pre>
+<pre><code>select * from exam order by subject;
++-----------+-------+
+| subject   | score |
++-----------+-------+
+| chemistry |    80 |
+| chemistry |   100 |
+| chemistry |  NULL |
+| math      |    60 |
+| math      |    70 |
+| math      |    85 |
+| physics   |    75 |
+| physics   |    80 |
+| physics   |    85 |
+| physics   |    99 |
++-----------+-------+</code></pre>
+<p>Calculate the median of each subject.</p>
+<pre><code>select subject, percentile_disc(score, 0.5)
+from exam group by subject;</code></pre>
+<p>Output</p>
+<pre><code>+-----------+-----------------------------+
+| subject   | percentile_disc(score, 0.5) |
++-----------+-----------------------------+
+| chemistry |                         100 |
+| math      |                          70 |
+| physics   |                          85 |
++-----------+-----------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/percentile_disc.md">StarRocks documentation</a></p>
+</body></html>

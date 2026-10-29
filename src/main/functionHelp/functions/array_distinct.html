@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_distinct</title></head><body>
+<h2>array_distinct</h2>
+<p>Removes duplicate elements from an array.</p>
+<h3>Syntax</h3>
+<pre><code>array_distinct(array)</code></pre>
+<h3>Parameters</h3>
+<p><code>array</code>: the array from which you want to remove duplicate elements. Only the ARRAY data type is supported.</p>
+<h3>Return value</h3>
+<p>Returns an array.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>The elements of the array that is returned may be sorted in a different order than the elements of the array that you specify.</li>
+</ul>
+<ul>
+<li>The elements of the array that is returned are of the same data type as the elements of the array that you specify.</li>
+</ul>
+<h3>Examples</h3>
+<p>In this section, the following table is used as an example:</p>
+<pre><code>mysql&gt; select * from test;
+
++------+---------------+
+
+| c1   | c2            |
+
++------+---------------+
+
+|    1 | [1,1,2]       |
+
+|    2 | [1,null,null] |
+
+|    3 | NULL          |
+
+|    4 | [null]        |
+
++------+---------------+</code></pre>
+<p>Remove duplicate values from column <code>c2</code>.</p>
+<pre><code>mysql&gt; select c1, array_distinct(c2) from test;
+
++------+----------------------+
+
+| c1   | array_distinct(`c2`) |
+
++------+----------------------+
+
+|    1 | [2,1]                |
+
+|    2 | [null,1]             |
+
+|    3 | NULL                 |
+
+|    4 | [null]               |
+
++------+----------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_distinct.md">StarRocks documentation</a></p>
+</body></html>

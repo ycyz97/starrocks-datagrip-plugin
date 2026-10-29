@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>schema</title></head><body>
+<h2><code>FILES</code></h2>
+<p>Defines data files in remote storage, used for loading and unloading data:</p>
+<ul>
+<li>Load or query data from a remote storage system</li>
+<li>Unload data into a remote storage system</li>
+</ul>
+<p><code>FILES()</code> supports the following data sources and file formats:</p>
+<ul>
+<li><b>Data sources:</b></li>
+<li>HDFS</li>
+<li>AWS S3</li>
+<li>Google Cloud Storage</li>
+<li>Other S3-compatible storage system</li>
+<li>Microsoft Azure Blob Storage</li>
+<li>NFS(NAS)</li>
+<li><b>File formats:</b></li>
+<li>Parquet</li>
+<li>ORC (Supported from v3.3 onwards)</li>
+<li>CSV (Supported from v3.3 onwards)</li>
+<li>Avro (Supported from v3.4.4 onwards and for loading only)</li>
+</ul>
+<p>From v3.2 onwards, FILES() further supports complex data types including <code>ARRAY</code>, <code>JSON</code>, <code>MAP</code>, and <code>STRUCT</code> in addition to basic data types.</p>
+<h3><code>FILES()</code> for loading</h3>
+<p>From v3.1.0 onwards, StarRocks supports defining read-only files in remote storage using the table function <code>FILES()</code>. It can access remote storage with the path-related properties of the files, infers the table schema of the data in the files, and returns the data rows. You can directly query the data rows using <code>SELECT</code>, load the data rows into an existing table using <code>INSERT</code>, or create a new table and load the data rows into it using <code>CREATE TABLE AS SELECT</code>. From v3.3.4, you can also view the schema of a data file using <code>FILES()</code> with <code>DESC</code>.</p>
+<h4>Syntax</h4>
+<pre><code>FILES( data_location , [data_format] [, schema_detect ] [, StorageCredentialParams ] [, columns_from_path ] [, list_files_only ] [, list_recursively])</code></pre>
+<h4>Parameters</h4>
+<p>All parameters are in the <code>&quot;key&quot; = &quot;value&quot;</code> pairs.</p>
+<h5><code>data_location</code></h5>
+<p>The URI used to access the files.</p>
+<p>You can specify a path or a file. For example, you can specify this parameter as <code>&quot;hdfs://&lt;hdfs_host&gt;:&lt;hdfs_port&gt;/user/data/tablename/20210411&quot;</code> to load a data file named <code>20210411</code> from the path <code>/user/data/tablename</code> on the HDFS server.</p>
+<p>You can also specify this parameter as the save path of multiple data files by using wildcards <code>?</code>, <code>*</code>, <code>[]</code>, or <code>^</code>. For example, you can specify this parameter as <code>&quot;hdfs://&lt;hdfs_host&gt;:&lt;hdfs_port&gt;/user/data/tablename/*/*&quot;</code> or <code>&quot;hdfs://&lt;hdfs_host&gt;:&lt;hdfs_port&gt;/user/data/tablename/dt=202104*/*&quot;</code> to load the data files from all partitions or only <code>202104</code> partitions in the path <code>/user/data/tablename</code> on the HDFS server.</p>
+<p>:::note</p>
+<p>Wildcards can also be used to specify intermediate paths.</p>
+<pre><code>:::</code></pre>
+<ul>
+<li>To access HDFS, you need to specify this parameter as:</li>
+</ul>
+<pre><code>  &quot;path&quot; = &quot;hdfs://&lt;hdfs_host&gt;:&lt;hdfs_port&gt;/&lt;hdfs_path&gt;&quot;
+  -- Example: &quot;path&quot; = &quot;hdfs://127.0.0.1:9000/path/file.parquet&quot;</code></pre>
+<ul>
+<li>To access AWS S3:</li>
+</ul>
+<ul>
+<li>If you use the S3 protocol, you need to specify this parameter as:</li>
+</ul>
+<pre><code>    &quot;path&quot; = &quot;s3://&lt;s3_path&gt;&quot;
+    -- Example: &quot;path&quot; = &quot;s3://path/file.parquet&quot;</code></pre>
+<ul>
+<li>If you use the S3A protocol, you need to specify this parameter as:</li>
+</ul>
+<pre><code>    &quot;path&quot; = &quot;s3a://&lt;s3_path&gt;&quot;
+    -- Example: &quot;path&quot; = &quot;s3a://path/file.parquet&quot;</code></pre>
+<ul>
+<li>To access Google Cloud Storage, you need to specify this parameter as:</li>
+</ul>
+<pre><code>  &quot;path&quot; = &quot;s3a://&lt;gcs_path&gt;&quot;
+  -- Example: &quot;path&quot; = &quot;s3a://path/file.parquet&quot;</code></pre>
+<ul>
+<li>To access Azure Blob Storage:</li>
+</ul>
+<ul>
+<li>If your storage account allows access over HTTP, you need to specify this parameter as:</li>
+</ul>
+<pre><code>    &quot;path&quot; = &quot;wasb://&lt;container&gt;@&lt;storage_account&gt;.blob.core.windows.net/&lt;blob_path&gt;&quot;
+    -- Example: &quot;path&quot; = &quot;wasb://testcontainer@testaccount.blob.core.windows.net/path/file.parquet&quot;</code></pre>
+<ul>
+<li>If your storage account allows access over HTTPS, you need to specify this parameter as:</li>
+</ul>
+<pre><code>    &quot;path&quot; = &quot;wasbs://&lt;container&gt;@&lt;storage_account&gt;.blob.core.windows.net/&lt;blob_path&gt;&quot;
+    -- Example: &quot;path&quot; = &quot;wasbs://testcontainer@testaccount.blob.core.windows.net/path/file.parquet&quot;</code></pre>
+<ul>
+<li>To access NFS(NAS):</li>
+</ul>
+<pre><code>  &quot;path&quot; = &quot;file:///&lt;absolute_path&gt;&quot;
+  -- Example: &quot;path&quot; = &quot;file:///home/ubuntu/parquetfile/file.parquet&quot;</code></pre>
+<p>:::note</p>
+<p>To access NFS(NAS) via the <code>file://</code> protocol, mount the same NAS device as NFS under the same directory on the nodes that need to access the path:</p>
+<ul>
+<li>For read/write operations, mount it on each FE node and each BE or CN node. FE nodes list the files and infer the file schema, and BE/CN nodes read the data.</li>
+<li>For write only operations, mount it on each BE or CN node.</li>
+</ul>
+<pre><code>:::</code></pre>
+<h5><code>data_format</code></h5>
+<p>The format of the data file. Valid values:</p>
+<ul>
+<li><code>parquet</code></li>
+<li><code>orc</code> (Supported from v3.3 onwards)</li>
+<li><code>csv</code> (Supported from v3.3 onwards)</li>
+<li><code>avro</code> (Supported from v3.4.4 onwards and for loading only)</li>
+</ul>
+<p>You must set detailed options for specific data file formats.</p>
+<p>When <code>list_files_only</code> is set to <code>true</code>, you do not need to specify <code>data_format</code>.</p>
+<p>##### Parquet</p>
+<p>Example of the Parquet format:</p>
+<pre><code>&quot;format&quot;=&quot;parquet&quot;,
+&quot;parquet.use_legacy_encoding&quot; = &quot;true&quot;,   -- for unloading only
+&quot;parquet.version&quot; = &quot;2.6&quot;                 -- for unloading only</code></pre>
+<p>When reading Parquet files (for example, via <code>FILES()</code> or Broker Load), StarRocks maps the Parquet TIMESTAMP logical type to DATETIME according to the type's <code>isAdjustedToUTC</code> attribute:</p>
+<ul>
+<li><b>Instant Semantics</b>: If <code>isAdjustedToUTC</code> is <code>true</code>, the value identifies an instant on the timeline normalized to UTC. StarRocks converts it to the wall-clock reading in the current session time zone.</li>
+<li><b>Local Semantics</b>: If <code>isAdjustedToUTC</code> is <code>false</code>, the value is a wall-clock reading without a time zone. StarRocks returns it as written, regardless of the session time zone.</li>
+<li>The legacy INT96 physical type carries no <code>isAdjustedToUTC</code> attribute. StarRocks treats an INT96 column as an instant normalized to UTC and converts it to the session time zone, whether the INT96 timestamp is a top-level column or nested inside a STRUCT, ARRAY, or MAP.</li>
+</ul>
+<p>:::note</p>
+<p><b>Behavior change</b>: In earlier versions, StarRocks shifted timestamps with Local Semantics (<code>isAdjustedToUTC</code> = <code>false</code>) by the session time zone offset on read. Such values are now returned as written. If your session time zone is not UTC, the same file now returns different values than in earlier versions. The new values are correct per the Parquet specification.</p>
+<pre><code>:::</code></pre>
+<p>###### <code>parquet.use_legacy_encoding</code></p>
+<p>Controls the encoding technique used for DATETIME and DECIMAL data types. Valid values: <code>true</code> and <code>false</code> (default). This property is only supported for data unloading.</p>
+<p>If this item is set to <code>true</code>:</p>
+<ul>
+<li>For DECIMAL type, the system uses <code>fixed_len_byte_array</code> encoding.</li>
+<li>For DATETIME type, the system uses <code>INT96</code> encoding.</li>
+</ul>
+<p>If this item is set to <code>false</code>:</p>
+<ul>
+<li>For DECIMAL type, the system uses <code>INT32</code> or <code>INT64</code> encoding.</li>
+<li>For DATETIME type, the system uses <code>INT64</code> encoding.</li>
+<li><b>Instant Semantics</b>: If <code>isAdjustedToUTC</code> is set to <code>true</code> for the Parquet TIMESTAMP type, the system outputs a timestamp normalized to UTC. Each value unambiguously identifies a single instant on the timeline, and can be transferred into a specific timezone.</li>
+<li><b>Local Semantics</b>: If <code>isAdjustedToUTC</code> is set to <code>false</code> for the Parquet TIMESTAMP type, the system outputs a timestamp that represents the year, month, day, hour, minute, second, and sub-second in a local timezone, regardless of what specific timezone is considered local. Such values are always displayed the same way, regardless of the local timezone in effect, and do not identify instants on the timeline.</li>
+</ul>
+<p>:::note</p>
+<p>For DECIMAL 128 data type, only <code>fixed_len_byte_array</code> encoding is available. <code>parquet.use_legacy_encoding</code> does not take effect.</p>
+<pre><code>:::</code></pre>
+<p>###### <code>parquet.version</code></p>
+<p>Controls the Parquet version into which the system unloads data. Supported from v3.4.6 onwards. Valid values: <code>1.0</code>, <code>2.4</code>, and <code>2.6</code> (default). This property is only supported for data unloading.</p>
+<p>##### CSV</p>
+<p>Example for the CSV format:</p>
+<pre><code>&quot;format&quot;=&quot;csv&quot;,
+&quot;csv.column_separator&quot;=&quot;\\t&quot;,
+&quot;csv.enclose&quot;='&quot;',
+&quot;csv.skip_header&quot;=&quot;1&quot;,  -- for loading only
+&quot;csv.escape&quot;=&quot;\\&quot;</code></pre>
+<p>###### <code>csv.column_separator</code></p>
+<p>Specifies the column separator used when the data file is in CSV format. If you do not specify this parameter, this parameter defaults to <code>\\t</code>, indicating tab. The column separator you specify using this parameter must be the same as the column separator that is actually used in the data file. Otherwise, the load job will fail due to inadequate data quality.</p>
+<p>Tasks that use Files() are submitted according to the MySQL protocol. StarRocks and MySQL both escape characters in the load requests. Therefore, if the column separator is an invisible character such as tab, you must add a backslash (<code>\</code>) preceding the column separator. For example, you must input <code>\\t</code> if the column separator is <code>\t</code>, and you must input <code>\\n</code> if the column separator is <code>\n</code>. Apache Hive™ files use <code>\x01</code> as their column separator, so you must input <code>\\x01</code> if the data file is from Hive.</p>
+<p>:::note</p>
+<ul>
+<li>For CSV data, you can use a UTF-8 string, such as a comma (,), tab, or pipe (|), whose length does not exceed 50 bytes as a text delimiter.</li>
+</ul>
+<p>&gt; - Null values are denoted by using <code>\N</code>. For example, a data file consists of three columns, and a record from that data file holds data in the first and third columns but no data in the second column. In this situation, you need to use <code>\N</code> in the second column to denote a null value. This means the record must be compiled as <code>a,\N,b</code> instead of <code>a,,b</code>. <code>a,,b</code> denotes that the second column of the record holds an empty string.</p>
+<pre><code>:::</code></pre>
+<p>###### <code>csv.enclose</code></p>
+<p>Specifies the character that is used to wrap the field values in the data file according to RFC4180 when the data file is in CSV format. Type: single-byte character. Default value: <code>NONE</code>. The most prevalent characters are single quotation mark (<code>'</code>) and double quotation mark (<code>&quot;</code>).</p>
+<p>All special characters (including row separators and column separators) wrapped by using the <code>enclose</code>-specified character are considered normal symbols. StarRocks can do more than RFC4180 as it allows you to specify any single-byte character as the <code>enclose</code>-specified character.</p>
+<p>If a field value contains an <code>enclose</code>-specified character, you can use the same character to escape that <code>enclose</code>-specified character. For example, you set <code>enclose</code> to <code>&quot;</code>, and a field value is <code>a &quot;quoted&quot; c</code>. In this case, you can enter the field value as <code>&quot;a &quot;&quot;quoted&quot;&quot; c&quot;</code> into the data file.</p>
+<p>###### <code>csv.skip_header</code></p>
+<p>Specifies the number of header rows to skip in the CSV-formatted data. Type: <code>INTEGER</code>. Default value: <code>0</code>. This property is only supported for data loading.</p>
+<p>In some CSV-formatted data files, a number of header rows are used to define metadata such as column names and column data types. By setting the <code>skip_header</code> parameter, you can enable StarRocks to skip these header rows. For example, if you set this parameter to <code>1</code>, StarRocks skips the first row of the data file during data loading.</p>
+<p>The header rows in the data file must be separated by using the row separator that you specify in the load statement.</p>
+<p>###### <code>csv.escape</code></p>
+<p>Specifies the character that is used to escape various special characters, such as row separators, column separators, escape characters, and <code>enclose</code>-specified characters, which are then considered by StarRocks to be common characters and are parsed as part of the field values in which they reside. Type: single-byte character. Default value: <code>NONE</code>. The most prevalent character is slash (<code>\</code>), which must be written as double slashes (<code>\\</code>) in SQL statements.</p>
+<p>:::note<br>The character specified by <code>escape</code> is applied to both inside and outside of each pair of <code>enclose</code>-specified characters.<br>&gt; Two examples are as follows:<br>&gt; - When you set <code>enclose</code> to <code>&quot;</code> and <code>escape</code> to <code>\</code>, StarRocks parses <code>&quot;say \&quot;Hello world\&quot;&quot;</code> into <code>say &quot;Hello world&quot;</code>.<br>&gt; - Assume that the column separator is comma (<code>,</code>). When you set <code>escape</code> to <code>\</code>, StarRocks parses <code>a, b\, c</code> into two separate field values: <code>a</code> and <code>b, c</code>.</p>
+<pre><code>:::</code></pre>
+<h5><code>schema_detect</code></h5>
+<p>From v3.2 onwards, <code>FILES()</code> supports automatic schema detection and unionization of the same batch of data files. StarRocks first detects the schema of the data by sampling certain data rows of a random data file in the batch. Then, StarRocks unionizes the columns from all the data files in the batch.</p>
+<p>You can configure the sampling rule using the following parameters:</p>
+<ul>
+<li><code>auto_detect_sample_files</code>: the number of random data files to sample in each batch. By default, the first and last files are selected. Range: <code>[0, + ∞]</code>. Default: <code>2</code>.</li>
+<li><code>auto_detect_sample_rows</code>: the number of data rows to scan in each sampled data file. Range: <code>[0, + ∞]</code>. Default: <code>500</code>.</li>
+<li><code>auto_detect_types</code>: (valid for CSV only) - whether to guess the data types of sampled columns, or just assume String. <code>{true | false}</code>. Default: <code>true</code>.</li>
+</ul>
+<p>After the sampling, StarRocks unionizes the columns from all the data files according to these rules:</p>
+<ul>
+<li>For columns with different column names or indices, each column is identified as an individual column, and, eventually, the union of all individual columns is returned.</li>
+<li>For columns with the same column name but different data types, they are identified as the same column but with a general data type on a relative fine granularity level. For example, if the column <code>col1</code> in file A is <code>INT</code> but <code>DECIMAL</code> in file B, <code>DOUBLE</code> is used in the returned column.</li>
+<li>All integer columns will be unionized as an integer type on an overall rougher granularity level.</li>
+<li>Integer columns together with <code>FLOAT</code> type columns will be unionized as the DECIMAL type.</li>
+<li>String types are used for unionizing other types.</li>
+<li>Generally, the <code>STRING</code> type can be used to unionize all data types.</li>
+<li>If type auto-detection is turned off, all columns will return as <code>STRING</code></li>
+</ul>
+<p>You can refer to Example 5.</p>
+<p>If StarRocks fails to unionize all the columns, it generates a schema error report that includes the error information and all the file schemas.</p>
+<p>:::important<br>All data files in a single batch must be of the same file format.</p>
+<pre><code>:::</code></pre>
+<p>##### Push down target table column types / schema</p>
+<p>From v3.4.0 onwards, the system supports pushing down target table column types to the Scan stage of <code>FILES()</code> to improve type inference accuracy.</p>
+<p>Schema detection of <code>FILES()</code> is not fully strict. For example, any integer column in CSV files is inferred as the BIGINT type when the function is reading the files. In this case, if the corresponding column in the target table is the <code>TINYINT</code> type, the CSV data records that exceed the TINYINT range will not be filtered. Instead, they will be filled with <code>NULL</code> implicitly.</p>
+<p>To address this issue, the system introduces the dynamic FE configuration item <code>files_enable_insert_push_down_column_type</code> (alias: <code>files_enable_insert_push_down_schema</code>) to control whether to push down the target table column types to the Scan stage of <code>FILES()</code>. By setting <code>files_enable_insert_push_down_column_type</code> to <code>true</code>, the system will rewrite the types of matched file columns with the target table column types at the file reading stage. Only columns that already exist in the inferred file schema are affected; no columns are added or removed.</p>
+<p>For full schema push-down (both column names and types), you can set the INSERT property <code>enable_push_down_schema</code> to <code>true</code>. Unlike the FE configuration, this is specified on the INSERT statement itself rather than in the <code>FILES()</code> properties:</p>
+<pre><code>INSERT INTO target_table
+PROPERTIES (&quot;enable_push_down_schema&quot; = &quot;true&quot;)
+SELECT * FROM FILES(
+    &quot;path&quot; = &quot;s3://...&quot;,
+    &quot;format&quot; = &quot;parquet&quot;
+);</code></pre>
+<p>When <code>enable_push_down_schema</code> is <code>true</code>, StarRocks reshapes the <code>FILES()</code> schema to match the target table columns — adding columns that are missing from the inferred schema and trimming the schema to only the columns actually read by the SELECT list. Note that in <code>BY NAME</code> mode with <code>SELECT *</code>, the <code>*</code> is expanded to the target table's column names rather than the file's original columns, so extra file columns are dropped even with <code>SELECT *</code>.</p>
+<p>##### Union files with different schema</p>
+<p>From v3.4.0 onwards, the system supports unionizing files with different schema, and by default, an error will be returned if there are non-existent columns. By setting the property <code>fill_mismatch_column_with</code> to <code>null</code>, you can allow the system to assign <code>NULL</code> values to the non-existent columns instead of returning an error.</p>
+<p><code>fill_mismatch_column_with</code>: The behavior of the system after a non-existent column is detected when unionizing files with different schema. Valid values:</p>
+<ul>
+<li><code>none</code>: An error will be returned if a non-existent column is detected.</li>
+<li><code>null</code>: NULL values will be assigned to the non-existent column.</li>
+</ul>
+<p>For example, the files to read are from different partitions of a Hive table, and Schema Change has been performed on the newer partitions. When reading both new and old partitions, you can set <code>fill_mismatch_column_with</code> to <code>null</code>, and the system will unionize the schema of the new and old partition files, and assign NULL values to the non-existent columns.</p>
+<p>The system unionizes the schema of Parquet and ORC files based on the column names, and that of CSV files based on the position (order) of the columns.</p>
+<p>##### Infer STRUCT type from Parquet</p>
+<p>From v3.4.0 onwards, <code>FILES()</code> supports inferring the <code>STRUCT</code> type data from Parquet files.</p>
+<h5><code>StorageCredentialParams</code></h5>
+<p>The authentication information used by StarRocks to access your storage system.</p>
+<p>StarRocks currently supports accessing HDFS with the simple authentication, accessing AWS S3 and GCS with the IAM user-based authentication, and accessing Azure Blob Storage with Shared Key, SAS Token, Managed Identity, and Service Principal.</p>
+<p>##### HDFS</p>
+<ul>
+<li>Use the simple authentication to access HDFS:</li>
+</ul>
+<pre><code>  &quot;hadoop.security.authentication&quot; = &quot;simple&quot;,
+  &quot;username&quot; = &quot;xxxxxxxxxx&quot;,
+  &quot;password&quot; = &quot;yyyyyyyyyy&quot;</code></pre>
+<pre><code>| **Key**                        | **Required** | **Description**                                              |</code></pre>
+<pre><code>| ------------------------------ | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `hadoop.security.authentication` | No           | The authentication method. Valid value: `simple` (Default). `simple` represents simple authentication, meaning no authentication. |</code></pre>
+<pre><code>| `username`                      | Yes          | The username of the account that you want to use to access the NameNode of the HDFS cluster. |</code></pre>
+<pre><code>| `password`                       | Yes          | The password of the account that you want to use to access the NameNode of the HDFS cluster. |</code></pre>
+<ul>
+<li>Use the Kerberos authentication to access HDFS:</li>
+</ul>
+<p>Currently, FILES() supports Kerberos authentication with HDFS only via the configuration file <b><code>hdfs-site.xml</code></b> placed under the <b><code>fe/conf</code></b>, <b><code>be/conf</code></b>, and <b><code>cn/conf</code></b> directories.</p>
+<p>In addition, you need to append the following option in the configuration item <code>JAVA_OPTS</code> in each FE configuration file <b><code>fe.conf</code></b>, BE configuration file <b><code>be.conf</code></b>, and CN configuration file <b><code>cn.conf</code></b>:</p>
+<pre><code>  # Specify the local path to which the Kerberos configuration file is stored.
+  -Djava.security.krb5.conf=&lt;path_to_kerberos_conf_file&gt;</code></pre>
+<p>Example:</p>
+<pre><code>  JAVA_OPTS=&quot;-Xlog:gc*:${LOG_DIR}/be.gc.log.$DATE:time -XX:ErrorFile=${LOG_DIR}/hs_err_pid%p.log -Djava.security.krb5.conf=/etc/krb5.conf&quot;</code></pre>
+<p>You also need to run the <code>kinit</code> command on each FE, BE, and CN node to obtain Ticket Granting Ticket (TGT) from Key Distribution Center (KDC).</p>
+<pre><code>  kinit -kt &lt;path_to_keytab_file&gt; &lt;principal&gt;</code></pre>
+<p>To run this command, the principal you use must have the write access to your HDFS cluster. In addition, you need to set a crontab for the command to schedule the task by a specific interval, thus preventing the authentication from expiring.</p>
+<p>Example:</p>
+<pre><code>  # Renew TGT every 6 hours.
+  0 */6 * * * kinit -kt sr.keytab sr/test.starrocks.com@STARROCKS.COM &gt; /tmp/kinit.log</code></pre>
+<ul>
+<li>Access HDFS with HA mode enabled:</li>
+</ul>
+<p>Currently, <code>FILES()</code> supports access to HDFS with HA mode enabled only via the configuration file <b><code>hdfs-site.xml</code></b> placed under the <b><code>fe/conf</code></b>, <b><code>be/conf</code></b>, and <b><code>cn/conf</code></b> directories.</p>
+<p>##### AWS S3</p>
+<p>If you choose AWS S3 as your storage system, take one of the following actions:</p>
+<ul>
+<li>To choose the instance profile-based authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;aws.s3.use_instance_profile&quot; = &quot;true&quot;,
+  &quot;aws.s3.region&quot; = &quot;&lt;aws_s3_region&gt;&quot;</code></pre>
+<ul>
+<li>To choose the assumed role-based authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;aws.s3.use_instance_profile&quot; = &quot;true&quot;,
+  &quot;aws.s3.iam_role_arn&quot; = &quot;&lt;iam_role_arn&gt;&quot;,
+  &quot;aws.s3.region&quot; = &quot;&lt;aws_s3_region&gt;&quot;</code></pre>
+<ul>
+<li>To choose the IAM user-based authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;aws.s3.use_instance_profile&quot; = &quot;false&quot;,
+  &quot;aws.s3.access_key&quot; = &quot;&lt;iam_user_access_key&gt;&quot;,
+  &quot;aws.s3.secret_key&quot; = &quot;&lt;iam_user_secret_key&gt;&quot;,
+  &quot;aws.s3.region&quot; = &quot;&lt;aws_s3_region&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| Parameter                   | Required | Description                                                  |</code></pre>
+<pre><code>| --------------------------- | -------- | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `aws.s3.use_instance_profile` | Yes      | Specifies whether to enable the credential methods instance profile and assumed role. Valid values: `true` and `false`. Default value: `false`. |</code></pre>
+<pre><code>| `aws.s3.iam_role_arn`         | No       | The ARN of the IAM role that has privileges on your AWS S3 bucket. If you choose assumed role as the credential method for accessing AWS S3, you must specify this parameter. |</code></pre>
+<pre><code>| `aws.s3.region`               | Yes      | The region in which your AWS S3 bucket resides. Example: `us-west-1`. |</code></pre>
+<pre><code>| `aws.s3.access_key`           | No       | The access key of your IAM user. If you choose IAM user as the credential method for accessing AWS S3, you must specify this parameter. |</code></pre>
+<pre><code>| `aws.s3.secret_key`           | No       | The secret key of your IAM user. If you choose IAM user as the credential method for accessing AWS S3, you must specify this parameter. |</code></pre>
+<p>For information about how to choose an authentication method for accessing AWS S3 and how to configure an access control policy in AWS IAM Console, see Authentication parameters for accessing AWS S3.</p>
+<p>###### AWS STS Regional endpoints</p>
+<p>AWS Security Token Service (AWS STS) is available both as a global and Regional service.</p>
+<pre><code>| Parameter             | Required | Description                                                              |</code></pre>
+<pre><code>| --------------------- | -------- | ------------------------------------------------------------------------ |</code></pre>
+<pre><code>| `aws.s3.sts.region`   | No       | The region of the AWS Security Token Service to access.                  |</code></pre>
+<pre><code>| `aws.s3.sts.endpoint` | No       | Used to override the default endpoint of the AWS Security Token Service. |</code></pre>
+<p>:::important<br>When using AWS STS endpoints for authentication and accessing data in S3 compatible storage outside of S3, you must set <code>aws.s3.use_instance_profile</code> to <code>false</code>.</p>
+<pre><code>:::</code></pre>
+<p>##### Google GCS</p>
+<p>If you choose Google GCS as your storage system, take one of the following actions:</p>
+<ul>
+<li>To choose the VM-based authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;gcp.gcs.use_compute_engine_service_account&quot; = &quot;true&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**                              | **Default value** | **Value** **example** | **Description**                                              |</code></pre>
+<pre><code>| ------------------------------------------ | ----------------- | --------------------- | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `gcp.gcs.use_compute_engine_service_account` | false             | true                  | Specifies whether to directly use the service account that is bound to your Compute Engine. |</code></pre>
+<ul>
+<li>To choose the service account-based authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;gcp.gcs.service_account_email&quot; = &quot;&lt;google_service_account_email&gt;&quot;,
+  &quot;gcp.gcs.service_account_private_key_id&quot; = &quot;&lt;google_service_private_key_id&gt;&quot;,
+  &quot;gcp.gcs.service_account_private_key&quot; = &quot;&lt;google_service_private_key&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**                          | **Default value** | **Value** **example**                                        | **Description**                                              |</code></pre>
+<pre><code>| -------------------------------------- | ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `gcp.gcs.service_account_email`          | &quot;&quot;                | `&quot;user@hello.iam.gserviceaccount.com&quot;` | The email address in the JSON file generated at the creation of the service account. |</code></pre>
+<pre><code>| `gcp.gcs.service_account_private_key_id` | &quot;&quot;                | &quot;61d257bd8479547cb3e04f0b9b6b9ca07af3b7ea&quot;                   | The private key ID in the JSON file generated at the creation of the service account. |</code></pre>
+<pre><code>| `gcp.gcs.service_account_private_key`    | &quot;&quot;                | &quot;`-----BEGIN PRIVATE KEY----xxxx-----END PRIVATE KEY-----\n`&quot;  | The private key in the JSON file generated at the creation of the service account. |</code></pre>
+<ul>
+<li>To choose the impersonation-based authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<ul>
+<li>Make a VM instance impersonate a service account:</li>
+</ul>
+<pre><code>    &quot;gcp.gcs.use_compute_engine_service_account&quot; = &quot;true&quot;,
+    &quot;gcp.gcs.impersonation_service_account&quot; = &quot;&lt;assumed_google_service_account_email&gt;&quot;</code></pre>
+<pre><code>The following table describes the parameters you need to configure in `StorageCredentialParams`.</code></pre>
+<pre><code>| **Parameter**                              | **Default value** | **Value** **example** | **Description**                                              |</code></pre>
+<pre><code>| ------------------------------------------ | ----------------- | --------------------- | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `gcp.gcs.use_compute_engine_service_account` | false             | true                  | Specifies whether to directly use the service account that is bound to your Compute Engine. |</code></pre>
+<pre><code>| `gcp.gcs.impersonation_service_account`      | &quot;&quot;                | &quot;hello&quot;               | The service account that you want to impersonate.            |</code></pre>
+<ul>
+<li>Make a service account (named as meta service account) impersonate another service account (named as data service account):</li>
+</ul>
+<pre><code>    &quot;gcp.gcs.service_account_email&quot; = &quot;&lt;google_service_account_email&gt;&quot;,
+    &quot;gcp.gcs.service_account_private_key_id&quot; = &quot;&lt;meta_google_service_account_email&gt;&quot;,
+    &quot;gcp.gcs.service_account_private_key&quot; = &quot;&lt;meta_google_service_account_email&gt;&quot;,
+    &quot;gcp.gcs.impersonation_service_account&quot; = &quot;&lt;data_google_service_account_email&gt;&quot;</code></pre>
+<pre><code>The following table describes the parameters you need to configure in `StorageCredentialParams`.</code></pre>
+<pre><code>| **Parameter**                          | **Default value** | **Value** **example**                                        | **Description**                                              |</code></pre>
+<pre><code>| -------------------------------------- | ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `gcp.gcs.service_account_email`          | &quot;&quot;                | `&quot;user@hello.iam.gserviceaccount.com&quot;` | The email address in the JSON file generated at the creation of the meta service account. |</code></pre>
+<pre><code>| `gcp.gcs.service_account_private_key_id` | &quot;&quot;                | &quot;61d257bd8479547cb3e04f0b9b6b9ca07af3b7ea&quot;                   | The private key ID in the JSON file generated at the creation of the meta service account. |</code></pre>
+<pre><code>| `gcp.gcs.service_account_private_key`    | &quot;&quot;                | &quot;-----BEGIN PRIVATE KEY----xxxx-----END PRIVATE KEY-----\n&quot;  | The private key in the JSON file generated at the creation of the meta service account. |</code></pre>
+<pre><code>| `gcp.gcs.impersonation_service_account`  | &quot;&quot;                | &quot;hello&quot;                                                      | The data service account that you want to impersonate.       |</code></pre>
+<p>##### Azure Blob Storage</p>
+<ul>
+<li>Use Shared Key to access Azure Blob Storage:</li>
+</ul>
+<pre><code>  &quot;azure.blob.shared_key&quot; = &quot;&lt;shared_key&gt;&quot;</code></pre>
+<pre><code>| **Key**                    | **Required** | **Description**                                              |</code></pre>
+<pre><code>| -------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.blob.shared_key`      | Yes          | The Shared Key that you can use to access the Azure Blob Storage account. |</code></pre>
+<ul>
+<li>Use SAS Token to access Azure Blob Storage:</li>
+</ul>
+<pre><code>  &quot;azure.blob.sas_token&quot; = &quot;&lt;storage_account_SAS_token&gt;&quot;</code></pre>
+<pre><code>| **Key**                    | **Required** | **Description**                                              |</code></pre>
+<pre><code>| -------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.blob.sas_token`       | Yes          | The SAS token that you can use to access the Azure Blob Storage account. |</code></pre>
+<ul>
+<li>Use Managed Identity to access Azure Blob Storage (Supported from v3.4.4 onwards):</li>
+</ul>
+<p>:::note</p>
+<ul>
+<li>Only User-assigned Managed Identities with Client ID credentials are supported.</li>
+<li>The FE dynamic configuration <code>azure_use_native_sdk</code> (Default: <code>true</code>) controls whether to allow the system to use authentication with Managed Identity and Service Principals.</li>
+</ul>
+<pre><code>:::</code></pre>
+<pre><code>  &quot;azure.blob.oauth2_use_managed_identity&quot; = &quot;true&quot;,
+  &quot;azure.blob.oauth2_client_id&quot; = &quot;&lt;oauth2_client_id&gt;&quot;</code></pre>
+<pre><code>| **Key**                                | **Required** | **Description**                                              |</code></pre>
+<pre><code>| -------------------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.blob.oauth2_use_managed_identity` | Yes          | Whether to use Managed Identity to access the Azure Blob Storage account. Set it to `true`.                  |</code></pre>
+<pre><code>| `azure.blob.oauth2_client_id`            | Yes          | The Client ID of the Managed Identity that you can use to access the Azure Blob Storage account.                |</code></pre>
+<ul>
+<li>Use Service Principal to access Azure Blob Storage (Supported from v3.4.4 onwards):</li>
+</ul>
+<p>:::note</p>
+<ul>
+<li>Only Client Secret credentials are supported.</li>
+<li>The FE dynamic configuration <code>azure_use_native_sdk</code> (Default: <code>true</code>) controls whether to allow the system to use authentication with Managed Identity and Service Principals.</li>
+</ul>
+<pre><code>:::</code></pre>
+<pre><code>  &quot;azure.blob.oauth2_client_id&quot; = &quot;&lt;oauth2_client_id&gt;&quot;,
+  &quot;azure.blob.oauth2_client_secret&quot; = &quot;&lt;oauth2_client_secret&gt;&quot;,
+  &quot;azure.blob.oauth2_tenant_id&quot; = &quot;&lt;oauth2_tenant_id&gt;&quot;</code></pre>
+<pre><code>| **Key**                                | **Required** | **Description**                                              |</code></pre>
+<pre><code>| -------------------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.blob.oauth2_client_id`            | Yes          | The Client ID of the Service Principal that you can use to access the Azure Blob Storage account.                    |</code></pre>
+<pre><code>| `azure.blob.oauth2_client_secret`        | Yes          | The Client Secret of the Service Principal that you can use to access the Azure Blob Storage account.          |</code></pre>
+<pre><code>| `azure.blob.oauth2_tenant_id`            | Yes          | The Tenant ID of the Service Principal that you can use to access the Azure Blob Storage account.                |</code></pre>
+<p>##### Azure Data Lake Storage Gen2</p>
+<p>If you choose Data Lake Storage Gen2 as your storage system, take one of the following actions:</p>
+<ul>
+<li>To choose the Managed Identity authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;azure.adls2.oauth2_use_managed_identity&quot; = &quot;true&quot;,
+  &quot;azure.adls2.oauth2_tenant_id&quot; = &quot;&lt;service_principal_tenant_id&gt;&quot;,
+  &quot;azure.adls2.oauth2_client_id&quot; = &quot;&lt;service_client_id&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**                           | **Required** | **Description**                                              |</code></pre>
+<pre><code>| --------------------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.adls2.oauth2_use_managed_identity` | Yes          | Specifies whether to enable the Managed Identity authentication method. Set the value to `true`. |</code></pre>
+<pre><code>| `azure.adls2.oauth2_tenant_id`            | Yes          | The ID of the tenant whose data you want to access.          |</code></pre>
+<pre><code>| `azure.adls2.oauth2_client_id`            | Yes          | The client (application) ID of the managed identity.         |</code></pre>
+<ul>
+<li>To choose the Shared Key authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;azure.adls2.storage_account&quot; = &quot;&lt;storage_account_name&gt;&quot;,
+  &quot;azure.adls2.shared_key&quot; = &quot;&lt;storage_account_shared_key&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**               | **Required** | **Description**                                              |</code></pre>
+<pre><code>| --------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.adls2.storage_account` | Yes          | The username of your Data Lake Storage Gen2 storage account. |</code></pre>
+<pre><code>| `azure.adls2.shared_key`      | Yes          | The shared key of your Data Lake Storage Gen2 storage account. |</code></pre>
+<ul>
+<li>To choose the Service Principal authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;azure.adls2.oauth2_client_id&quot; = &quot;&lt;service_client_id&gt;&quot;,
+  &quot;azure.adls2.oauth2_client_secret&quot; = &quot;&lt;service_principal_client_secret&gt;&quot;,
+  &quot;azure.adls2.oauth2_client_endpoint&quot; = &quot;&lt;service_principal_client_endpoint&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**                      | **Required** | **Description**                                              |</code></pre>
+<pre><code>| ---------------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.adls2.oauth2_client_id`       | Yes          | The client (application) ID of the service principal.        |</code></pre>
+<pre><code>| `azure.adls2.oauth2_client_secret`   | Yes          | The value of the new client (application) secret created.    |</code></pre>
+<pre><code>| `azure.adls2.oauth2_client_endpoint` | Yes          | The OAuth 2.0 token endpoint (v1) of the service principal or application. |</code></pre>
+<ul>
+<li>To choose the Workload Identity authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;azure.adls2.oauth2_token_file&quot; = &quot;&lt;path_to_token&gt;&quot;,
+  &quot;azure.adls2.oauth2_tenant_id&quot; = &quot;&lt;service_principal_tenant_id&gt;&quot;,
+  &quot;azure.adls2.oauth2_client_id&quot; = &quot;&lt;service_client_id&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**                           | **Required** | **Description**                                              |</code></pre>
+<pre><code>| --------------------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| azure.adls2.oauth2_token_file           | Yes          | The absolute file path to the OAuth2 token file projected into the pod by the Azure Workload Identity webhook. |</code></pre>
+<pre><code>| azure.adls2.oauth2_tenant_id            | Yes          | The ID of the tenant whose data you want to access.          |</code></pre>
+<pre><code>| azure.adls2.oauth2_client_id            | Yes          | The client ID (application ID) of the Azure AD application (user-assigned managed identity or app registration) associated with the workload identity. |</code></pre>
+<p>##### Azure Data Lake Storage Gen1</p>
+<p>If you choose Data Lake Storage Gen1 as your storage system, take one of the following actions:</p>
+<ul>
+<li>To choose the Managed Service Identity authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;azure.adls1.use_managed_service_identity&quot; = &quot;true&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**                            | **Required** | **Description**                                              |</code></pre>
+<pre><code>| ---------------------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.adls1.use_managed_service_identity` | Yes          | Specifies whether to enable the Managed Service Identity authentication method. Set the value to `true`. |</code></pre>
+<ul>
+<li>To choose the Service Principal authentication method, configure <code>StorageCredentialParams</code> as follows:</li>
+</ul>
+<pre><code>  &quot;azure.adls1.oauth2_client_id&quot; = &quot;&lt;application_client_id&gt;&quot;,
+  &quot;azure.adls1.oauth2_credential&quot; = &quot;&lt;application_client_credential&gt;&quot;,
+  &quot;azure.adls1.oauth2_endpoint&quot; = &quot;&lt;OAuth_2.0_authorization_endpoint_v2&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| **Parameter**                 | **Required** | **Description**                                              |</code></pre>
+<pre><code>| ----------------------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `azure.adls1.oauth2_client_id`  | Yes          | The client (application) ID of the .                         |</code></pre>
+<pre><code>| `azure.adls1.oauth2_credential` | Yes          | The value of the new client (application) secret created.    |</code></pre>
+<pre><code>| `azure.adls1.oauth2_endpoint`   | Yes          | The OAuth 2.0 token endpoint (v1) of the service principal or application. |</code></pre>
+<p>##### Other S3-compatible storage system</p>
+<p>If you choose other S3-compatible storage system, such as MinIO, configure <code>StorageCredentialParams</code> as follows:</p>
+<pre><code>&quot;aws.s3.enable_ssl&quot; = &quot;false&quot;,
+&quot;aws.s3.enable_path_style_access&quot; = &quot;true&quot;,
+&quot;aws.s3.endpoint&quot; = &quot;&lt;s3_endpoint&gt;&quot;,
+&quot;aws.s3.access_key&quot; = &quot;&lt;iam_user_access_key&gt;&quot;,
+&quot;aws.s3.secret_key&quot; = &quot;&lt;iam_user_secret_key&gt;&quot;</code></pre>
+<p>The following table describes the parameters you need to configure in <code>StorageCredentialParams</code>.</p>
+<pre><code>| Parameter                        | Required | Description                                                  |</code></pre>
+<pre><code>| -------------------------------- | -------- | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `aws.s3.enable_ssl`                | Yes      | Specifies whether to enable SSL connection. Valid values: `true` and `false`. Default value: `true`. |</code></pre>
+<pre><code>| `aws.s3.enable_path_style_access`  | Yes      | Specifies whether to enable path-style URL access. Valid values: `true` and `false`. Default value: `false`. For MinIO, you must set the value to `true`. |</code></pre>
+<pre><code>| `aws.s3.endpoint`                  | Yes      | The endpoint that is used to connect to your S3-compatible storage system instead of AWS S3. |</code></pre>
+<pre><code>| `aws.s3.access_key`                | Yes      | The access key of your IAM user. |</code></pre>
+<pre><code>| `aws.s3.secret_key`                | Yes      | The secret key of your IAM user. |</code></pre>
+<h5><code>columns_from_path</code></h5>
+<p>From v3.2 onwards, StarRocks can extract the value of a key/value pair from the file path as the value of a column.</p>
+<pre><code>&quot;columns_from_path&quot; = &quot;&lt;column_name&gt; [, ...]&quot;</code></pre>
+<p>Suppose the data file <b>file1</b> is stored under a path in the format of <code>/geo/country=US/city=LA/</code>. You can specify the <code>columns_from_path</code> parameter as <code>&quot;columns_from_path&quot; = &quot;country, city&quot;</code> to extract the geographic information in the file path as the value of columns that are returned. For further instructions, see Example 4.</p>
+<h5><code>schema</code></h5>
+<p>From v4.1.2 onwards, <code>FILES()</code> supports an explicit <code>schema</code> parameter that lets you declare exactly which columns to read and their StarRocks types, bypassing BE-side schema inference.</p>
+<pre><code>&quot;schema&quot; = &quot;col_name TYPE[, col_name TYPE ...]&quot;</code></pre>
+<p>When <code>schema</code> is set, <code>FILES()</code> reads only the declared columns with the declared types. Automatic schema detection (sampling-based inference) is skipped, which makes query behavior predictable when the underlying files evolve differently across batches.</p>
+<p>##### Supported types</p>
+<p>All StarRocks scalar and complex types (<code>ARRAY</code>, <code>MAP</code>, <code>STRUCT</code>) are supported inside <code>schema</code>, except StarRocks-only aggregate types (<code>HLL</code>, <code>BITMAP</code>, <code>PERCENTILE</code>), which have no representation in Parquet/ORC/Avro/CSV and are rejected at any depth (top level or inside <code>ARRAY</code> / <code>MAP</code> value / <code>STRUCT</code> field). For <code>STRUCT</code>, you may declare only a subset of subfields; undeclared subfields are ignored during projection.</p>
+<p>Example of a partial nested declaration:</p>
+<pre><code>&quot;schema&quot; = &quot;request_data STRUCT&lt;device_data STRUCT&lt;platform VARCHAR(64)&gt;, now BIGINT&gt;&quot;</code></pre>
+<p>##### Forbidden tokens inside the schema string</p>
+<p>The following tokens are rejected and produce a validation error:</p>
+<ul>
+<li><code>NULL</code> / <code>NOT NULL</code></li>
+<li><code>DEFAULT</code></li>
+<li><code>COMMENT</code></li>
+<li><code>KEY</code> (and related key-type descriptors)</li>
+<li><code>AUTO_INCREMENT</code></li>
+<li>Charset specifiers (for example <code>CHARACTER SET</code>)</li>
+<li>Aggregation descriptors (for example <code>SUM</code>, <code>REPLACE</code>)</li>
+<li>Generated-column clauses (<code>AS (...)</code>)</li>
+</ul>
+<p>Example (invalid):</p>
+<pre><code>&quot;schema&quot; = &quot;id BIGINT NOT NULL, dt DATE DEFAULT '2026-01-01'&quot;</code></pre>
+<p>##### Column matching semantics per format</p>
+<ul>
+<li><b>Parquet / ORC / Avro</b>: schema columns are matched against file columns <b>by name</b>, and matching is <b>case-sensitive</b>. For example, <code>UserId</code> in <code>schema</code> does not match <code>userid</code> in the file.</li>
+<li><b>CSV</b>: schema columns are matched <b>by position</b>. The names in <code>schema</code> act only as aliases for the ordinal columns in the CSV file. The first schema item maps to the first CSV column, the second to the second, and so on.</li>
+</ul>
+<p>##### Mutual exclusions</p>
+<p><code>schema</code> cannot be combined with any of the auto-detection parameters. Using any of the following together with <code>schema</code> is a validation error:</p>
+<ul>
+<li><code>auto_detect_sample_files</code></li>
+<li><code>auto_detect_sample_rows</code></li>
+<li><code>auto_detect_types</code></li>
+</ul>
+<p>##### Interactions with other properties and statements</p>
+<ul>
+<li><b><code>fill_mismatch_column_with</code></b>: Declared columns that are missing from some files follow the existing <code>fill_mismatch_column_with</code> behavior — <code>none</code> fails the query, <code>null</code> fills <code>NULL</code> for the missing column.</li>
+<li><b><code>columns_from_path</code></b>: Path-extracted columns are appended <b>after</b> the <code>schema</code> columns. If a <code>columns_from_path</code> name collides with a name in <code>schema</code>, the query fails with a validation error.</li>
+<li><b><code>list_files_only = true</code></b>: <code>schema</code> is silently ignored when <code>list_files_only</code> is <code>true</code> (only file metadata is returned).</li>
+<li><b><code>DESC FILES(..., &quot;schema&quot; = ...)</code></b>: Explicitly rejected. Use <code>DESC FILES(...)</code> without <code>schema</code> to inspect the inferred file schema.</li>
+<li><b><code>INSERT INTO FILES(..., &quot;schema&quot; = ...)</code> (unload)</b>: Explicitly rejected. <code>schema</code> is a read-path parameter only.</li>
+<li><b>INSERT push-down interactions</b>:</li>
+<li>The FE configuration <code>files_enable_insert_push_down_column_type</code> (alias <code>files_enable_insert_push_down_schema</code>) is <b>silently skipped</b> when <code>schema</code> is set, because the user-declared types already determine column types.</li>
+<li>Combining <code>schema</code> with the INSERT property <code>enable_push_down_schema = true</code> is a validation error.</li>
+</ul>
+<p>##### Examples</p>
+<p>Parquet matched by name:</p>
+<pre><code>SELECT user_id, event_time
+FROM FILES(
+  &quot;path&quot; = &quot;s3://bucket/path/*.parquet&quot;,
+  &quot;format&quot; = &quot;parquet&quot;,
+  &quot;schema&quot; = &quot;user_id BIGINT, event_time DATETIME&quot;
+);</code></pre>
+<p>CSV matched by position (the names <code>a</code> and <code>b</code> are aliases for the first and second CSV columns):</p>
+<pre><code>SELECT *
+FROM FILES(
+  &quot;path&quot; = &quot;s3://bucket/path/*.csv&quot;,
+  &quot;format&quot; = &quot;csv&quot;,
+  &quot;csv.column_separator&quot; = &quot;,&quot;,
+  &quot;schema&quot; = &quot;a BIGINT, b VARCHAR(64)&quot;
+);</code></pre>
+<p>Partial nested declaration (only two subfields of <code>request_data</code> are projected):</p>
+<pre><code>SELECT request_data.device_data.platform, request_data.now
+FROM FILES(
+  &quot;path&quot; = &quot;s3://bucket/path/*.parquet&quot;,
+  &quot;format&quot; = &quot;parquet&quot;,
+  &quot;schema&quot; = &quot;request_data STRUCT&lt;device_data STRUCT&lt;platform VARCHAR(64)&gt;, now BIGINT&gt;&quot;
+);</code></pre>
+<h5><code>list_files_only</code></h5>
+<p>From v3.4.0 onwards, <code>FILES()</code> supports only list the files when reading them.</p>
+<pre><code>&quot;list_files_only&quot; = &quot;true&quot;</code></pre>
+<p>Please note that you do not need to specify <code>data_format</code> when <code>list_files_only</code> is set to <code>true</code>.</p>
+<p>For more information, see Return.</p>
+<h5><code>list_recursively</code></h5>
+<p>StarRocks further supports <code>list_recursively</code> to list the files and directories recursively. <code>list_recursively</code> only takes effect when <code>list_files_only</code> is set to <code>true</code>. The default value is <code>false</code>.</p>
+<pre><code>&quot;list_files_only&quot; = &quot;true&quot;,
+&quot;list_recursively&quot; = &quot;true&quot;</code></pre>
+<p>When both <code>list_files_only</code> and <code>list_recursively</code> are set to <code>true</code>, StarRocks will do the follows:</p>
+<ul>
+<li>If the specified <code>path</code> is a file (whether it is specified specifically or represented by wildcards), StarRocks will show the information of the file.</li>
+<li>If the specified <code>path</code> is a directory (whether it is specified specifically or represented by wildcards, and whether or not it is suffixed by <code>/</code>), StarRocks will show all the files and sub-directories under this directory.</li>
+</ul>
+<p>For more information, see Return.</p>
+<h4>Return</h4>
+<h5><code>SELECT FROM FILES()</code></h5>
+<p>When used with SELECT, FILES() returns the data in the file as a table.</p>
+<ul>
+<li>When querying CSV files, you can use <code>$1</code>, <code>$2</code>, and so on, to represent each column in the SELECT statement, or specify <code>*</code> to obtain data from all columns.</li>
+</ul>
+<pre><code>  SELECT * FROM FILES(
+      &quot;path&quot; = &quot;s3://inserttest/csv/file1.csv&quot;,
+      &quot;format&quot; = &quot;csv&quot;,
+      &quot;csv.column_separator&quot;=&quot;,&quot;,
+      &quot;csv.row_delimiter&quot;=&quot;\n&quot;,
+      &quot;csv.enclose&quot;='&quot;',
+      &quot;csv.skip_header&quot;=&quot;1&quot;,
+      &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+      &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+      &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+  )
+  WHERE $1 &gt; 5;
+  +------+---------+------------+
+  | $1   | $2      | $3         |
+  +------+---------+------------+
+  |    6 | 0.34413 | 2017-11-25 |
+  |    7 | 0.40055 | 2017-11-26 |
+  |    8 | 0.42437 | 2017-11-27 |
+  |    9 | 0.67935 | 2017-11-27 |
+  |   10 | 0.22783 | 2017-11-29 |
+  +------+---------+------------+
+  5 rows in set (0.30 sec)
+
+  SELECT $1, $2 FROM FILES(
+      &quot;path&quot; = &quot;s3://inserttest/csv/file1.csv&quot;,
+      &quot;format&quot; = &quot;csv&quot;,
+      &quot;csv.column_separator&quot;=&quot;,&quot;,
+      &quot;csv.row_delimiter&quot;=&quot;\n&quot;,
+      &quot;csv.enclose&quot;='&quot;',
+      &quot;csv.skip_header&quot;=&quot;1&quot;,
+      &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+      &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+      &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+  );
+  +------+---------+
+  | $1   | $2      |
+  +------+---------+
+  |    1 | 0.71173 |
+  |    2 | 0.16145 |
+  |    3 | 0.80524 |
+  |    4 | 0.91852 |
+  |    5 | 0.37766 |
+  |    6 | 0.34413 |
+  |    7 | 0.40055 |
+  |    8 | 0.42437 |
+  |    9 | 0.67935 |
+  |   10 | 0.22783 |
+  +------+---------+
+  10 rows in set (0.38 sec)</code></pre>
+<ul>
+<li>When querying Parquet or ORC files, you can directly specify the name of the desired columns in the SELECT statement, or specify <code>*</code> to obtain data from all columns.</li>
+</ul>
+<pre><code>  SELECT * FROM FILES(
+      &quot;path&quot; = &quot;s3://inserttest/parquet/file2.parquet&quot;,
+      &quot;format&quot; = &quot;parquet&quot;,
+      &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+      &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+      &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+  )
+  WHERE c1 IN (101,105);
+  +------+------+---------------------+
+  | c1   | c2   | c3                  |
+  +------+------+---------------------+
+  |  101 |    9 | 2018-05-15T18:30:00 |
+  |  105 |    6 | 2018-05-15T18:30:00 |
+  +------+------+---------------------+
+  2 rows in set (0.29 sec)
+
+  SELECT c1, c3 FROM FILES(
+      &quot;path&quot; = &quot;s3://inserttest/parquet/file2.parquet&quot;,
+      &quot;format&quot; = &quot;parquet&quot;,
+      &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+      &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+      &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+  );
+  +------+---------------------+
+  | c1   | c3                  |
+  +------+---------------------+
+  |  101 | 2018-05-15T18:30:00 |
+  |  102 | 2018-05-15T18:30:00 |
+  |  103 | 2018-05-15T18:30:00 |
+  |  104 | 2018-05-15T18:30:00 |
+  |  105 | 2018-05-15T18:30:00 |
+  |  106 | 2018-05-15T18:30:00 |
+  |  107 | 2018-05-15T18:30:00 |
+  |  108 | 2018-05-15T18:30:00 |
+  |  109 | 2018-05-15T18:30:00 |
+  |  110 | 2018-05-15T18:30:00 |
+  +------+---------------------+
+  10 rows in set (0.55 sec)</code></pre>
+<ul>
+<li>When you query files with <code>list_files_only</code> set to <code>true</code>, the system will return <code>PATH</code>, <code>SIZE</code>, <code>IS_DIR</code> (whether the given path is a directory), and <code>MODIFICATION_TIME</code>.</li>
+</ul>
+<pre><code>  SELECT * FROM FILES(
+      &quot;path&quot; = &quot;s3://bucket/*.parquet&quot;,
+      &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+      &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+      &quot;list_files_only&quot; = &quot;true&quot;
+  );
+  +-----------------------+------+--------+---------------------+
+  | PATH                  | SIZE | IS_DIR | MODIFICATION_TIME   |
+  +-----------------------+------+--------+---------------------+
+  | s3://bucket/1.parquet | 5221 |      0 | 2024-08-15 20:47:02 |
+  | s3://bucket/2.parquet | 5222 |      0 | 2024-08-15 20:54:57 |
+  | s3://bucket/3.parquet | 5223 |      0 | 2024-08-20 15:21:00 |
+  | s3://bucket/4.parquet | 5224 |      0 | 2024-08-15 11:32:14 |
+  +-----------------------+------+--------+---------------------+
+  4 rows in set (0.03 sec)</code></pre>
+<ul>
+<li>When you query files with <code>list_files_only</code> and <code>list_recursively</code> set to <code>true</code>, the system will list the files and directories recursively.</li>
+</ul>
+<p>Suppose the path <code>s3://bucket/list/</code> contains the following files and sub-directories:</p>
+<pre><code>  s3://bucket/list/
+  ├── basic1.csv
+  ├── basic2.csv
+  ├── orc0
+  │   └── orc1
+  │       └── basic_type.orc
+  ├── orc1
+  │   └── basic_type.orc
+  └── parquet
+      └── basic_type.parquet</code></pre>
+<p>List the files and directories recursively:</p>
+<pre><code>  SELECT * FROM FILES(
+      &quot;path&quot;=&quot;s3://bucket/list/&quot;,
+      &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+      &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+      &quot;list_files_only&quot; = &quot;true&quot;,
+      &quot;list_recursively&quot; = &quot;true&quot;
+  );
+  +---------------------------------------------+------+--------+---------------------+
+  | PATH                                        | SIZE | IS_DIR | MODIFICATION_TIME   |
+  +---------------------------------------------+------+--------+---------------------+
+  | s3://bucket/list                            |    0 |      1 | 2024-12-24 22:15:59 |
+  | s3://bucket/list/basic1.csv                 |   52 |      0 | 2024-12-24 11:35:53 |
+  | s3://bucket/list/basic2.csv                 |   34 |      0 | 2024-12-24 11:35:53 |
+  | s3://bucket/list/orc0                       |    0 |      1 | 2024-12-24 11:35:53 |
+  | s3://bucket/list/orc0/orc1                  |    0 |      1 | 2024-12-24 11:35:53 |
+  | s3://bucket/list/orc0/orc1/basic_type.orc   | 1027 |      0 | 2024-12-24 11:35:53 |
+  | s3://bucket/list/orc1                       |    0 |      1 | 2024-12-24 22:16:00 |
+  | s3://bucket/list/orc1/basic_type.orc        | 1027 |      0 | 2024-12-24 22:16:00 |
+  | s3://bucket/list/parquet                    |    0 |      1 | 2024-12-24 11:35:53 |
+  | s3://bucket/list/parquet/basic_type.parquet | 2281 |      0 | 2024-12-24 11:35:53 |
+  +---------------------------------------------+------+--------+---------------------+
+  10 rows in set (0.04 sec)</code></pre>
+<p>Lists files and directories matching <code>orc*</code> in this path in a non-recursive way:</p>
+<pre><code>  SELECT * FROM FILES(
+      &quot;path&quot;=&quot;s3://bucket/list/orc*&quot;,
+      &quot;list_files_only&quot; = &quot;true&quot;,
+      &quot;list_recursively&quot; = &quot;false&quot;
+  );
+  +--------------------------------------+------+--------+---------------------+
+  | PATH                                 | SIZE | IS_DIR | MODIFICATION_TIME   |
+  +--------------------------------------+------+--------+---------------------+
+  | s3://bucket/list/orc0/orc1           |    0 |      1 | 2024-12-24 11:35:53 |
+  | s3://bucket/list/orc1/basic_type.orc | 1027 |      0 | 2024-12-24 22:16:00 |
+  +--------------------------------------+------+--------+---------------------+
+  2 rows in set (0.03 sec)</code></pre>
+<h5><code>DESC FILES()</code></h5>
+<p>When used with <code>DESC</code>, <code>FILES()</code> returns the schema of the file.</p>
+<pre><code>DESC FILES(
+    &quot;path&quot; = &quot;s3://inserttest/lineorder.parquet&quot;,
+    &quot;format&quot; = &quot;parquet&quot;,
+    &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+    &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);
+
++------------------+------------------+------+
+| Field            | Type             | Null |
++------------------+------------------+------+
+| lo_orderkey      | int              | YES  |
+| lo_linenumber    | int              | YES  |
+| lo_custkey       | int              | YES  |
+| lo_partkey       | int              | YES  |
+| lo_suppkey       | int              | YES  |
+| lo_orderdate     | int              | YES  |
+| lo_orderpriority | varchar(1048576) | YES  |
+| lo_shippriority  | int              | YES  |
+| lo_quantity      | int              | YES  |
+| lo_extendedprice | int              | YES  |
+| lo_ordtotalprice | int              | YES  |
+| lo_discount      | int              | YES  |
+| lo_revenue       | int              | YES  |
+| lo_supplycost    | int              | YES  |
+| lo_tax           | int              | YES  |
+| lo_commitdate    | int              | YES  |
+| lo_shipmode      | varchar(1048576) | YES  |
++------------------+------------------+------+
+17 rows in set (0.05 sec)</code></pre>
+<p>When you viewing files with <code>list_files_only</code> set to <code>true</code>, the system will return the <code>Type</code> and <code>Null</code> properties of <code>PATH</code>, <code>SIZE</code>, <code>IS_DIR</code> (whether the given path is a directory), and <code>MODIFICATION_TIME</code>.</p>
+<pre><code>DESC FILES(
+    &quot;path&quot; = &quot;s3://bucket/*.parquet&quot;,
+    &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+    &quot;list_files_only&quot; = &quot;true&quot;
+);
++-------------------+------------------+------+
+| Field             | Type             | Null |
++-------------------+------------------+------+
+| PATH              | varchar(1048576) | YES  |
+| SIZE              | bigint           | YES  |
+| IS_DIR            | boolean          | YES  |
+| MODIFICATION_TIME | datetime         | YES  |
++-------------------+------------------+------+
+4 rows in set (0.00 sec)</code></pre>
+<h3><code>FILES()</code> for unloading</h3>
+<p>From v3.2.0 onwards, <code>FILES()</code> supports writing data into files in remote storage. You can use <code>INSERT INTO FILES()</code> to unload data from StarRocks to remote storage.</p>
+<h4>Syntax</h4>
+<pre><code>FILES( data_location , data_format [, StorageCredentialParams ] , unload_data_param )</code></pre>
+<h4>Parameters</h4>
+<p>All parameters are in the <code>&quot;key&quot; = &quot;value&quot;</code> pairs.</p>
+<h5>data_location</h5>
+<p>See <code>FILES()</code> for loading - Parameters - data_location.</p>
+<h5>data_format</h5>
+<p>See <code>FILES()</code> for loading - Parameters - data_format.</p>
+<h5>StorageCredentialParams</h5>
+<p>See <code>FILES()</code> for loading - Parameters - StorageCredentialParams.</p>
+<h5><code>unload_data_param</code></h5>
+<pre><code>unload_data_param ::=
+    &quot;compression&quot; = { &quot;uncompressed&quot; | &quot;gzip&quot; | &quot;snappy&quot; | &quot;zstd | &quot;lz4&quot; },
+    &quot;partition_by&quot; = &quot;&lt;column_name&gt; [, ...]&quot;,
+    &quot;single&quot; = { &quot;true&quot; | &quot;false&quot; } ,
+    &quot;target_max_file_size&quot; = &quot;&lt;int&gt;&quot;,
+    &quot;csv.column_separator&quot; = &quot;&lt;column_separator&gt;&quot;,
+    &quot;csv.row_delimiter&quot; = &quot;&lt;row_delimiter&gt;&quot;,
+    &quot;csv.include_header&quot; = { &quot;true&quot; | &quot;false&quot; },
+    &quot;csv.enclose&quot; = &quot;&lt;enclose_character&gt;&quot;,
+    &quot;csv.escape&quot; = &quot;&lt;escape_character&gt;&quot;</code></pre>
+<pre><code>| **Key**          | **Required** | **Description**                                              |</code></pre>
+<pre><code>| ---------------- | ------------ | ------------------------------------------------------------ |</code></pre>
+<pre><code>| `compression`      | Yes          | The compression method to use when unloading data. Valid values:&lt;ul&gt;&lt;li&gt;`uncompressed`: No compression algorithm is used.&lt;/li&gt;&lt;li&gt;`gzip`: Use the gzip compression algorithm.&lt;/li&gt;&lt;li&gt;`snappy`: Use the SNAPPY compression algorithm.&lt;/li&gt;&lt;li&gt;`zstd`: Use the Zstd compression algorithm.&lt;/li&gt;&lt;li&gt;`lz4`: Use the LZ4 compression algorithm.&lt;/li&gt;&lt;/ul&gt;**NOTE**&lt;br /&gt;Unloading into CSV files does not support data compression. You must set this item as `uncompressed`.                  |</code></pre>
+<pre><code>| `partition_by`     | No           | The list of columns that are used to partition data files into different storage paths. Multiple columns are separated by commas (,). `FILES()` extracts the key/value information of the specified columns and stores the data files under the storage paths featured with the extracted key/value pair. For further instructions, see Example 7. |</code></pre>
+<pre><code>| `single`           | No           | Whether to unload the data into a single file. Valid values:&lt;ul&gt;&lt;li&gt;`true`: The data is stored in a single data file.&lt;/li&gt;&lt;li&gt;`false` (Default): The data is stored in multiple files if the amount of data unloaded exceeds 512 MB.&lt;/li&gt;&lt;/ul&gt;                  |</code></pre>
+<pre><code>| `target_max_file_size` | No           | The best-effort maximum size of each file in the batch to be unloaded. Unit: Bytes. Default value: 1073741824 (1 GB). When the size of data to be unloaded exceeds this value, the data will be divided into multiple files, and the size of each file will not significantly exceed this value. Introduced in v3.2.7. |</code></pre>
+<pre><code>| `csv.column_separator` | No       | The column separator used in CSV-format output files. Default value: `\t`. Only applicable when `format` is `csv`.                       |</code></pre>
+<pre><code>| `csv.row_delimiter` | No          | The row delimiter used in CSV-format output files. Default value: `\n`. Only applicable when `format` is `csv`.                          |</code></pre>
+<pre><code>| `csv.include_header` | No         | Whether to include column names as the first row of CSV-format output files. Valid values: `true`, `false` (default). Only applicable when `format` is `csv`. |</code></pre>
+<pre><code>| `csv.enclose`      | No           | The character used to enclose each field value in CSV-format output files. When specified, all non-NULL fields are wrapped with this character, and occurrences of the enclose/escape characters within field values are escaped using the `csv.escape` character. NULL values are output as `\N` without enclosing. Type: single-byte ASCII character. Multi-character or multi-byte (non-ASCII) values are rejected with a semantic error. Default: `NONE` (disabled). Only applicable when `format` is `csv`. |</code></pre>
+<pre><code>| `csv.escape`       | No           | The character used to escape the enclose character and the escape character itself within field values. Type: single-byte ASCII character. Multi-character or multi-byte (non-ASCII) values are rejected with a semantic error. Default: `NONE`. Common combinations:&lt;ul&gt;&lt;li&gt;`&quot;csv.enclose&quot;=&quot;\&quot;&quot;`, `&quot;csv.escape&quot;=&quot;\&quot;&quot;`: RFC 4180 style (doubled quotes).&lt;/li&gt;&lt;li&gt;`&quot;csv.enclose&quot;=&quot;\&quot;&quot;`, `&quot;csv.escape&quot;=&quot;\\&quot;`: backslash escape style.&lt;/li&gt;&lt;/ul&gt;**NOTE**&lt;br /&gt;When re-importing RFC 4180 doubled-quote output (where `escape` equals `enclose`) back into StarRocks, set only `csv.enclose` without `csv.escape` on the read side. StarRocks' CSV reader natively handles doubled quotes via its ENCLOSE state. |</code></pre>
+<h3>Examples</h3>
+<h5>Example 1: Query the data from a file</h5>
+<p>Query the data from the Parquet file <b>parquet/par-dup.parquet</b> within the AWS S3 bucket <code>inserttest</code>:</p>
+<pre><code>SELECT * FROM FILES(
+     &quot;path&quot; = &quot;s3://inserttest/parquet/par-dup.parquet&quot;,
+     &quot;format&quot; = &quot;parquet&quot;,
+     &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+     &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+     &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);
++------+---------------------------------------------------------+
+| c1   | c2                                                      |
++------+---------------------------------------------------------+
+|    1 | {&quot;1&quot;: &quot;key&quot;, &quot;1&quot;: &quot;1&quot;, &quot;111&quot;: &quot;1111&quot;, &quot;111&quot;: &quot;aaaa&quot;}    |
+|    2 | {&quot;2&quot;: &quot;key&quot;, &quot;2&quot;: &quot;NULL&quot;, &quot;222&quot;: &quot;2222&quot;, &quot;222&quot;: &quot;bbbb&quot;} |
++------+---------------------------------------------------------+
+2 rows in set (22.335 sec)</code></pre>
+<p>Query the data from the Parquet files in NFS(NAS):</p>
+<pre><code>SELECT * FROM FILES(
+  'path' = 'file:///home/ubuntu/parquetfile/*.parquet',
+  'format' = 'parquet'
+);</code></pre>
+<h5>Example 2: Insert the data rows from a file</h5>
+<p>Insert the data rows from the Parquet file <b>parquet/insert_wiki_edit_append.parquet</b> within the AWS S3 bucket <code>inserttest</code> into the table <code>insert_wiki_edit</code>:</p>
+<pre><code>INSERT INTO insert_wiki_edit
+    SELECT * FROM FILES(
+        &quot;path&quot; = &quot;s3://inserttest/parquet/insert_wiki_edit_append.parquet&quot;,
+        &quot;format&quot; = &quot;parquet&quot;,
+        &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+        &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+        &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);
+Query OK, 2 rows affected (23.03 sec)
+{'label':'insert_d8d4b2ee-ac5c-11ed-a2cf-4e1110a8f63b', 'status':'VISIBLE', 'txnId':'2440'}</code></pre>
+<p>Insert the data rows from the CSV files in NFS(NAS) into the table <code>insert_wiki_edit</code>:</p>
+<pre><code>INSERT INTO insert_wiki_edit
+  SELECT * FROM FILES(
+    'path' = 'file:///home/ubuntu/csvfile/*.csv',
+    'format' = 'csv',
+    'csv.column_separator' = ',',
+    'csv.row_delimiter' = '\n'
+  );</code></pre>
+<h5>Example 3: CTAS with data rows from a file</h5>
+<p>Create a table named <code>ctas_wiki_edit</code> and insert the data rows from the Parquet file <b>parquet/insert_wiki_edit_append.parquet</b> within the AWS S3 bucket <code>inserttest</code> into the table:</p>
+<pre><code>CREATE TABLE ctas_wiki_edit AS
+    SELECT * FROM FILES(
+        &quot;path&quot; = &quot;s3://inserttest/parquet/insert_wiki_edit_append.parquet&quot;,
+        &quot;format&quot; = &quot;parquet&quot;,
+        &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+        &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+        &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);
+Query OK, 2 rows affected (22.09 sec)
+{'label':'insert_1a217d70-2f52-11ee-9e4a-7a563fb695da', 'status':'VISIBLE', 'txnId':'3248'}</code></pre>
+<h5>Example 4: Query the data from a file and extract the key/value information in its path</h5>
+<p>Query the data from the Parquet file <b>/geo/country=US/city=LA/file1.parquet</b> (which only contains two columns -<code>id</code> and <code>user</code>), and extract the key/value information in its path as columns returned.</p>
+<pre><code>SELECT * FROM FILES(
+    &quot;path&quot; = &quot;hdfs://xxx.xx.xxx.xx:9000/geo/country=US/city=LA/file1.parquet&quot;,
+    &quot;format&quot; = &quot;parquet&quot;,
+    &quot;hadoop.security.authentication&quot; = &quot;simple&quot;,
+    &quot;username&quot; = &quot;xxxxx&quot;,
+    &quot;password&quot; = &quot;xxxxx&quot;,
+    &quot;columns_from_path&quot; = &quot;country, city&quot;
+);
++------+---------+---------+------+
+| id   | user    | country | city |
++------+---------+---------+------+
+|    1 | richard | US      | LA   |
+|    2 | amber   | US      | LA   |
++------+---------+---------+------+
+2 rows in set (3.84 sec)</code></pre>
+<h5>Example 5: Automatic schema detection and Unionization</h5>
+<p>The following example is based on two Parquet files in the S3 bucket:</p>
+<ul>
+<li>File 1 contains three columns - INT column <code>c1</code>, FLOAT column <code>c2</code>, and DATE column <code>c3</code>.</li>
+</ul>
+<pre><code>c1,c2,c3
+1,0.71173,2017-11-20
+2,0.16145,2017-11-21
+3,0.80524,2017-11-22
+4,0.91852,2017-11-23
+5,0.37766,2017-11-24
+6,0.34413,2017-11-25
+7,0.40055,2017-11-26
+8,0.42437,2017-11-27
+9,0.67935,2017-11-27
+10,0.22783,2017-11-29</code></pre>
+<ul>
+<li>File 2 contains three columns - INT column <code>c1</code>, INT column <code>c2</code>, and DATETIME column <code>c3</code>.</li>
+</ul>
+<pre><code>c1,c2,c3
+101,9,2018-05-15T18:30:00
+102,3,2018-05-15T18:30:00
+103,2,2018-05-15T18:30:00
+104,3,2018-05-15T18:30:00
+105,6,2018-05-15T18:30:00
+106,1,2018-05-15T18:30:00
+107,8,2018-05-15T18:30:00
+108,5,2018-05-15T18:30:00
+109,6,2018-05-15T18:30:00
+110,8,2018-05-15T18:30:00</code></pre>
+<p>Use a CTAS statement to create a table named <code>test_ctas_parquet</code> and insert the data rows from the two Parquet files into the table:</p>
+<pre><code>CREATE TABLE test_ctas_parquet AS
+SELECT * FROM FILES(
+    &quot;path&quot; = &quot;s3://inserttest/parquet/*&quot;,
+    &quot;format&quot; = &quot;parquet&quot;,
+    &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+    &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);</code></pre>
+<p>View the table schema of <code>test_ctas_parquet</code>:</p>
+<pre><code>SHOW CREATE TABLE test_ctas_parquet\G</code></pre>
+<pre><code>*************************** 1. row ***************************
+       Table: test_ctas_parquet
+Create Table: CREATE TABLE `test_ctas_parquet` (
+  `c1` bigint(20) NULL COMMENT &quot;&quot;,
+  `c2` decimal(38, 9) NULL COMMENT &quot;&quot;,
+  `c3` varchar(1048576) NULL COMMENT &quot;&quot;
+) ENGINE=OLAP
+DUPLICATE KEY(`c1`, `c2`)
+COMMENT &quot;OLAP&quot;
+DISTRIBUTED BY RANDOM
+PROPERTIES (
+&quot;bucket_size&quot; = &quot;4294967296&quot;,
+&quot;compression&quot; = &quot;LZ4&quot;,
+&quot;replication_num&quot; = &quot;3&quot;
+);</code></pre>
+<p>The result shows that the <code>c2</code> column, which contains both FLOAT and INT data, is merged as a DECIMAL column, and <code>c3</code>, which contains both DATE and DATETIME data, is merged as a VARCHAR column.</p>
+<p>The above result stays the same when the Parquet files are changed to CSV files that contain the same data:</p>
+<pre><code>CREATE TABLE test_ctas_csv AS
+  SELECT * FROM FILES(
+    &quot;path&quot; = &quot;s3://inserttest/csv/*&quot;,
+    &quot;format&quot; = &quot;csv&quot;,
+    &quot;csv.column_separator&quot;=&quot;,&quot;,
+    &quot;csv.row_delimiter&quot;=&quot;\n&quot;,
+    &quot;csv.enclose&quot;='&quot;',
+    &quot;csv.skip_header&quot;=&quot;1&quot;,
+    &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+    &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);
+Query OK, 0 rows affected (30.90 sec)
+
+SHOW CREATE TABLE test_ctas_csv\G
+*************************** 1. row ***************************
+       Table: test_ctas_csv
+Create Table: CREATE TABLE `test_ctas_csv` (
+  `c1` bigint(20) NULL COMMENT &quot;&quot;,
+  `c2` decimal(38, 9) NULL COMMENT &quot;&quot;,
+  `c3` varchar(1048576) NULL COMMENT &quot;&quot;
+) ENGINE=OLAP
+DUPLICATE KEY(`c1`, `c2`)
+COMMENT &quot;OLAP&quot;
+DISTRIBUTED BY RANDOM
+PROPERTIES (
+&quot;bucket_size&quot; = &quot;4294967296&quot;,
+&quot;compression&quot; = &quot;LZ4&quot;,
+&quot;replication_num&quot; = &quot;3&quot;
+);
+1 row in set (0.27 sec)</code></pre>
+<ul>
+<li>Unionize the schema of Parquet files and allow the system to assign NULL values to non-existent columns by setting <code>fill_mismatch_column_with</code> to <code>null</code>:</li>
+</ul>
+<pre><code>SELECT * FROM FILES(
+  &quot;path&quot; = &quot;s3://inserttest/basic_type.parquet,s3://inserttest/basic_type_k2k5k7.parquet&quot;,
+  &quot;format&quot; = &quot;parquet&quot;,
+  &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+  &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+  &quot;aws.s3.region&quot; = &quot;us-west-2&quot;,
+  &quot;fill_mismatch_column_with&quot; = &quot;null&quot;
+);
++------+------+------+-------+------------+---------------------+------+------+
+| k1   | k2   | k3   | k4    | k5         | k6                  | k7   | k8   |
++------+------+------+-------+------------+---------------------+------+------+
+| NULL |   21 | NULL |  NULL | 2024-10-03 | NULL                | c    | NULL |
+|    0 |    1 |    2 |  3.20 | 2024-10-01 | 2024-10-01 12:12:12 | a    |  4.3 |
+|    1 |   11 |   12 | 13.20 | 2024-10-02 | 2024-10-02 13:13:13 | b    | 14.3 |
++------+------+------+-------+------------+---------------------+------+------+
+3 rows in set (0.03 sec)</code></pre>
+<h5>Example 6: View the schema of a file</h5>
+<p>View the schema of the Parquet file <code>lineorder</code> stored in AWS S3 using DESC.</p>
+<pre><code>DESC FILES(
+    &quot;path&quot; = &quot;s3://inserttest/lineorder.parquet&quot;,
+    &quot;format&quot; = &quot;parquet&quot;,
+    &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+    &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);
+
++------------------+------------------+------+
+| Field            | Type             | Null |
++------------------+------------------+------+
+| lo_orderkey      | int              | YES  |
+| lo_linenumber    | int              | YES  |
+| lo_custkey       | int              | YES  |
+| lo_partkey       | int              | YES  |
+| lo_suppkey       | int              | YES  |
+| lo_orderdate     | int              | YES  |
+| lo_orderpriority | varchar(1048576) | YES  |
+| lo_shippriority  | int              | YES  |
+| lo_quantity      | int              | YES  |
+| lo_extendedprice | int              | YES  |
+| lo_ordtotalprice | int              | YES  |
+| lo_discount      | int              | YES  |
+| lo_revenue       | int              | YES  |
+| lo_supplycost    | int              | YES  |
+| lo_tax           | int              | YES  |
+| lo_commitdate    | int              | YES  |
+| lo_shipmode      | varchar(1048576) | YES  |
++------------------+------------------+------+
+17 rows in set (0.05 sec)</code></pre>
+<h5>Example 7: Unload data</h5>
+<p>Unload all data rows in <code>sales_records</code> as multiple Parquet files under the path <b>/unload/partitioned/</b> in the HDFS cluster. These files are stored in different subpaths distinguished by the values in the column <code>sales_time</code>.</p>
+<pre><code>INSERT INTO FILES(
+    &quot;path&quot; = &quot;hdfs://xxx.xx.xxx.xx:9000/unload/partitioned/&quot;,
+    &quot;format&quot; = &quot;parquet&quot;,
+    &quot;hadoop.security.authentication&quot; = &quot;simple&quot;,
+    &quot;username&quot; = &quot;xxxxx&quot;,
+    &quot;password&quot; = &quot;xxxxx&quot;,
+    &quot;compression&quot; = &quot;lz4&quot;,
+    &quot;partition_by&quot; = &quot;sales_time&quot;
+)
+SELECT * FROM sales_records;</code></pre>
+<p>Unload the query results into CSV and Parquet files in NFS(NAS):</p>
+<pre><code>-- CSV
+INSERT INTO FILES(
+    'path' = 'file:///home/ubuntu/csvfile/',
+    'format' = 'csv',
+    'csv.column_separator' = ',',
+    'csv.row_delimitor' = '\n'
+)
+SELECT * FROM sales_records;
+
+-- Parquet
+INSERT INTO FILES(
+    'path' = 'file:///home/ubuntu/parquetfile/',
+    'format' = 'parquet'
+)
+SELECT * FROM sales_records;</code></pre>
+<h5>Example 8: Avro files</h5>
+<p>Load an Avro file:</p>
+<pre><code>INSERT INTO avro_tbl
+  SELECT * FROM FILES(
+    &quot;path&quot; = &quot;hdfs://xxx.xx.xx.x:yyyy/avro/primitive.avro&quot;,
+    &quot;format&quot; = &quot;avro&quot;
+);</code></pre>
+<p>Query the data from an Avro file:</p>
+<pre><code>SELECT * FROM FILES(&quot;path&quot; = &quot;hdfs://xxx.xx.xx.x:yyyy/avro/complex.avro&quot;, &quot;format&quot; = &quot;avro&quot;)\G
+*************************** 1. row ***************************
+record_field: {&quot;id&quot;:1,&quot;name&quot;:&quot;avro&quot;}
+  enum_field: HEARTS
+ array_field: [&quot;one&quot;,&quot;two&quot;,&quot;three&quot;]
+   map_field: {&quot;a&quot;:1,&quot;b&quot;:2}
+ union_field: 100
+ fixed_field: 0x61626162616261626162616261626162
+1 row in set (0.05 sec)</code></pre>
+<p>View the schema of an Avro file:</p>
+<pre><code>DESC FILES(&quot;path&quot; = &quot;hdfs://xxx.xx.xx.x:yyyy/avro/logical.avro&quot;, &quot;format&quot; = &quot;avro&quot;);
++------------------------+------------------+------+
+| Field                  | Type             | Null |
++------------------------+------------------+------+
+| decimal_bytes          | decimal(10,2)    | YES  |
+| decimal_fixed          | decimal(10,2)    | YES  |
+| uuid_string            | varchar(1048576) | YES  |
+| date                   | date             | YES  |
+| time_millis            | int              | YES  |
+| time_micros            | bigint           | YES  |
+| timestamp_millis       | datetime         | YES  |
+| timestamp_micros       | datetime         | YES  |
+| local_timestamp_millis | bigint           | YES  |
+| local_timestamp_micros | bigint           | YES  |
+| duration               | varbinary(12)    | YES  |
++------------------------+------------------+------+</code></pre>
+<h5>Example 9: Access Azure Blob Storage using Managed Identity and Service Principal</h5>
+<pre><code>-- Managed Identity
+SELECT * FROM FILES(
+    &quot;path&quot; = &quot;wasbs://storage-container@storage-account.blob.core.windows.net/ssb_1g/customer/*&quot;,
+    &quot;format&quot; = &quot;parquet&quot;,
+    &quot;azure.blob.oauth2_use_managed_identity&quot; = &quot;true&quot;,
+    &quot;azure.blob.oauth2_client_id&quot; = &quot;1d6bfdec-dd34-4260-b8fd-aaaaaaaaaaaa&quot;
+);
+-- Service Principal
+SELECT * FROM FILES(
+    &quot;path&quot; = &quot;wasbs://storage-container@storage-account.blob.core.windows.net/ssb_1g/customer/*&quot;,
+    &quot;format&quot; = &quot;parquet&quot;,
+    &quot;azure.blob.oauth2_client_id&quot; = &quot;1d6bfdec-dd34-4260-b8fd-bbbbbbbbbbbb&quot;,
+    &quot;azure.blob.oauth2_client_secret&quot; = &quot;C2M8Q~ZXXXXXX_5XsbDCeL2dqP7hIR60xxxxxxxx&quot;,
+    &quot;azure.blob.oauth2_tenant_id&quot; = &quot;540e19cc-386b-4a44-a7b8-cccccccccccc&quot;
+);</code></pre>
+<h5>Example 10: CSV file</h5>
+<p>Query the data from a CSV file:</p>
+<pre><code>SELECT * FROM FILES(                                                                                                                                                     &quot;path&quot; = &quot;s3://test-bucket/file1.csv&quot;,
+    &quot;format&quot; = &quot;csv&quot;,
+    &quot;csv.column_separator&quot;=&quot;,&quot;,
+    &quot;csv.row_delimiter&quot;=&quot;\r\n&quot;,
+    &quot;csv.enclose&quot;='&quot;',
+    &quot;csv.skip_header&quot;=&quot;1&quot;,
+    &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+    &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);
++------+---------+--------------+
+| $1   | $2      | $3           |
++------+---------+--------------+
+|    1 | 0.71173 | 2017-11-20   |
+|    2 | 0.16145 | 2017-11-21   |
+|    3 | 0.80524 | 2017-11-22   |
+|    4 | 0.91852 | 2017-11-23   |
+|    5 | 0.37766 | 2017-11-24   |
+|    6 | 0.34413 | 2017-11-25   |
+|    7 | 0.40055 | 2017-11-26   |
+|    8 | 0.42437 | 2017-11-27   |
+|    9 | 0.67935 | 2017-11-27   |
+|   10 | 0.22783 | 2017-11-29   |
++------+---------+--------------+
+10 rows in set (0.33 sec)</code></pre>
+<p>Load a CSV file:</p>
+<pre><code>INSERT INTO csv_tbl
+  SELECT * FROM FILES(
+    &quot;path&quot; = &quot;s3://test-bucket/file1.csv&quot;,
+    &quot;format&quot; = &quot;csv&quot;,
+    &quot;csv.column_separator&quot;=&quot;,&quot;,
+    &quot;csv.row_delimiter&quot;=&quot;\r\n&quot;,
+    &quot;csv.enclose&quot;='&quot;',
+    &quot;csv.skip_header&quot;=&quot;1&quot;,
+    &quot;aws.s3.access_key&quot; = &quot;AAAAAAAAAAAAAAAAAAAA&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&quot;,
+    &quot;aws.s3.region&quot; = &quot;us-west-2&quot;
+);</code></pre>
+<h5>Example 11: Using AWS STS Regional endpoints</h5>
+<p>There are two cases shown here:</p>
+<p>1. Using a STS regional endpoint outside an AWS environment.<br>2. Using STS within an AWS environment (for example, EC2).</p>
+<p>##### Outside an AWS environment</p>
+<p>:::important<br>When working outside an AWS environment and using regional STS requires setting <code>&quot;aws.s3.use_instance_profile&quot; = &quot;false&quot;</code>.</p>
+<pre><code>:::</code></pre>
+<pre><code>SELECT COUNT(*)
+FROM FILES(&quot;path&quot; = &quot;s3://aws-bucket/path/file.csv.gz&quot;,
+    &quot;format&quot; = &quot;csv&quot;,
+    &quot;compression&quot; = &quot;gzip&quot;,
+    &quot;aws.s3.endpoint&quot;=&quot;https://s3.us-east-1.amazonaws.com&quot;,
+    &quot;aws.s3.region&quot;=&quot;us-east-1&quot;,
+    &quot;aws.s3.use_aws_sdk_default_behavior&quot; = &quot;false&quot;,
+--highlight-start
+    &quot;aws.s3.use_instance_profile&quot; = &quot;false&quot;,
+--highlight-end
+    &quot;aws.s3.access_key&quot; = &quot;****&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;****&quot;,
+    &quot;aws.s3.iam_role_arn&quot;=&quot;arn:aws:iam::1234567890:role/access-role&quot;,
+--highlight-start
+    &quot;aws.s3.sts.region&quot; = &quot;{sts_region}&quot;,
+    &quot;aws.s3.sts.endpoint&quot; = &quot;{sts_endpoint}&quot;
+--highlight-end
+);</code></pre>
+<p>##### Inside an AWS environment</p>
+<pre><code>SELECT COUNT(*)
+FROM FILES(&quot;path&quot; = &quot;s3://aws-bucket/path/file.csv.gz&quot;,
+    &quot;format&quot; = &quot;csv&quot;,
+    &quot;compression&quot; = &quot;gzip&quot;,
+    &quot;aws.s3.endpoint&quot;=&quot;https://s3.us-east-1.amazonaws.com&quot;,
+    &quot;aws.s3.region&quot;=&quot;us-east-1&quot;,
+    &quot;aws.s3.use_aws_sdk_default_behavior&quot; = &quot;false&quot;,
+--highlight-start
+    &quot;aws.s3.use_instance_profile&quot; = &quot;true&quot;,
+--highlight-end
+    &quot;aws.s3.access_key&quot; = &quot;****&quot;,
+    &quot;aws.s3.secret_key&quot; = &quot;****&quot;,
+    &quot;aws.s3.iam_role_arn&quot;=&quot;arn:aws:iam::1234567890:role/access-role&quot;,
+--highlight-start
+    &quot;aws.s3.sts.region&quot; = &quot;{sts_region}&quot;,
+    &quot;aws.s3.sts.endpoint&quot; = &quot;{sts_endpoint}&quot;
+--highlight-end
+);</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/table-functions/files.md">StarRocks documentation</a></p>
+</body></html>

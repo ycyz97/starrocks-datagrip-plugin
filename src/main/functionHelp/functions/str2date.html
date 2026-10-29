@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>str2date</title></head><body>
+<h2>str2date</h2>
+<p>Converts a string into a DATE value according to the specified format. If the conversion fails, NULL is returned.</p>
+<p>The format must be consistent with that described in date_format.</p>
+<p>This function is equivalent to str_to_date but has a different return type.</p>
+<h3>Syntax</h3>
+<pre><code>DATE str2date(VARCHAR str, VARCHAR format);</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the time expression you want to convert. It must be of the VARCHAR type.</p>
+<p><code>format</code>: the format used to return the value. For the supported format, see date_format.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DATE type.</p>
+<p>NULL is returned if <code>str</code> or <code>format</code> is NULL.</p>
+<h3>Examples</h3>
+<pre><code>select str2date('2010-11-30 23:59:59', '%Y-%m-%d %H:%i:%s');
++------------------------------------------------------+
+| str2date('2010-11-30 23:59:59', '%Y-%m-%d %H:%i:%s') |
++------------------------------------------------------+
+| 2010-11-30                                           |
++------------------------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/str2date.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_concat</title></head><body>
+<h2>array_concat</h2>
+<p>Concatenates multiple arrays into one array that contains all the elements in the arrays.</p>
+<p>Elements in the arrays to concatenate can be of the same type or different types. However, we recommend that the elements be of the same type.</p>
+<p>Nulls are processed as normal values.</p>
+<h3>Syntax</h3>
+<pre><code>array_concat(input0, input1, ...)</code></pre>
+<h3>Parameters</h3>
+<p><code>input</code>: one or more arrays that you want to concatenate. Specify arrays in the <code>(input0, input1, ...)</code> format. This function supports the following types of array elements: BOOLEAN, TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, VARCHAR, DECIMALV2, DATETIME, DATE, and JSON. <b>JSON is supported from 2.5.</b></p>
+<h3>Return value</h3>
+<p>Returns an array that contains all the elements held in the arrays that are specified by the <code>input</code> parameter. The elements of the returned array are of the same data type as the elements of the input arrays. Additionally, the elements of the returned array follow the order of the input arrays and their elements.</p>
+<h3>Examples</h3>
+<p>Example 1: Concatenate arrays that contain numeric elements.</p>
+<pre><code>select array_concat([57.73,97.32,128.55,null,324.2], [3], [5]) as res;
+
++-------------------------------------+
+
+| res                                 |
+
++-------------------------------------+
+
+| [57.73,97.32,128.55,null,324.2,3,5] |
+
++-------------------------------------+</code></pre>
+<p>Example 2: Concatenate arrays that contain string elements.</p>
+<pre><code>select array_concat([&quot;sql&quot;,&quot;storage&quot;,&quot;execute&quot;], [&quot;Query&quot;], [&quot;Vectorized&quot;, &quot;cbo&quot;]);
+
++----------------------------------------------------------------------------+
+
+| array_concat(['sql','storage','execute'], ['Query'], ['Vectorized','cbo']) |
+
++----------------------------------------------------------------------------+
+
+| [&quot;sql&quot;,&quot;storage&quot;,&quot;execute&quot;,&quot;Query&quot;,&quot;Vectorized&quot;,&quot;cbo&quot;]                     |
+
++----------------------------------------------------------------------------+</code></pre>
+<p>Example 3: Concatenate two arrays of different types.</p>
+<pre><code>select array_concat([57,65], [&quot;pear&quot;,&quot;apple&quot;]);
++-------------------------------------------+
+| array_concat([57, 65], ['pear', 'apple']) |
++-------------------------------------------+
+| [&quot;57&quot;,&quot;65&quot;,&quot;pear&quot;,&quot;apple&quot;]                |
++-------------------------------------------+</code></pre>
+<p>Example 4: Process nulls as normal values.</p>
+<pre><code>select array_concat([&quot;sql&quot;,null], [null], [&quot;Vectorized&quot;, null]);
+
++---------------------------------------------------------+
+
+| array_concat(['sql',NULL], [NULL], ['Vectorized',NULL]) |
+
++---------------------------------------------------------+
+
+| [&quot;sql&quot;,null,null,&quot;Vectorized&quot;,null]                     |
+
++---------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_concat.md">StarRocks documentation</a></p>
+</body></html>

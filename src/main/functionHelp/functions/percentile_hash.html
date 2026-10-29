@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>percentile_hash</title></head><body>
+<h2>percentile_hash</h2>
+<p>Constructs DOUBLE values as PERCENTILE values.</p>
+<h3>Syntax</h3>
+<pre><code>PERCENTILE_HASH(x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: The supported data type is DOUBLE.</p>
+<h3>Return value</h3>
+<p>Returns a PERCENTILE value.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select percentile_approx_raw(percentile_hash(234.234), 0.99);
++-------------------------------------------------------+
+| percentile_approx_raw(percentile_hash(234.234), 0.99) |
++-------------------------------------------------------+
+|                                    234.23399353027344 |
++-------------------------------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/percentile-functions/percentile_hash.md">StarRocks documentation</a></p>
+</body></html>

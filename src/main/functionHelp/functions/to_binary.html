@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>to_binary</title></head><body>
+<h2>to_binary</h2>
+<p>Converts a VARCHAR string to a binary value based on the specified binary format (<code>binary_type</code>) of the input string. The following binary formats are supported: <code>hex</code>, <code>encode64</code>, and <code>utf8</code>. If no <code>binary_type</code> is specified, <code>hex</code> is the default.</p>
+<h3>Syntax</h3>
+<pre><code>to_binary(str[, binary_type])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the string to convert, required. It must be a VARCHAR string.</li>
+<li><code>binary_type</code>: the binary format for conversion, optional.</li>
+</ul>
+<ul>
+<li><code>hex</code>(default): <code>to_binary</code> assumes the input string is a hex string in which all characters are in '0123456789abcdef'. If the input string is not valid, an empty binary is returned (exceptions will not be thrown). <code>to_binary</code> will convert the input string into binary directly. For example, <code>&quot;abab&quot;</code> will be converted to <code>x'abab'</code>. The input string is not case-sensitive.</li>
+<li><code>encode64</code>: <code>to_binary</code> assumes the input string is a base64-encoded string . If the input string is not valid, an empty binary is returned (exceptions will not be thrown). <code>to_binary</code> will decode the base64-encoded string as the binary result. For example, <code>&quot;YWJhYg==&quot;</code> will be converted to <code>x'abab'</code>.</li>
+<li><code>utf8</code>: <code>to_binary</code> converts the input string as a binary value without any transformation.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a VARCHAR value.</p>
+<h3>Examples</h3>
+<p>The following examples assume that the <code>--binary-as-hex</code> option is enabled when you access StarRocks from your MySQL client. This way, binary data is displayed using hexadecimal notation.</p>
+<pre><code>mysql&gt; select to_binary('ABAB', 'hex');
++----------------------------------------------------+
+| to_binary('ABAB', 'hex')                           |
++----------------------------------------------------+
+| 0xABAB                                             |
++----------------------------------------------------+
+1 row in set (0.01 sec)
+
+mysql&gt; select to_binary('U1RBUlJPQ0tT', 'encode64');
++------------------------------------------------------------------------------+
+| to_binary('U1RBUlJPQ0tT', 'encode64')                                        |
++------------------------------------------------------------------------------+
+| 0x53544152524F434B53                                                         |
++------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; select to_binary('STARROCKS', 'utf8');
++----------------------------------------------------------------+
+| to_binary('STARROCKS', 'utf8')                                 |
++----------------------------------------------------------------+
+| 0x53544152524F434B53                                           |
++----------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+-- The input string does not match the binary format and an empty binary is returned.
+
+mysql&gt; select to_binary('U1RBUlJPQ0tT', 'hex');
++--------------------------------------------------------------------+
+| to_binary('U1RBUlJPQ0tT', 'hex')                                   |
++--------------------------------------------------------------------+
+| 0x                                                                 |
++--------------------------------------------------------------------+
+1 row in set (0.00 sec)</code></pre>
+<h3>References</h3>
+<ul>
+<li>from_binary</li>
+<li>BINARY/VARBINARY data type</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/binary-functions/to_binary.md">StarRocks documentation</a></p>
+</body></html>

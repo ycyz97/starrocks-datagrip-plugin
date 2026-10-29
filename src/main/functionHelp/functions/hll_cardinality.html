@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hll_cardinality</title></head><body>
+<h2>hll_cardinality</h2>
+<p>Calculates the cardinality of a single HLL type value.</p>
+<h3>Syntax</h3>
+<pre><code>HLL_CARDINALITY(hll)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select HLL_CARDINALITY(uv_set) from test_uv;
++---------------------------+
+| hll_cardinality(`uv_set`) |
++---------------------------+
+|                         3 |
++---------------------------+</code></pre>
+<h3>keyword</h3>
+<p>HLL,HLL_CARDINALITY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/scalar-functions/hll_cardinality.md">StarRocks documentation</a></p>
+</body></html>

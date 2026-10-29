@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>regexp_replace</title></head><body>
+<p>Replaces substrings that match a regular expression.</p>
+<p><b>Syntax:</b> <code>REGEXP_REPLACE(source, pattern, replacement)</code></p>
+<p><b>Parameters:</b> <code>source</code> is the input string; <code>pattern</code> is the regular expression; <code>replacement</code> is the replacement text.</p>
+<p><b>Returns:</b> The input string with matching substrings replaced.</p>
+<pre><code>SELECT REGEXP_REPLACE('order-123', '[0-9]+', 'id'); -- order-id</code></pre>
+</body></html>

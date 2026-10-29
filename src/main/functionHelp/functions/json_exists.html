@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>json_exists</title></head><body>
+<h2>json_exists</h2>
+<p>Checks whether a JSON object contains an element that can be located by the <code>json_path</code> expression. If the element exists, the JSON_EXISTS function returns <code>1</code>. Otherwise, the JSON_EXISTS function returns <code>0</code>.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>json_exists(json_object_expr, json_path)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>json_object_expr</code>: the expression that represents the JSON object. The object can be a JSON column, or a JSON object that is produced by a JSON constructor function such as PARSE_JSON.</li>
+</ul>
+<ul>
+<li><code>json_path</code>: the expression that represents the path to an element in the JSON object. The value of this parameter is a string. For more information about the JSON path syntax that is supported by StarRocks, see Overview of JSON functions and operators.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BOOLEAN value.</p>
+<h3>Examples</h3>
+<p>Example 1: Check whether the specified JSON object contains an element that can be located by the <code>'$.a.b'</code> expression. In this example, the element exists in the JSON object. Therefore, the json_exists function returns <code>1</code>.</p>
+<pre><code>mysql&gt; SELECT json_exists(PARSE_JSON('{&quot;a&quot;: {&quot;b&quot;: 1}}'), '$.a.b') ;
+
+       -&gt; 1</code></pre>
+<p>Example 2: Check whether the specified JSON object contains an element that can be located by the <code>'$.a.c'</code> expression. In this example, the element does not exist in the JSON object. Therefore, the json_exists function returns <code>0</code>.</p>
+<pre><code>mysql&gt; SELECT json_exists(PARSE_JSON('{&quot;a&quot;: {&quot;b&quot;: 1}}'), '$.a.c') ;
+
+       -&gt; 0</code></pre>
+<p>Example 3: Check whether the specified JSON object contains an element that can be located by the <code>'$.a[2]'</code> expression. In this example, the JSON object, which is an array named a, contains an element at index 2. Therefore, the json_exists function returns <code>1</code>.</p>
+<pre><code>mysql&gt; SELECT json_exists(PARSE_JSON('{&quot;a&quot;: [1,2,3]}'), '$.a[2]') ;
+
+       -&gt; 1</code></pre>
+<p>Example 4: Check whether the specified JSON object contains an element that can be located by the <code>'$.a[3]'</code> expression. In this example, the JSON object, which is an array named a, does not contain an element at index 3. Therefore, the json_exists function returns <code>0</code>.</p>
+<pre><code>mysql&gt; SELECT json_exists(PARSE_JSON('{&quot;a&quot;: [1,2,3]}'), '$.a[3]') ;
+
+       -&gt; 0</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/json_exists.md">StarRocks documentation</a></p>
+</body></html>

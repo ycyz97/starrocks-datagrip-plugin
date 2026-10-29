@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>str_to_map</title></head><body>
+<h2>str_to_map</h2>
+<p>Splits a given string into key-value pairs using two delimiters and returns a map of the split pairs.</p>
+<p>This function is supported from v3.1 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>MAP&lt;VARCHAR, VARCHAR&gt; str_to_map(VARCHAR content[, VARCHAR delimiter[, VARCHAR map_delimiter]])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>content</code>: required, the string expression to split.</li>
+<li><code>delimiter</code>: optional, the delimiter used to split <code>content</code> into key-value pairs, defaults to <code>,</code>.</li>
+<li><code>map_delimiter</code>: optional, the delimiter used to separate each key-value pair, defaults to <code>:</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a MAP of STRING elements. Any null input results in NULL.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; SELECT str_to_map('a:1|b:2|c:3', '|', ':') as map;
++---------------------------+
+| map                       |
++---------------------------+
+| {&quot;a&quot;:&quot;1&quot;,&quot;b&quot;:&quot;2&quot;,&quot;c&quot;:&quot;3&quot;} |
++---------------------------+
+
+mysql&gt; SELECT str_to_map('a:1;b:2;c:3', ';', ':') as map;
++---------------------------+
+| map                       |
++---------------------------+
+| {&quot;a&quot;:&quot;1&quot;,&quot;b&quot;:&quot;2&quot;,&quot;c&quot;:&quot;3&quot;} |
++---------------------------+
+
+mysql&gt; SELECT str_to_map('a:1,b:2,c:3', ',', ':') as map;
++---------------------------+
+| map                       |
++---------------------------+
+| {&quot;a&quot;:&quot;1&quot;,&quot;b&quot;:&quot;2&quot;,&quot;c&quot;:&quot;3&quot;} |
++---------------------------+
+
+mysql&gt; SELECT str_to_map('a') as map;
++------------+
+| map        |
++------------+
+| {&quot;a&quot;:null} |
++------------+
+
+mysql&gt; SELECT str_to_map('a:1,b:2,c:3',null, ':') as map;
++------+
+| map  |
++------+
+| NULL |
++------+
+
+mysql&gt; SELECT str_to_map('a:1,b:2,c:null') as map;
++------------------------------+
+| map                          |
++------------------------------+
+| {&quot;a&quot;:&quot;1&quot;,&quot;b&quot;:&quot;2&quot;,&quot;c&quot;:&quot;null&quot;} |
++------------------------------+</code></pre>
+<h3>keywords</h3>
+<p>STR_TO_MAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/str_to_map.md">StarRocks documentation</a></p>
+</body></html>

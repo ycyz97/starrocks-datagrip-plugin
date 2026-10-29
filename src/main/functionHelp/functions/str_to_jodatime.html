@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>str_to_jodatime</title></head><body>
+<h2>str_to_jodatime</h2>
+<p>Converts a Joda-formatted string into a DATETIME value in the specified Joda DateTime format like <code>yyyy-MM-dd HH:mm:ss</code>.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME str_to_jodatime(VARCHAR str, VARCHAR format)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the time expression you want to convert. It must be of the VARCHAR type.</li>
+<li><code>format</code>: the Joda DateTime format of the DATETIME value to be returned. For information about the formats available, see Joda DateTime.</li>
+</ul>
+<h3>Return value</h3>
+<ul>
+<li>If parsing the input string succeeds, a DATETIME value is returned.</li>
+<li>If parsing the input string fails, <code>NULL</code> is returned.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Convert the string <code>2014-12-21 12:34:56</code> into a DATETIME value in <code>yyyy-MM-dd HH:mm:ss</code> format.</p>
+<pre><code>MySQL &gt; select str_to_jodatime('2014-12-21 12:34:56', 'yyyy-MM-dd HH:mm:ss');
++--------------------------------------------------------------+
+| str_to_jodatime('2014-12-21 12:34:56', 'yyyy-MM-dd HH:mm:ss') |
++--------------------------------------------------------------+
+| 2014-12-21 12:34:56                                          |
++--------------------------------------------------------------+</code></pre>
+<p>Example 2: Convert the string <code>21/December/23 12:34:56</code> with a text-style month into a DATETIME value in <code>dd/MMMM/yy HH:mm:ss</code> format.</p>
+<pre><code>MySQL &gt; select str_to_jodatime('21/December/23 12:34:56', 'dd/MMMM/yy HH:mm:ss');
++------------------------------------------------------------------+
+| str_to_jodatime('21/December/23 12:34:56', 'dd/MMMM/yy HH:mm:ss') |
++------------------------------------------------------------------+
+| 2023-12-21 12:34:56                                              |
++------------------------------------------------------------------+</code></pre>
+<p>Example 3: Convert the string <code>21/December/23 12:34:56.123</code> accurate to milliseconds into a DATETIME value in <code>dd/MMMM/yy HH:mm:ss.SSS</code> format.</p>
+<pre><code>MySQL &gt; select str_to_jodatime('21/December/23 12:34:56.123', 'dd/MMMM/yy HH:mm:ss.SSS');
++--------------------------------------------------------------------------+
+| str_to_jodatime('21/December/23 12:34:56.123', 'dd/MMMM/yy HH:mm:ss.SSS') |
++--------------------------------------------------------------------------+
+| 2023-12-21 12:34:56.123000                                               |
++--------------------------------------------------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>STR_TO_JODATIME, DATETIME</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/str_to_jodatime.md">StarRocks documentation</a></p>
+</body></html>

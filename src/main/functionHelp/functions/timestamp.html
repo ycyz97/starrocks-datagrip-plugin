@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>timestamp</title></head><body>
+<h2>timestamp</h2>
+<p>Returns the DATETIME value of a date or datetime expression.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME timestamp(DATETIME|DATE expr);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the time expression you want to convert. It must be of the DATETIME or DATE type.</p>
+<h3>Return value</h3>
+<p>Returns a DATETIME value. If the input time is empty or does not exist, such as <code>2021-02-29</code>, NULL is returned.</p>
+<h3>Examples</h3>
+<pre><code>select timestamp(&quot;2019-05-27&quot;);
++-------------------------+
+| timestamp('2019-05-27') |
++-------------------------+
+| 2019-05-27 00:00:00     |
++-------------------------+
+1 row in set (0.00 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/timestamp.md">StarRocks documentation</a></p>
+</body></html>

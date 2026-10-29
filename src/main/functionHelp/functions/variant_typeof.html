@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>variant_typeof</title></head><body>
+<h2>variant_typeof</h2>
+<p>Returns the type name of a VARIANT value as a string.</p>
+<p>This function inspects a VARIANT value and returns its type as a string. This is useful for understanding the structure of VARIANT data or for conditional processing based on the data type.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR variant_typeof(variant_expr)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>variant_expr</code>: the expression that represents the VARIANT object. This is typically a VARIANT column from an Iceberg table or a VARIANT value returned by <code>variant_query</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a VARCHAR value representing the type name.</p>
+<p>Possible return values include:</p>
+<ul>
+<li><code>&quot;Null&quot;</code> - for a VARIANT null, such as a JSON null. For SQL NULL, including the result of <code>variant_query</code> when the path does not exist, the function returns NULL. To test for a VARIANT null, use is_variant_null.</li>
+<li><code>&quot;Boolean(true)&quot;</code> - for boolean true values</li>
+<li><code>&quot;Boolean(false)&quot;</code> - for boolean false values</li>
+<li><code>&quot;Int8&quot;</code>, <code>&quot;Int16&quot;</code>, <code>&quot;Int32&quot;</code>, <code>&quot;Int64&quot;</code> - for integer values</li>
+<li><code>&quot;Float&quot;</code>, <code>&quot;Double&quot;</code> - for floating-point values</li>
+<li><code>&quot;Decimal4&quot;</code>, <code>&quot;Decimal8&quot;</code>, <code>&quot;Decimal16&quot;</code> - for decimal values with different precision</li>
+<li><code>&quot;String&quot;</code> - for string values</li>
+<li><code>&quot;Binary&quot;</code> - for binary data</li>
+<li><code>&quot;Date&quot;</code> - for date values</li>
+<li><code>&quot;TimestampTz&quot;</code>, <code>&quot;TimestampNtz&quot;</code> - for timestamp values with or without timezone</li>
+<li><code>&quot;TimestampTzNanos&quot;</code>, <code>&quot;TimestampNtzNanos&quot;</code> - for nanosecond-precision timestamp values</li>
+<li><code>&quot;TimeNtz&quot;</code> - for time values without timezone</li>
+<li><code>&quot;Uuid&quot;</code> - for UUID values</li>
+<li><code>&quot;Object&quot;</code> - for struct or map values</li>
+<li><code>&quot;Array&quot;</code> - for array values</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Get the type of a VARIANT value at the root level.</p>
+<pre><code>SELECT variant_typeof(data) AS type
+FROM bluesky
+LIMIT 1;</code></pre>
+<pre><code>+--------+
+| type   |
++--------+
+| Object |
++--------+</code></pre>
+<p>Example 2: Get the type of nested fields.</p>
+<pre><code>SELECT
+    variant_typeof(variant_query(data, '$.kind')) AS kind_type,
+    variant_typeof(variant_query(data, '$.did')) AS did_type,
+    variant_typeof(variant_query(data, '$.commit')) AS commit_type
+FROM bluesky
+LIMIT 1;</code></pre>
+<pre><code>+-----------+----------+-------------+
+| kind_type | did_type | commit_type |
++-----------+----------+-------------+
+| String    | String   | Object      |
++-----------+----------+-------------+</code></pre>
+<p>Example 3: Check types of multiple fields.</p>
+<pre><code>SELECT
+    variant_typeof(variant_query(data, '$.commit')) AS commit_type,
+    variant_typeof(variant_query(data, '$.time_us')) AS time_type
+FROM bluesky
+LIMIT 1;</code></pre>
+<pre><code>+-------------+-----------+
+| commit_type | time_type |
++-------------+-----------+
+| Object      | Int64     |
++-------------+-----------+</code></pre>
+<p>Example 4: Use in conditional logic to handle different types.</p>
+<pre><code>SELECT
+    CASE variant_typeof(variant_query(data, '$.time_us'))
+        WHEN 'Int64' THEN get_variant_int(data, '$.time_us')
+        ELSE NULL
+    END AS timestamp_value
+FROM bluesky
+LIMIT 3;</code></pre>
+<pre><code>+------------------+
+| timestamp_value  |
++------------------+
+| 1733267476040329 |
+| 1733267476040803 |
+| 1733267476041472 |
++------------------+</code></pre>
+<p>Example 5: Filter rows based on type.</p>
+<pre><code>SELECT COUNT(*) AS object_count
+FROM bluesky
+WHERE variant_typeof(variant_query(data, '$.commit')) = 'Object';</code></pre>
+<pre><code>+--------------+
+| object_count |
++--------------+
+| 9960624      |
++--------------+</code></pre>
+<h3>keyword</h3>
+<p>VARIANT_TYPEOF,VARIANT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/variant-functions/variant_typeof.md">StarRocks documentation</a></p>
+</body></html>

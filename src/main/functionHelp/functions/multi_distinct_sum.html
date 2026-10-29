@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>multi_distinct_sum</title></head><body>
+<h2>multi_distinct_sum</h2>
+<p>Returns the sum of distinct values in <code>expr</code>, equivalent to sum(distinct expr).</p>
+<h3>Syntax</h3>
+<pre><code>multi_distinct_sum(expr)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr</code>: the columns involved in the calculation. Column values can be of the following types: TINYINT, SMALLINT, INT, LARGEINT, FLOAT, DOUBLE, or DECIMAL.</li>
+</ul>
+<h3>Return value</h3>
+<p>The mapping between column values and return value types is as follows:</p>
+<ul>
+<li>BOOLEAN -&gt; BIGINT</li>
+<li>TINYINT -&gt; BIGINT</li>
+<li>SMALLINT -&gt; BIGINT</li>
+<li>INT -&gt; BIGINT</li>
+<li>BIGINT -&gt; BIGINT</li>
+<li>FLOAT -&gt; DOUBLE</li>
+<li>DOUBLE -&gt; DOUBLE</li>
+<li>LARGEINT -&gt; LARGEINT</li>
+<li>DECIMALV2 -&gt; DECIMALV2</li>
+<li>DECIMAL32 -&gt; DECIMAL128</li>
+<li>DECIMAL64 -&gt; DECIMAL128</li>
+<li>DECIMAL128 -&gt; DECIMAL128</li>
+</ul>
+<h3>Examples</h3>
+<p>1. Create a table with <code>k0</code> as the INT field.</p>
+<pre><code>    CREATE TABLE tabl
+    (k0 BIGINT NOT NULL) ENGINE=OLAP
+    DUPLICATE KEY(`k0`)
+    COMMENT &quot;OLAP&quot;
+    DISTRIBUTED BY HASH(`k0`)
+    PROPERTIES(
+        &quot;replication_num&quot; = &quot;3&quot;,
+        &quot;storage_format&quot; = &quot;DEFAULT&quot;
+    );</code></pre>
+<p>2. Insert values into the table.</p>
+<pre><code>    --
+    INSERT INTO tabl VALUES ('0'), ('1'), ('1'), ('1'), ('2'), ('2');</code></pre>
+<p>3. Use multi_distinct_sum() to calculate the sum of distinct values in the <code>k0</code> column.</p>
+<pre><code>    MySQL &gt; select multi_distinct_sum(k0) from tabl;
+    +------------------------+
+    | multi_distinct_sum(k0) |
+    +------------------------+
+    |                      3 |
+    +------------------------+
+    1 row in set (0.03 sec)</code></pre>
+<pre><code>The distinct values of `k0` is 0, 1, 2 and we can get 3 after adding them together.</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/multi_distinct_sum.md">StarRocks documentation</a></p>
+</body></html>

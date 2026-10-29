@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>if</title></head><body>
+<h2>if</h2>
+<p>If <code>expr1</code> evaluates to TRUE, returns <code>expr2</code>. Otherwise, returns <code>expr3</code>.</p>
+<h3>Syntax</h3>
+<pre><code>if(expr1,expr2,expr3);</code></pre>
+<h3>Parameters</h3>
+<p><code>expr1</code>: the condition. It must be a BOOLEAN value.</p>
+<p><code>expr2</code> and <code>expr3</code> must be compatible in data type.</p>
+<h3>Return value</h3>
+<p>The return value has the same type as <code>expr2</code>.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select if(true,1,2);
++----------------+
+| if(TRUE, 1, 2) |
++----------------+
+|              1 |
++----------------+
+
+mysql&gt; select if(false,2.14,2);
++--------------------+
+| if(FALSE, 2.14, 2) |
++--------------------+
+|               2.00 |
++--------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/condition-functions/if.md">StarRocks documentation</a></p>
+</body></html>

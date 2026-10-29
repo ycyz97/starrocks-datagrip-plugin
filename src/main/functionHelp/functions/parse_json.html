@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>parse_json</title></head><body>
+<h2>parse_json</h2>
+<p>Converts a string to a JSON value.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>parse_json(string_expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>string_expr</code>: the expression that represents the string. Only the STRING, VARCHAR, and CHAR data types are supported.</p>
+<h3>Return value</h3>
+<p>Returns a JSON value.</p>
+<p>&gt; Note: If the string cannot be parsed into a standard JSON value, the PARSE_JSON function returns <code>NULL</code> (see Example 5). For information about the JSON specifications, see RFC 7159.</p>
+<h3>Examples</h3>
+<p>Example 1: Convert a STRING value of <code>1</code> to a JSON value of <code>1</code>.</p>
+<pre><code>mysql&gt; SELECT parse_json('1');
++-----------------+
+| parse_json('1') |
++-----------------+
+| &quot;1&quot;             |
++-----------------+</code></pre>
+<p>Example 2: Convert an array of the STRING data type to a JSON array.</p>
+<pre><code>mysql&gt; SELECT parse_json('[1,2,3]');
++-----------------------+
+| parse_json('[1,2,3]') |
++-----------------------+
+| [1, 2, 3]             |
++-----------------------+ </code></pre>
+<p>Example 3: Convert an object of the STRING data type to a JSON object.</p>
+<pre><code>mysql&gt; SELECT parse_json('{&quot;star&quot;: &quot;rocks&quot;}');
++---------------------------------+
+| parse_json('{&quot;star&quot;: &quot;rocks&quot;}') |
++---------------------------------+
+| {&quot;star&quot;: &quot;rocks&quot;}               |
++---------------------------------+</code></pre>
+<p>Example 4: Construct a JSON value of <code>NULL</code>.</p>
+<pre><code>mysql&gt; SELECT parse_json('null');
++--------------------+
+| parse_json('null') |
++--------------------+
+| &quot;null&quot;             |
++--------------------+</code></pre>
+<p>Example 5: If the string cannot be parsed into a standard JSON value, the PARSE_JSON function returns <code>NULL</code>. In this example, <code>star</code> is not enclosed in double quotation marks (&quot;). Therefore, the PARSE_JSON function returns <code>NULL</code>.</p>
+<pre><code>mysql&gt; SELECT parse_json('{star: &quot;rocks&quot;}');
++-------------------------------+
+| parse_json('{star: &quot;rocks&quot;}') |
++-------------------------------+
+| NULL                          |
++-------------------------------+</code></pre>
+<p>Example 6: If a JSON key contains a '.', for example, 'a.1', it must be escaped with '\\' or you need to enclose the entire key value along with double quotes in single quotes.</p>
+<pre><code>mysql&gt; select parse_json('{&quot;b&quot;:4, &quot;a.1&quot;: &quot;1&quot;}')-&gt;&quot;a\\.1&quot;;
++--------------------------------------------+
+| parse_json('{&quot;b&quot;:4, &quot;a.1&quot;: &quot;1&quot;}')-&gt;'a\\.1' |
++--------------------------------------------+
+| &quot;1&quot;                                        |
++--------------------------------------------+
+mysql&gt; select parse_json('{&quot;b&quot;:4, &quot;a.1&quot;: &quot;1&quot;}')-&gt;'&quot;a.1&quot;';
++--------------------------------------------+
+| parse_json('{&quot;b&quot;:4, &quot;a.1&quot;: &quot;1&quot;}')-&gt;'&quot;a.1&quot;' |
++--------------------------------------------+
+| &quot;1&quot;                                        |
++--------------------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>parse_json, parse json</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-constructor-functions/parse_json.md">StarRocks documentation</a></p>
+</body></html>

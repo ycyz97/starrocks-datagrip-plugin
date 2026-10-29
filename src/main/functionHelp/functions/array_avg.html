@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_avg</title></head><body>
+<h2>array_avg</h2>
+<p>Calculates the average value of all data in an ARRAY and return this result.</p>
+<h3>Syntax</h3>
+<pre><code>array_avg(array(type))</code></pre>
+<p><code>array(type)</code> supports the following types of elements: BOOLEAN, TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, DECIMALV2.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select array_avg([11, 11, 12]);
++-----------------------+
+| array_avg([11,11,12]) |
++-----------------------+
+| 11.333333333333334    |
++-----------------------+
+
+mysql&gt; select array_avg([11.33, 11.11, 12.324]);
++---------------------------------+
+| array_avg([11.33,11.11,12.324]) |
++---------------------------------+
+| 11.588                          |
++---------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ARRAY_AVG,ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_avg.md">StarRocks documentation</a></p>
+</body></html>

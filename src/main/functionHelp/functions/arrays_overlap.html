@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>arrays_overlap</title></head><body>
+<h2>arrays_overlap</h2>
+<p>Checks whether the intersection of two arrays is empty. The arrays that you specify must be of the same data type. If the intersection is empty, this function returns <code>0</code>. Otherwise, this function returns <code>1</code>.</p>
+<h3>Syntax</h3>
+<pre><code>arrays_overlap(input0, input1)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>input0</code>: one of the two arrays that you want to compare.</li>
+</ul>
+<ul>
+<li><code>input1</code>: the other of the two arrays that you want to compare. The value of this parameter must be of the same data type as the value of the <code>input0</code> parameter.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the BOOLEAN data type.</p>
+<h3>Examples</h3>
+<p>Example 1:</p>
+<pre><code>mysql&gt; select arrays_overlap([11, 9, 3, 2], [null, 11]);
++--------------------------------------+
+| arrays_overlap([11,9,3,2], [NULL,11]) |
++--------------------------------------+
+|                                    1 |
++--------------------------------------+</code></pre>
+<p>Example 2:</p>
+<pre><code>mysql&gt; select arrays_overlap([9, 3, 2], [null, 11]);
++-----------------------------------+
+| arrays_overlap([9,3,2], [NULL,11]) |
++-----------------------------------+
+|                                 0 |
++-----------------------------------+</code></pre>
+<p>Example 3:</p>
+<pre><code>mysql&gt; select arrays_overlap([9, 3, null, 2], [null, 11]);
++----------------------------------------+
+| arrays_overlap([9,3,NULL,2], [NULL,11]) |
++----------------------------------------+
+|                                      1 |
++----------------------------------------+</code></pre>
+<p>Example 4:</p>
+<pre><code>mysql&gt; select arrays_overlap([9, 3, &quot;SQL&quot;, 2], [null, &quot;SQL&quot;]);
++--------------------------------------------+
+| arrays_overlap([9,3,'SQL',2], [NULL,'SQL']) |
++--------------------------------------------+
+|                                          1 |
++--------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/arrays_overlap.md">StarRocks documentation</a></p>
+</body></html>

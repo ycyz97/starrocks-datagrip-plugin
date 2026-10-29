@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>dround</title></head><body>
+<h2>round, dround</h2>
+<p>Rounds a number to a specified number of digits.</p>
+<ul>
+<li>If <code>n</code> is not specified, <code>x</code> is rounded to the nearest integer.</li>
+<li>If <code>n</code> is specified, <code>x</code> is rounded to <code>n</code> decimal places. If <code>n</code> is negative, <code>x</code> is rounded to the left of the decimal point. If overflow occurs, an error is returned.</li>
+</ul>
+<h3>Syntax</h3>
+<pre><code>ROUND(x [,n]);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: the number to be rounded. It supports the DOUBLE and DECIMAL128 data types.</p>
+<p><code>n</code>: the number of decimal places to round the number to. It supports the INT data type. This parameter is optional.</p>
+<h3>Return value</h3>
+<ul>
+<li>If only <code>x</code> is specified, the return value is of the following data type:</li>
+</ul>
+<p>[&quot;DECIMAL128&quot;] -&gt; &quot;DECIMAL128&quot;</p>
+<p>[&quot;DOUBLE&quot;] -&gt; &quot;BIGINT&quot;</p>
+<ul>
+<li>If both <code>x</code> and <code>n</code> are specified, the return value is of the following data type:</li>
+</ul>
+<p>[&quot;DECIMAL128&quot;, &quot;INT&quot;] -&gt; &quot;DECIMAL128&quot;</p>
+<p>[&quot;DOUBLE&quot;, &quot;INT&quot;] -&gt; &quot;DOUBLE&quot;</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select round(3.14);
++-------------+
+| round(3.14) |
++-------------+
+|           3 |
++-------------+
+
+mysql&gt; select round(3.14,1);
++----------------+
+| round(3.14, 1) |
++----------------+
+|            3.1 |
++----------------+
+
+mysql&gt; select round(13.14,-1);
++------------------+
+| round(13.14, -1) |
++------------------+
+|               10 |
++------------------+
+
+mysql&gt; select round(122.14,-1);
++-------------------+
+| round(122.14, -1) |
++-------------------+
+|               120 |
++-------------------+
+
+mysql&gt; select round(122.14,-2);
++-------------------+
+| round(122.14, -2) |
++-------------------+
+|               100 |
++-------------------+
+
+mysql&gt; select round(122.14,-3);
++-------------------+
+| round(122.14, -3) |
++-------------------+
+|                 0 |
++-------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/round.md">StarRocks documentation</a></p>
+</body></html>

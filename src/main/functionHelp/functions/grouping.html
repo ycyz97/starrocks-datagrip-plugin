@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>grouping</title></head><body>
+<h2>grouping</h2>
+<p>Indicates whether a column is an aggregate column. If it is an aggregate column, 0 is returned. Otherwise, 1 is returned.</p>
+<h3>Syntax</h3>
+<pre><code>GROUPING(col_expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>col_expr</code>: An expression for a dimension column specified in the expression-list of the ROLLUP, CUBE, or GROUPING SETS expansion of the GROUP BY clause.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select * from t;
++------+------+
+| k1   | k2   |
++------+------+
+| NULL | B    |
+| NULL | b    |
+| A    | NULL |
+| A    | B    |
+| A    | b    |
+| a    | NULL |
+| a    | B    |
+| a    | b    |
++------+------+
+8 rows in set (0.12 sec)
+
+MySQL &gt; SELECT k1, k2, GROUPING(k1), GROUPING(k2), COUNT(*) FROM t GROUP BY ROLLUP(k1, k2);
++------+------+--------------+--------------+----------+
+| k1   | k2   | grouping(k1) | grouping(k2) | count(*) |
++------+------+--------------+--------------+----------+
+| NULL | NULL |            1 |            1 |        8 |
+| NULL | NULL |            0 |            1 |        2 |
+| NULL | B    |            0 |            0 |        1 |
+| NULL | b    |            0 |            0 |        1 |
+| A    | NULL |            0 |            1 |        3 |
+| a    | NULL |            0 |            1 |        3 |
+| A    | NULL |            0 |            0 |        1 |
+| A    | B    |            0 |            0 |        1 |
+| A    | b    |            0 |            0 |        1 |
+| a    | NULL |            0 |            0 |        1 |
+| a    | B    |            0 |            0 |        1 |
+| a    | b    |            0 |            0 |        1 |
++------+------+--------------+--------------+----------+
+12 rows in set (0.12 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/grouping.md">StarRocks documentation</a></p>
+</body></html>

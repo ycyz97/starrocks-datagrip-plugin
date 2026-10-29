@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>materialize</title></head><body>
+<h2>materialize</h2>
+<h3>Description</h3>
+<p>Returns the input value unchanged but acts as an optimization barrier for the FE (Frontend) optimizer. Wrapping an expression with <code>materialize()</code> prevents the optimizer from applying transformations such as constant folding, partition pruning, and other rewrites on the wrapped expression.</p>
+<p>This function is useful for testing and debugging query execution behavior. For example, you can use it to verify that a query returns correct results without relying on partition pruning.</p>
+<h3>Syntax</h3>
+<pre><code>materialize(x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: the expression to pass through. Supported data types are BOOLEAN, TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, VARCHAR, DATE, DATETIME, DECIMALV2, DECIMAL32, DECIMAL64, DECIMAL128, DECIMAL256, JSON, and VARBINARY.</p>
+<h3>Return value</h3>
+<p>Returns the same value and type as the input.</p>
+<h3>Examples</h3>
+<p>Prevent partition pruning on a date column:</p>
+<pre><code>-- Without materialize: partition pruning applies
+SELECT * FROM sales WHERE dt &gt;= '2024-01-01';
+
+-- With materialize: partition pruning is disabled on dt
+SELECT * FROM sales WHERE materialize(dt) &gt;= '2024-01-01';</code></pre>
+<p>Prevent constant folding:</p>
+<pre><code>SELECT materialize(1 + 2);
++-------------------+
+| materialize(1 + 2)|
++-------------------+
+|                 3 |
++-------------------+</code></pre>
+<h3>Keywords</h3>
+<p>MATERIALIZE, materialize</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/materialize.md">StarRocks documentation</a></p>
+</body></html>

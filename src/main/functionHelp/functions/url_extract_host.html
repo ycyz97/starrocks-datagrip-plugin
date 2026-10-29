@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>url_extract_host</title></head><body>
+<h2>url_extract_host</h2>
+<p>Extracts the host section from a URL.</p>
+<p>This function is supported from v3.3 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR url_extract_host(VARCHAR str)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the string to extract its host string. If <code>str</code> is not a string, this function will try implicit cast first.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns the host string.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select url_extract_host('httpa://starrocks.com/test/api/v1');
++-------------------------------------------------------+
+| url_extract_host('httpa://starrocks.com/test/api/v1') |
++-------------------------------------------------------+
+| starrocks.com                                         |
++-------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/url_extract_host.md">StarRocks documentation</a></p>
+</body></html>

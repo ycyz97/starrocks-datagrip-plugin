@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>divide</title></head><body>
+<h2>divide</h2>
+<p>Return the quotient of x divide y. If y is 0, return null.</p>
+<h3>Syntax</h3>
+<pre><code>divide(x, y)</code></pre>
+<h4>Parameters</h4>
+<ul>
+<li><code>x</code>: The supported types are DOUBLE, FLOAT, LARGEINT, BIGINT, INT, SMALLINT, TINYINT, DECIMALV2, DECIMAL32, DECIMAL64, DECIMAL128.</li>
+</ul>
+<ul>
+<li><code>y</code>: The supported types are the same as <code>x</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3>Usage notes</h3>
+<p>If you specify a non-numeric value, this function returns <code>NULL</code>.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select divide(3, 2);
++--------------+
+| divide(3, 2) |
++--------------+
+|          1.5 |
++--------------+
+1 row in set (0.00 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/divide.md">StarRocks documentation</a></p>
+</body></html>

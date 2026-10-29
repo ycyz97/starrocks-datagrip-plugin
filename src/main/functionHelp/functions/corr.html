@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>corr</title></head><body>
+<h2>corr</h2>
+<p>Returns the Pearson correlation coefficient between two expressions. This function is supported from v2.5.10. It can also be used as a window function.</p>
+<h3>Syntax</h3>
+<pre><code>CORR(expr1, expr2)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr1</code> and <code>expr2</code> must evaluate to TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE, or DECIMAL.</p>
+<p>If <code>expr1</code> and <code>expr2</code> are table columns, this function calculates the correlation coefficient of these two columns.</p>
+<h3>Return value</h3>
+<p>Returns a DOUBLE value. The formula is as follows, where <code>n</code> represents the row count of the table:</p>
+<p>!corr formula</p>
+<h3>Usage notes</h3>
+<ul>
+<li>A data row is counted only when the two columns in this row are non-null values. Otherwise, this data row is eliminated from the result.</li>
+</ul>
+<ul>
+<li>0 is returned if <code>n</code> is 1.</li>
+</ul>
+<ul>
+<li>NULL is returned in any input is NULL.</li>
+</ul>
+<h3>Examples</h3>
+<p>Suppose table <code>agg</code> has the following data:</p>
+<pre><code>mysql&gt; select * from agg;
++------+-------+-------+
+| no   | k     | v     |
++------+-------+-------+
+|    1 | 10.00 |  NULL |
+|    2 | 10.00 | 11.00 |
+|    2 | 20.00 | 22.00 |
+|    2 | 25.00 |  NULL |
+|    2 | 30.00 | 35.00 |
++------+-------+-------+</code></pre>
+<p>Calculate the correlation coefficient of the <code>k</code> and <code>v</code> columns:</p>
+<pre><code>mysql&gt; select no,CORR(k,v) from agg group by no;
++------+--------------------+
+| no   | corr(k, v)         |
++------+--------------------+
+|    1 |               NULL |
+|    2 | 0.9988445981121532 |
++------+--------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/corr.md">StarRocks documentation</a></p>
+</body></html>

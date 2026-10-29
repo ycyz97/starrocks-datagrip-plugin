@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>json_length</title></head><body>
+<h2>json_length</h2>
+<p>Returns the length of a JSON document. If a path is specified, this function returns the length of the value identified by the path.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<p>The length of a document is determined according to the following rules:</p>
+<ul>
+<li>The length of a scalar value is 1. For example, the length of <code>1</code>, <code>&quot;a&quot;</code>, <code>true</code>, <code>false</code>, and <code>null</code> is 1.</li>
+</ul>
+<ul>
+<li>The length of an array is the number of array elements. For example, the length of <code>[1, 2]</code> is 2.</li>
+</ul>
+<ul>
+<li>The length of an object is the number of object members. For example, the length of <code>{&quot;a&quot;: 1}</code> is 1.</li>
+</ul>
+<ul>
+<li>The length of nested arrays or objects does not count. For example, the length of <code>{&quot;a&quot;: [1, 2]}</code> is 1, because the nested array <code>[1, 2]</code> is not calculated into length.</li>
+</ul>
+<h3>Syntax</h3>
+<pre><code>json_length(json_doc[, path])</code></pre>
+<h3>Parameters</h3>
+<p><code>json_doc</code>: required, the JSON document for which to return the length.</p>
+<p><code>path</code>: optional. It is used to return the length of a value within the document. The path generally starts with <code>$</code> and uses <code>.</code> as the path separator. <code>[]</code> is used as the array subscript, which starts from 0.</p>
+<h3>Return value</h3>
+<p>Returns a value of the INT type.</p>
+<p>An error is returned if the JSON document is not a valid document.</p>
+<p>0 is returned in any of the following scenarios:</p>
+<ul>
+<li>The <b><code>path</code></b> does not identify a value in the document. </li>
+</ul>
+<ul>
+<li>The path is not a valid path expression.</li>
+</ul>
+<ul>
+<li>The path contains the <code>*</code> or <code>**</code> wildcard.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Return the length of a scalar value.</p>
+<pre><code>select json_length('1');
++------------------+
+| json_length('1') |
++------------------+
+|                1 |
++------------------+</code></pre>
+<p>Example 2: Return the length of an empty object.</p>
+<pre><code>select json_length('{}');
++-------------------+
+| json_length('{}') |
++-------------------+
+|                 0 |
++-------------------+</code></pre>
+<p>Example 3: Return the length of an object that has data.</p>
+<pre><code>select json_length('{&quot;Name&quot;: &quot;Homer&quot;}');
++----------------------------------+
+| json_length('{&quot;Name&quot;: &quot;Homer&quot;}') |
++----------------------------------+
+|                                1 |
++----------------------------------+</code></pre>
+<p>Example 4: Return the length of a JSON array.</p>
+<pre><code>select json_length('[1, 2, 3]');
++--------------------------+
+| json_length('[1, 2, 3]') |
++--------------------------+
+|                        3 |
++--------------------------+</code></pre>
+<p>Example 5: Return the length of a JSON array in which one element has a nested array.</p>
+<p>The nested array <code>[3, 4]</code> is not calculated into length.</p>
+<pre><code>select json_length('[1, 2, [3, 4]]');
++-------------------------------+
+| json_length('[1, 2, [3, 4]]') |
++-------------------------------+
+|                             3 |
++-------------------------------+</code></pre>
+<p>Example 6: Return the length of an object specified by path <code>$.Person</code>.</p>
+<pre><code>SET @file = '{
+    &quot;Person&quot;: {
+       &quot;Name&quot;: &quot;Homer&quot;,
+       &quot;Age&quot;: 39,
+       &quot;Hobbies&quot;: [&quot;Eating&quot;, &quot;Sleeping&quot;]
+    }
+ }';
+select json_length(@file, '$.Person') 'Result';</code></pre>
+<p>Example 7: Return the length of the value specified by path <code>$.y</code>.</p>
+<pre><code>select json_length('{&quot;x&quot;: 1, &quot;y&quot;: [1, 2]}', '$.y');
++---------------------------------------------+
+| json_length('{&quot;x&quot;: 1, &quot;y&quot;: [1, 2]}', '$.y') |
++---------------------------------------------+
+|                                           2 |
++---------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/json_length.md">StarRocks documentation</a></p>
+</body></html>

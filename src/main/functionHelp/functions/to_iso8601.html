@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>to_iso8601</title></head><body>
+<h2>to_iso8601</h2>
+<p>Converts the specified date into a string in ISO 8601 format.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR TO_ISO8601(DATETIME | DATE date)</code></pre>
+<h3>Parameters</h3>
+<p><code>date</code>: the date you want to convert. It must be a valid date or date expression.</p>
+<h3>Examples</h3>
+<p>Example 1: Convert the date <code>2020-01-01</code> into a string in ISO 8601 format.</p>
+<pre><code>MySQL &gt; select to_iso8601(date'2020-01-01');
++--------------------------+
+| to_iso8601('2020-01-01') |
++--------------------------+
+| 2020-01-01               |
++--------------------------+</code></pre>
+<p>Example 2: Convert the date <code>2020-01-01 00:00:00.01</code> into a string in ISO 8601 format.</p>
+<pre><code>MySQL &gt; select to_iso8601(datetime'2020-01-01 00:00:00.01');
++------------------------------------------+
+| to_iso8601('2020-01-01 00:00:00.010000') |
++------------------------------------------+
+| 2020-01-01T00:00:00.010000               |
++------------------------------------------+</code></pre>
+<h3>Keywords</h3>
+<p>TO_ISO8601</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/to_iso8601.md">StarRocks documentation</a></p>
+</body></html>

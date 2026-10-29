@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>hex</title></head><body>
+<h2>hex</h2>
+<p>If <code>x</code> is a numerical value, this function returns a hexadecimal string representation of the value.</p>
+<p>If <code>x</code> is a string, this function returns a hexadecimal string representation of the string where each character in the string is converted into two hexadecimal digits.</p>
+<h3>Syntax</h3>
+<pre><code>HEX(x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: the string or number to convert. The supported data types are BIGINT, VARCHAR, and VARBINARY (v3.0 and later).</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select hex(3);
++--------+
+| hex(3) |
++--------+
+| 3      |
++--------+
+1 row in set (0.00 sec)
+
+mysql&gt; select hex('3');
++----------+
+| hex('3') |
++----------+
+| 33       |
++----------+
+1 row in set (0.00 sec)
+
+mysql&gt; select hex('apple');
++--------------+
+| hex('apple') |
++--------------+
+| 6170706C65   |
++--------------+
+
+-- The input is a binary value.
+
+mysql&gt; select hex(x'abab');
++-------------+
+| hex('ABAB') |
++-------------+
+| ABAB        |
++-------------+
+1 row in set (0.01 sec)</code></pre>
+<h3>Keywords</h3>
+<p>HEX</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/hex.md">StarRocks documentation</a></p>
+</body></html>

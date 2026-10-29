@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>initcap</title></head><body>
+<h2>initcap</h2>
+<ul>
+<li>Converts the first letter of each word in a string to uppercase and the remaining characters to lowercase.</li>
+<li>This function is useful for normalizing text data, such as names, addresses, or titles, where consistent Title Casing is required.</li>
+</ul>
+<h3>Syntax</h3>
+<pre><code>initcap(str)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str:</code> The string expression to be formatted. This can be a VARCHAR column, a literal string, or the result of another string function.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns the formatted string as a VARCHAR.</p>
+<p>&gt; - Returns NULL if the argument is NULL.<br>&gt; - Words are delimited by whitespace or non-alphanumeric characters (e.g., punctuation, symbols, numbers).<br>&gt; - Characters immediately following a delimiter are uppercased; all other letters are lowercased.</p>
+<h3>Examples</h3>
+<p>Example 1: Format basic strings (lowercase or uppercase).</p>
+<pre><code>mysql&gt; SELECT initcap('hello world');
++------------------------+
+| initcap('hello world') |
++------------------------+
+| Hello World            |
++------------------------+</code></pre>
+<pre><code>mysql&gt; SELECT initcap('HELLO WORLD');
++------------------------+
+| initcap('HELLO WORLD') |
++------------------------+
+| Hello World            |
++------------------------+</code></pre>
+<p>Example 2: Format mixed-case strings.</p>
+<pre><code>mysql&gt; SELECT initcap('sTaRroCks dAtAbAsE');
++-------------------------------+
+| initcap('sTaRroCks dAtAbAsE') |
++-------------------------------+
+| Starrocks Database            |
++-------------------------------+</code></pre>
+<p>Example 3: Handling delimiters (numbers, symbols, and punctuation).</p>
+<pre><code>mysql&gt; SELECT initcap('1st place, in-the-world!');
++-------------------------------------+
+| initcap('1st place, in-the-world!') |
++-------------------------------------+
+| 1st Place, In-The-World!            |
++-------------------------------------+</code></pre>
+<h3>Usage notes</h3>
+<p><b>Word Boundaries:</b> The function identifies the start of a &quot;word&quot; based on any character that is not a letter or a number. For example, in <code>'abc-def'</code>, the hyphen - is a delimiter, so d becomes D.</p>
+<p><b>Numbers:</b> Numbers are treated as word characters if they appear at the start, but they do not change case. However, symbols following numbers will reset the word boundary (e.g., 1st -&gt; 1st because 1 starts the word, but 1-st -&gt; 1-St because - is a delimiter).</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/initcap.md">StarRocks documentation</a></p>
+</body></html>

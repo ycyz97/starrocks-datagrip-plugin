@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>blake3</title></head><body>
+<h2>blake3</h2>
+<p>Uses the BLAKE3 digest algorithm to hash a string into a 256-bit hexadecimal string.</p>
+<p>BLAKE3 is a modern cryptographic hash function that is significantly faster than MD5, SHA-1, SHA-2, and SHA-3, while providing strong security guarantees. It produces a 256-bit (32-byte) digest.</p>
+<h3>Syntax</h3>
+<pre><code>BLAKE3(str);</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: the string to hash. It must be of the VARCHAR type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type. If the input is NULL, NULL is returned. An empty input string returns the BLAKE3 digest of the zero-length message (<code>af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262</code>).</p>
+<p>This function accepts only one string. More than one input string causes an error.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select blake3('l');
++------------------------------------------------------------------+
+| blake3('l')                                                      |
++------------------------------------------------------------------+
+| b9f63c83975dadee9b4dc3faeeb669ddef34bbe12e3a0626183166982681d81c |
++------------------------------------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/crytographic-functions/blake3.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>concat_ws</title></head><body>
+<h2>concat_ws</h2>
+<p>This function uses the first argument sep as the separator which combines the second with the rest to form a string. If the separator is NULL, the result is NULL. concat_ws does not skip empty strings, but it will skip NULL values.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR concat_ws(VARCHAR sep, VARCHAR str,...)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select concat_ws(&quot;Rock&quot;, &quot;Star&quot;, &quot;s&quot;);
++--------------------------------+
+| concat_ws('Rock', 'Star', 's') |
++--------------------------------+
+| StarRocks                      |
++--------------------------------+
+
+MySQL &gt; select concat_ws(NULL, &quot;Star&quot;, &quot;s&quot;);
++------------------------------+
+| concat_ws(NULL, 'Star', 's') |
++------------------------------+
+| NULL                         |
++------------------------------+
+1 row in set (0.01 sec)
+
+MySQL &gt; StarRocks &gt; select concat_ws(&quot;Rock&quot;, &quot;Star&quot;, NULL, &quot;s&quot;);
++--------------------------------------+
+| concat_ws('Rock', 'Star', NULL, 's') |
++--------------------------------------+
+| StarRocks                            |
++--------------------------------------+
+1 row in set (0.04 sec)</code></pre>
+<h3>keyword</h3>
+<p>CONCAT_WS,CONCAT,WS</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/concat_ws.md">StarRocks documentation</a></p>
+</body></html>

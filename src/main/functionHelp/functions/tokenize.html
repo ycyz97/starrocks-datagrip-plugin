@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>tokenize</title></head><body>
+<h2>tokenize</h2>
+<p>Splits and parses text into tokens based on the specified tokenizer.</p>
+<h3>Syntax</h3>
+<pre><code>ARRRY&lt;VARCHAR&gt; tokenize(VARCHAR tokenizer_name, VARCHAR content);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>tokenizer_name</code>: The tokenizer to use. Valid values: <code>english</code>, <code>standard</code>, and <code>chinese</code>.</li>
+</ul>
+<ul>
+<li><code>content</code>: The text to be tokenized. This item can be a constant string or a column name. If a column is specified, it must be of the STRING or VARCHAR type.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a array of VARCHAR.</p>
+<h3>Examples</h3>
+<pre><code>MYSQL &gt; SELECT tokenize('english', 'Today is saturday');
++------------------------------------------+
+| tokenize('english', 'Today is saturday') |
++------------------------------------------+
+| [&quot;today&quot;,&quot;is&quot;,&quot;saturday&quot;]                |
++------------------------------------------+
+</code></pre>
+<h3>keyword</h3>
+<p>TOKENIZE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/tokenize.md">StarRocks documentation</a></p>
+</body></html>

@@ -39,6 +39,7 @@
             <li>Fixed false unresolved symbol warnings for new column names in <code>ALTER TABLE ... RENAME COLUMN ... TO ...</code>.</li>
             <li>Added table-level metadata refresh for StarRocks DDL, including catalog-qualified table names.</li>
             <li>Skipped automatic metadata synchronization for session-scoped temporary table creation.</li>
+            <li>Added built-in function quick documentation for the StarRocks function catalog, including parameters, return values, usage notes, and SQL examples.</li>
         </ul>
     ]]></change-notes>
 

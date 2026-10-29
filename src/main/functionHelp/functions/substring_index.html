@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>substring_index</title></head><body>
+<h2>substring_index</h2>
+<p>Extracts a substring that precedes or follows the <code>count</code> occurrences of the delimiter.</p>
+<ul>
+<li>If <code>count</code> is positive, counting starts from the beginning of the string and this function returns the substring that precedes the <code>count</code>th delimiter. For example, <code>select substring_index('https://www.starrocks.io', '.', 2);</code> returns the substring before the second <code>.</code> delimiter, which is <code>https://www.starrocks</code>.</li>
+</ul>
+<ul>
+<li>If <code>count</code> is negative, counting starts from the end of the string and this function returns the substring that follows the <code>count</code>th delimiter. For example, <code>select substring_index('https://www.starrocks.io', '.', -2);</code> returns the substring after the second <code>.</code> delimiter, which is <code>starrocks.io</code>.</li>
+</ul>
+<p>If any input parameter is null, NULL is returned.</p>
+<p>This function is supported from v3.2.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR substring_index(VARCHAR str, VARCHAR delimiter, INT count)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: required, the string you want to split.</li>
+<li><code>delimiter</code>: required, the delimiter used to split the string.</li>
+<li><code>count</code>: required, the position of the delimiter. The value cannot be 0. Otherwise, NULL is returned. If the value is greater than the actual number of delimiters in the string, the entire string is returned.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a VARCHAR value.</p>
+<h3>Examples</h3>
+<pre><code>-- Return the substring that precedes the second &quot;.&quot; delimiter.
+mysql&gt; select substring_index('https://www.starrocks.io', '.', 2);
++-----------------------------------------------------+
+| substring_index('https://www.starrocks.io', '.', 2) |
++-----------------------------------------------------+
+| https://www.starrocks                               |
++-----------------------------------------------------+
+
+-- The count is negative.
+mysql&gt; select substring_index('https://www.starrocks.io', '.', -2);
++------------------------------------------------------+
+| substring_index('https://www.starrocks.io', '.', -2) |
++------------------------------------------------------+
+| starrocks.io                                         |
++------------------------------------------------------+
+
+mysql&gt; select substring_index(&quot;hello world&quot;, &quot; &quot;, 1);
++----------------------------------------+
+| substring_index(&quot;hello world&quot;, &quot; &quot;, 1) |
++----------------------------------------+
+| hello                                  |
++----------------------------------------+
+
+mysql&gt; select substring_index(&quot;hello world&quot;, &quot; &quot;, -1);
++-----------------------------------------+
+| substring_index('hello world', ' ', -1) |
++-----------------------------------------+
+| world                                   |
++-----------------------------------------+
+
+-- Count is 0 and NULL is returned.
+mysql&gt; select substring_index(&quot;hello world&quot;, &quot; &quot;, 0);
++----------------------------------------+
+| substring_index('hello world', ' ', 0) |
++----------------------------------------+
+| NULL                                   |
++----------------------------------------+
+
+-- Count is greater than the number of spaces in the string and the entire string is returned.
+mysql&gt; select substring_index(&quot;hello world&quot;, &quot; &quot;, 2);
++----------------------------------------+
+| substring_index(&quot;hello world&quot;, &quot; &quot;, 2) |
++----------------------------------------+
+| hello world                            |
++----------------------------------------+
+
+-- Count is greater than the number of spaces in the string and the entire string is returned.
+mysql&gt; select substring_index(&quot;hello world&quot;, &quot; &quot;, -2);
++-----------------------------------------+
+| substring_index(&quot;hello world&quot;, &quot; &quot;, -2) |
++-----------------------------------------+
+| hello world                             |
++-----------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>substring_index</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/substring_index.md">StarRocks documentation</a></p>
+</body></html>

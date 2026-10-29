@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>map_size</title></head><body>
+<h2>map_size</h2>
+<p>Returns the number of elements in a MAP value. MAP is an unordered collection of key-value pairs, for example, <code>{&quot;a&quot;:1, &quot;b&quot;:2}</code>. One key-value pair constitutes one element, for example, <code>{&quot;a&quot;:1, &quot;b&quot;:2}</code> contains two elements.</p>
+<p>This function has an alias cardinality(). It is supported from v2.5.</p>
+<h3>Syntax</h3>
+<pre><code>INT map_size(any_map)</code></pre>
+<h3>Parameters</h3>
+<p><code>any_map</code>: the MAP value from which you want to retrieve the number of elements.</p>
+<h3>Return value</h3>
+<p>Returns a value of the INT type.</p>
+<p>If the input is NULL, NULL is returned.</p>
+<p>If a key or value in the MAP value is NULL, NULL is processed as a normal value.</p>
+<h3>Examples</h3>
+<h4>Query MAP data from a StarRocks native table</h4>
+<p>From v3.1 onwards, StarRocks supports defining MAP columns when you create a table. This example uses table <code>test_map</code>, which contains the following data:</p>
+<pre><code>CREATE TABLE test_map(
+    col_int INT,
+    col_map MAP&lt;VARCHAR(50),INT&gt;
+  )
+DUPLICATE KEY(col_int);
+
+INSERT INTO test_map VALUES
+(1,map{&quot;a&quot;:1,&quot;b&quot;:2}),
+(2,map{&quot;c&quot;:3}),
+(3,map{&quot;d&quot;:4,&quot;e&quot;:5});
+
+SELECT * FROM test_map ORDER BY col_int;
++---------+---------------+
+| col_int | col_map       |
++---------+---------------+
+|       1 | {&quot;a&quot;:1,&quot;b&quot;:2} |
+|       2 | {&quot;c&quot;:3}       |
+|       3 | {&quot;d&quot;:4,&quot;e&quot;:5} |
++---------+---------------+
+3 rows in set (0.05 sec)</code></pre>
+<p>Obtain the number of elements in each row of the <code>col_map</code> column.</p>
+<pre><code>select map_size(col_map) from test_map order by col_int;
++-------------------+
+| map_size(col_map) |
++-------------------+
+|                 2 |
+|                 1 |
+|                 2 |
++-------------------+
+3 rows in set (0.05 sec)</code></pre>
+<h4>Query MAP data from data lake</h4>
+<p>This example uses Hive table <code>hive_map</code>, which contains the following data:</p>
+<pre><code>SELECT * FROM hive_map ORDER BY col_int;
++---------+---------------+
+| col_int | col_map       |
++---------+---------------+
+|       1 | {&quot;a&quot;:1,&quot;b&quot;:2} |
+|       2 | {&quot;c&quot;:3}       |
+|       3 | {&quot;d&quot;:4,&quot;e&quot;:5} |
++---------+---------------+</code></pre>
+<p>After a Hive catalog is created in your cluster, you can use this catalog and the map_size() function to obtain the number of elements in each row of the <code>col_map</code> column.</p>
+<pre><code>select map_size(col_map) from hive_map order by col_int;
++-------------------+
+| map_size(col_map) |
++-------------------+
+|                 2 |
+|                 1 |
+|                 2 |
++-------------------+
+3 rows in set (0.05 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/map-functions/map_size.md">StarRocks documentation</a></p>
+</body></html>

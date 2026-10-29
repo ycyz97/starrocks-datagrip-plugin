@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>multiply</title></head><body>
+<h2>multiply</h2>
+<p>Computes the product of the arguments.</p>
+<h3>Syntax</h3>
+<pre><code>multiply(arg1, arg2)</code></pre>
+<h4>Parameters</h4>
+<p><code>arg1</code>: numeric source column or literal.<br><code>arg2</code>: numeric source column or literal.</p>
+<h3>Return value</h3>
+<p>Returns the product of two arguments. The return type depends on the arguments.</p>
+<h3>Usage notes</h3>
+<p>If you specify a non-numeric value, this function will fail.</p>
+<h3>Examples</h3>
+<pre><code>MySQL [test]&gt; select multiply(10,2);
++-----------------+
+| multiply(10, 2) |
++-----------------+
+|              20 |
++-----------------+
+1 row in set (0.01 sec)
+
+MySQL [test]&gt; select multiply(1,2.1);
++------------------+
+| multiply(1, 2.1) |
++------------------+
+|              2.1 |
++------------------+
+1 row in set (0.01 sec)
+
+MySQL [test]&gt; select * from t;
++------+------+------+------+
+| id   | name | job1 | job2 |
++------+------+------+------+
+|    2 |    2 |    2 |    2 |
++------+------+------+------+
+1 row in set (0.08 sec)
+
+MySQL [test]&gt; select multiply(1.0,id) from t;
++-------------------+
+| multiply(1.0, id) |
++-------------------+
+|                 2 |
++-------------------+
+1 row in set (0.01 sec)</code></pre>
+<h3>keyword</h3>
+<p>multiply</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/multiply.md">StarRocks documentation</a></p>
+</body></html>

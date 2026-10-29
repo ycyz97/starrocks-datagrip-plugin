@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>json_array</title></head><body>
+<h2>json_array</h2>
+<p>Converts each element of an SQL array to a JSON value and returns a JSON array that consists of the JSON values.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>json_array(value, ...)</code></pre>
+<h3>Parameters</h3>
+<p><code>value</code>: an element in the SQL array. Only <code>NULL</code> values and the following data types are supported: STRING, VARCHAR, CHAR, JSON, TINYINT, SMALLINT, INT, BIGINT, LARGEINT, DOUBLE, FLOAT, and BOOLEAN.</p>
+<h3>Return value</h3>
+<p>Returns a JSON array.</p>
+<h3>Examples</h3>
+<p>Example 1: Construct a JSON array that consists of values of different data types.</p>
+<pre><code>mysql&gt; SELECT json_array(1, true, 'starrocks', 1.1);
+
+       -&gt; [1, true, &quot;starrocks&quot;, 1.1]</code></pre>
+<p>Example 2: Construct an empty JSON array.</p>
+<pre><code>mysql&gt; SELECT json_array();
+
+       -&gt; []</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-constructor-functions/json_array.md">StarRocks documentation</a></p>
+</body></html>

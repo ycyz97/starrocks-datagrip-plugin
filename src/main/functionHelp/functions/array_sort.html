@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_sort</title></head><body>
+<h2>array_sort</h2>
+<p>Sorts the elements of an array in ascending order. From v4.0, <code>array_sort</code> supports Lambda Comparator.</p>
+<h3>Syntax</h3>
+<pre><code>-- Without Lambda Comparator
+array_sort(array)
+
+-- With Lambda Comparator
+array_sort(array, (x,y)-&gt;expr(x,y))</code></pre>
+<h3>Parameters</h3>
+<p><code>array</code>: the array whose elements you want to sort. Only the ARRAY data type is supported.</p>
+<p><code>lambda_comparator</code>: an optional lambda function comparator with format <code>(x,y)-&gt;expr(x,y)</code>. The lambda comparator:</p>
+<ul>
+<li>Must only depend on arguments x and y</li>
+<li>Must return boolean or numeric type</li>
+<li>Result should not be NULL</li>
+<li>Must satisfy strict weak ordering requirements</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns an array.</p>
+<h3>Usage notes</h3>
+<h4>Basic Sorting</h4>
+<ul>
+<li>This function sorts the elements of an array in ascending order when used without a lambda comparator.</li>
+<li><code>NULL</code> values are placed at the beginning of the array that is returned.</li>
+<li>The elements of the returned array have the same data type as the elements of the input array.</li>
+</ul>
+<h4>Lambda Comparator Sorting</h4>
+<ul>
+<li>When using a lambda comparator, the sorting order is determined by the expression result:</li>
+<li>For boolean return: <code>true</code> means x should come before y</li>
+<li>For numeric return: negative means x comes before y</li>
+</ul>
+<ul>
+<li>The lambda comparator must satisfy strict weak ordering requirements:</li>
+<li><b>Irreflexivity</b>: For all <code>x</code>, <code>expr(x, x)</code> must return false (boolean) or non-negative (numeric)</li>
+<li><b>Asymmetry</b>: If <code>expr(x, y)</code> holds, then <code>expr(y, x)</code> must not hold</li>
+<li><b>Transitivity</b>: If <code>expr(x, y)</code> and <code>expr(y, z)</code> hold, then <code>expr(x, z)</code> must hold</li>
+<li><b>Connectedness</b>: For all <code>x</code> and <code>y</code>, one of the following must be true:</li>
+<li><code>expr(x, y)</code></li>
+<li><code>expr(y, x)</code></li>
+<li><code>x = y</code></li>
+</ul>
+<ul>
+<li>The lambda comparator expression must:</li>
+<li>Only depend on parameters <code>x</code> and <code>y</code></li>
+<li>Return a boolean or numeric type</li>
+<li>Never return NULL</li>
+<li>Always produce consistent results for the same input values</li>
+</ul>
+<h4>Descending Order</h4>
+<p>If you want to sort the elements of an array in descending order, use the reverse function.</p>
+<h3>Examples</h3>
+<h4>Basic Examples</h4>
+<p>The following table is used as an example:</p>
+<pre><code>mysql&gt; select * from test;
++------+--------------+
+| c1   | c2           |
++------+--------------+
+|    1 | [4,3,null,1] |
+|    2 | NULL         |
+|    3 | [null]       |
+|    4 | [8,5,1,4]    |
++------+--------------+</code></pre>
+<p>Sort the values of column <code>c2</code> in ascending order.</p>
+<pre><code>mysql&gt; select c1, array_sort(c2) from test;
++------+------------------+
+| c1   | array_sort(`c2`) |
++------+------------------+
+|    1 | [null,1,3,4]     |
+|    2 | NULL             |
+|    3 | [null]           |
+|    4 | [1,4,5,8]        |
++------+------------------+</code></pre>
+<h4>Lambda Comparator Examples</h4>
+<p>Sort an array of integers in descending order using a lambda comparator:</p>
+<pre><code>mysql&gt; select array_sort([3,1,4,2], (x,y) -&gt; x &gt; y);
++-------------------------------------------+
+| array_sort([3, 1, 4, 2], (x, y) -&gt; x &gt; y) |
++-------------------------------------------+
+| [4, 3, 2, 1]                              |
++-------------------------------------------+</code></pre>
+<p>Sort an array of integers using numeric return values:</p>
+<pre><code>mysql&gt; select array_sort([3,1,4,2], (x,y) -&gt; x - y);
++-------------------------------------------+
+| array_sort([3, 1, 4, 2], (x, y) -&gt; x - y) |
++-------------------------------------------+
+| [1, 2, 3, 4]                              |
++-------------------------------------------+</code></pre>
+<p>Sort an array of strings by length:</p>
+<pre><code>mysql&gt; select array_sort(['apple', 'banana', 'cherry', 'date'], (x,y) -&gt; length(x) - length(y));
++------------------------------------------------------------------------------------+
+| array_sort(['apple', 'banana', 'cherry', 'date'], (x, y) -&gt; length(x) - length(y)) |
++------------------------------------------------------------------------------------+
+| ['date', 'apple', 'banana', 'cherry']                                              |
++------------------------------------------------------------------------------------+</code></pre>
+<p>Sort an array of strings alphabetically using boolean return:</p>
+<pre><code>mysql&gt; select array_sort(['banana', 'apple', 'cherry'], (x,y) -&gt; x &gt; y);
++------------------------------------------------------------+
+| array_sort(['banana', 'apple', 'cherry'], (x, y) -&gt; x &gt; y) |
++------------------------------------------------------------+
+| ['apple', 'banana', 'cherry']                              |
++------------------------------------------------------------+</code></pre>
+<p>Sort an array with custom business logic (sort even numbers first, then odd numbers):</p>
+<pre><code>mysql&gt; select array_sort([5,2,8,1,9,4], (x,y) -&gt;
+    case when x % 2 = 0 and y % 2 = 0 then x - y
+         when x % 2 = 0 and y % 2 = 1 then -1
+         when x % 2 = 1 and y % 2 = 0 then 1
+         else x - y end);
++--------------------------------------------------------------------------------------------------------------------+
+| array_sort([5, 2, 8, 1, 9, 4], (x, y) -&gt; case when x % 2 = 0 and y % 2 = 0 then x - y when x % 2 = 0 and y % 2 = 1 then -1 when x % 2 = 1 and y % 2 = 0 then 1 else x - y end) |
++--------------------------------------------------------------------------------------------------------------------+
+| [2, 4, 8, 1, 5, 9]                                                                                                 |
++--------------------------------------------------------------------------------------------------------------------+</code></pre>
+<p>Sort an array of decimals with custom precision comparison:</p>
+<pre><code>mysql&gt; select array_sort([3.141, 2.718, 1.414, 2.236], (x,y) -&gt; round(x, 2) - round(y, 2));
++----------------------------------------------------------------------------------------+
+| array_sort([3.141, 2.718, 1.414, 2.236], (x, y) -&gt; round(x, 2) - round(y, 2))          |
++----------------------------------------------------------------------------------------+
+| [1.414, 2.236, 2.718, 3.141]                                                           |
++----------------------------------------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_sort.md">StarRocks documentation</a></p>
+</body></html>

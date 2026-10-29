@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>sum_map</title></head><body>
+<h2>sum_map</h2>
+<h3>Description</h3>
+<p>Aggregates MAP values by summing numeric values for matching keys across multiple rows. This function is inspired by ClickHouse's sumMap and is particularly useful for data aggregation scenarios involving maps with numeric values.</p>
+<p>Given multiple maps with the same key type and numeric value type, <code>sum_map</code> merges them by:<br>1. Collecting all unique keys from all input maps<br>2. Summing the values for each key across all maps<br>3. Returning a single map with the aggregated results</p>
+<h3>Syntax</h3>
+<pre><code>sum_map(map_expr)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>map_expr</code>: A MAP expression where the value type must be numeric (TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, or DOUBLE). Both keys and values can be nullable.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a MAP with the same key and value types as the input, containing all unique keys and their summed values.</p>
+<h3>NULL Handling</h3>
+<p>The <code>sum_map</code> function handles NULL keys and values according to the following rules:</p>
+<ul>
+<li><b>NULL values</b>: Entries with NULL values are <b>excluded</b> from the aggregation, regardless of whether the key is NULL or not.</li>
+<li><b>NULL keys</b>: Entries with NULL keys but <b>non-NULL values</b> are <b>included</b> in the result as <code>{NULL: aggregated_value}</code>.</li>
+<li><b>NULL maps</b>: NULL map inputs (i.e., the entire map is NULL) are skipped during aggregation.</li>
+</ul>
+<p><b>Example behavior:</b></p>
+<pre><code>-- Map entries: {1:10, NULL:5, 2:NULL}
+-- After aggregation:
+--   - {1:10} is included
+--   - {NULL:5} is included (NULL key with non-NULL value)
+--   - {2:NULL} is excluded (NULL value)
+-- Result: {1:10, NULL:5}</code></pre>
+<h3>Examples</h3>
+<h4>Example 1: Basic usage with integer maps</h4>
+<pre><code>CREATE TABLE metrics (
+    id INT,
+    counters MAP&lt;VARCHAR(10), BIGINT&gt;
+) DUPLICATE KEY(id)
+DISTRIBUTED BY HASH(id) BUCKETS 3;
+
+INSERT INTO metrics VALUES
+    (1, map{&quot;clicks&quot;:100, &quot;views&quot;:200}),
+    (2, map{&quot;clicks&quot;:50, &quot;impressions&quot;:150}),
+    (3, map{&quot;views&quot;:250, &quot;impressions&quot;:350});
+
+SELECT sum_map(counters) FROM metrics;
+-- Result: {&quot;clicks&quot;:150, &quot;views&quot;:450, &quot;impressions&quot;:500}</code></pre>
+<h4>Example 2: Group by aggregation</h4>
+<pre><code>CREATE TABLE daily_stats (
+    date DATE,
+    category VARCHAR(20),
+    metrics MAP&lt;VARCHAR(20), DOUBLE&gt;
+) DUPLICATE KEY(date)
+DISTRIBUTED BY HASH(date) BUCKETS 3;
+
+INSERT INTO daily_stats VALUES
+    ('2024-01-01', 'A', map{&quot;revenue&quot;:100.5, &quot;cost&quot;:50.2}),
+    ('2024-01-01', 'B', map{&quot;revenue&quot;:200.3, &quot;cost&quot;:80.1}),
+    ('2024-01-02', 'A', map{&quot;revenue&quot;:150.7, &quot;cost&quot;:60.3});
+
+SELECT date, sum_map(metrics) as total_metrics
+FROM daily_stats
+GROUP BY date
+ORDER BY date;
+
+-- Result:
+-- 2024-01-01  {&quot;revenue&quot;:300.8, &quot;cost&quot;:130.3}
+-- 2024-01-02  {&quot;revenue&quot;:150.7, &quot;cost&quot;:60.3}</code></pre>
+<h4>Example 3: NULL key and value handling</h4>
+<pre><code>-- Create a table with nullable map keys and values
+CREATE TABLE events (
+    id INT,
+    tags MAP&lt;VARCHAR(10), INT&gt;
+) DUPLICATE KEY(id)
+DISTRIBUTED BY HASH(id) BUCKETS 3;
+
+-- Insert data with NULL keys and NULL values
+INSERT INTO events VALUES
+    (1, map{&quot;user&quot;:100, &quot;system&quot;:50}),
+    (2, map{&quot;user&quot;:25, NULL:30}),        -- NULL key with non-NULL value
+    (3, map{&quot;system&quot;:40, &quot;admin&quot;:NULL}), -- NULL value (will be excluded)
+    (4, map{NULL:15});                   -- NULL key with non-NULL value
+
+SELECT sum_map(tags) FROM events;
+-- Result: {&quot;user&quot;:125, &quot;system&quot;:90, NULL:45}
+-- Explanation:
+--   - &quot;user&quot;: 100 + 25 = 125
+--   - &quot;system&quot;: 50 + 40 = 90
+--   - NULL key: 30 + 15 = 45
+--   - &quot;admin&quot;:NULL was excluded (NULL value)</code></pre>
+<h4>Example 4: NULL map handling</h4>
+<pre><code>SELECT sum_map(counters) FROM (
+    VALUES
+        (map{1:10, 2:20}),
+        (map{1:5, 3:15}),
+        (NULL)                -- Entire map is NULL (ignored)
+) AS t(counters);
+-- Result: {1:15, 2:20, 3:15}
+-- NULL maps are ignored in aggregation</code></pre>
+<h3>Usage notes</h3>
+<ul>
+<li><b>Empty maps</b>: Empty maps contribute nothing to the aggregation</li>
+<li><b>NULL maps</b>: NULL map inputs (entire map is NULL) are skipped during aggregation</li>
+<li><b>NULL keys</b>: Entries with NULL keys and non-NULL values are included and aggregated together under a single NULL key in the result</li>
+<li><b>NULL values</b>: Entries with NULL values are excluded from the result, regardless of whether the key is NULL or not</li>
+<li><b>Key merging</b>: Keys that appear in multiple maps have their values summed; keys that appear in only some maps are included with the sum of values from maps where they appear</li>
+<li><b>Supported types</b>: The function only supports maps with numeric value types (TINYINT, SMALLINT, INT, BIGINT, LARGEINT, FLOAT, DOUBLE)</li>
+<li><b>Use cases</b>: This function is particularly useful for aggregating counters, metrics, or any key-value data where values should be summed</li>
+</ul>
+<h3>Keywords</h3>
+<p>SUM_MAP, MAP, AGGREGATE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/sum_map.md">StarRocks documentation</a></p>
+</body></html>

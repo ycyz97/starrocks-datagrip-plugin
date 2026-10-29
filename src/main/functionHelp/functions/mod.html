@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>mod</title></head><body>
+<h2>mod</h2>
+<p>The modulus function that returns the remainder of <code>dividend</code> divided by <code>divisor</code>.</p>
+<h3>Syntax</h3>
+<pre><code>mod(dividend, divisor)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>dividend</code>: The number to be divided.</li>
+<li><code>divisor</code>: The number that divides.</li>
+</ul>
+<p>Both <code>dividend</code> and <code>divisor</code> support the following data types:</p>
+<ul>
+<li>TINYINT</li>
+<li>SMALLINT</li>
+<li>INT</li>
+<li>BIGINT</li>
+<li>LARGEINT</li>
+<li>FLOAT</li>
+<li>DOUBLE</li>
+<li>DECIMALV2</li>
+<li>DECIMAL32</li>
+<li>DECIMAL64</li>
+<li>DECIMAL128</li>
+</ul>
+<p>&gt; <b>NOTE</b><br>&gt;<br>&gt; <code>dividend</code> and <code>divisor</code> must agree in the data type. StarRocks performs an implicit conversion if they do not agree in the data type.</p>
+<h3>Return value</h3>
+<p>Returns a value of the same data type as the <code>dividend</code>. StarRocks returns NULL if <code>divisor</code> is specified as 0.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select mod(3.14,3.14);
++-----------------+
+| mod(3.14, 3.14) |
++-----------------+
+|               0 |
++-----------------+
+
+mysql&gt; select mod(3.14, 3);
++--------------+
+| mod(3.14, 3) |
++--------------+
+|         0.14 |
++--------------+
+
+select mod(11,-5);
++------------+
+| mod(11, -5)|
++------------+
+|          1 |
++------------+
+
+select mod(-11,5);
++-------------+
+| mod(-11, 5) |
++-------------+
+|          -1 |
++-------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/mod.md">StarRocks documentation</a></p>
+</body></html>

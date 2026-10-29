@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>positive</title></head><body>
+<h2>positive</h2>
+<p>Returns <code>x</code> as a value.</p>
+<h3>Syntax</h3>
+<pre><code>POSITIVE(x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: supports the BIGINT, DOUBLE, DECIMALV2, DECIMAL32, DECIMAL64, and DECIMAL128 data types.</p>
+<h3>Return value</h3>
+<p>Returns a value whose data type is the same as the data type of the <code>x</code> value.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select positive(3);
++-------------+
+| positive(3) |
++-------------+
+|           3 |
++-------------+
+1 row in set (0.01 sec)
+
+mysql&gt; select positive(cast(3.14 as decimalv2));
++--------------------------------------+
+| positive(CAST(3.14 AS DECIMAL(9,0))) |
++--------------------------------------+
+|                                 3.14 |
++--------------------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/positive.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>months_diff</title></head><body>
+<h2>months_diff</h2>
+<p>Returns the month difference between two date expressions (<code>expr1</code> − <code>expr2</code>), accurate to the month.</p>
+<h3>Syntax</h3>
+<pre><code>BIGINT months_diff(DATETIME expr1,DATETIME expr2);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr1</code>: the end time. It must be of the DATETIME or DATE type.</li>
+</ul>
+<ul>
+<li><code>expr2</code>: the start time. It must be of the DATETIME or DATE type.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BIGINT value.</p>
+<p>NULL is returned if the date does not exist, for example, 2022-02-29.</p>
+<h3>Examples</h3>
+<pre><code>select months_diff('2010-11-30 23:59:59', '2010-1-1 23:59:59');
++---------------------------------------------------------+
+| months_diff('2010-11-30 23:59:59', '2010-1-1 23:59:59') |
++---------------------------------------------------------+
+|                                                      10 |
++---------------------------------------------------------+
+
+select months_diff('2010-11-30', '2010-1-1');
++---------------------------------------+
+| months_diff('2010-11-30', '2010-1-1') |
++---------------------------------------+
+|                                    10 |
++---------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/months_diff.md">StarRocks documentation</a></p>
+</body></html>

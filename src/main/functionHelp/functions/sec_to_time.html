@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>sec_to_time</title></head><body>
+<h2>sec_to_time</h2>
+<h3>Description</h3>
+<p>The SEC_TO_TIME function converts a value in seconds into a TIME type, returning the result in the format HH:MM:SS.<br>The input seconds represent the time elapsed since the start of a day (00:00:00).</p>
+<h3>Syntax</h3>
+<pre><code>TIME sec_to_time(BIGINT sec)</code></pre>
+<h3>Parameters</h3>
+<p><code>sec</code>: It must be of the INT type.</p>
+<h3>Return value</h3>
+<p>Returns a TIME value in the format HH:MM:SS, representing the time calculated from the start of a day (00:00:00).<br>If sec is NULL, the function returns NULL.</p>
+<h3>Examples</h3>
+<pre><code>select sec_to_time(43994);
++-----------------------------+
+| sec_to_time(43994)          |
++-----------------------------+
+|                   '12:13:14'|
++-----------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/sec_to_time.md">StarRocks documentation</a></p>
+</body></html>

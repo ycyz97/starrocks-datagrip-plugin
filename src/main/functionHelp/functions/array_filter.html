@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_filter</title></head><body>
+<h2>array_filter</h2>
+<p>Returns values from an array that matches the given filter.</p>
+<p>This function comes in the following two forms. The lambda adoption allows for more flexible array filtering. For more information about lambda functions, see Lambda expression. This function is supported from v2.5.</p>
+<h3>Syntax</h3>
+<pre><code>array_filter(array, array&lt;bool&gt;)
+array_filter(lambda_function, arr1,arr2...)</code></pre>
+<ul>
+<li><code>array_filter(array, array&lt;bool&gt;)</code></li>
+</ul>
+<p>Returns values from an array that matches <code>array&lt;bool&gt;</code>.</p>
+<ul>
+<li><code>array_filter(lambda_function, arr1,arr2...)</code></li>
+</ul>
+<p>Returns values from an array that matches the lambda function.</p>
+<h3>Parameters</h3>
+<p><code>array</code>: the array to filter values from.</p>
+<p><code>array&lt;bool&gt;</code>: the expression used to filter values.</p>
+<p><code>lambda_function</code>: the lambda function used to filter values.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>The two input parameters of <code>array_filter(array, array&lt;bool&gt;)</code> must be ARRAY and the filter expression can evaluate to <code>array&lt;bool&gt;</code>.</li>
+<li>The lambda function in <code>array_filter(lambda_function, arr1,arr2...)</code> follows the usage notes in array_map().</li>
+<li>If the input array is null, null is returned. If the filter array is null, an empty array is returned.</li>
+</ul>
+<h3>Examples</h3>
+<ul>
+<li>Examples without using lambda functions</li>
+</ul>
+<pre><code>    -- All the elements in the array match the filter.
+    select array_filter([1,2,3],[1,1,1]);
+    +------------------------------------+
+    | array_filter([1, 2, 3], [1, 1, 1]) |
+    +------------------------------------+
+    | [1,2,3]                            |
+    +------------------------------------+
+    1 row in set (0.01 sec)
+
+    -- The filter is null and an empty array is returned.
+    select array_filter([1,2,3],null);
+    +-------------------------------+
+    | array_filter([1, 2, 3], NULL) |
+    +-------------------------------+
+    | []                            |
+    +-------------------------------+
+    1 row in set (0.01 sec)
+
+    -- The input array is null, null is returned.
+    select array_filter(null,[1]);
+    +-------------------------+
+    | array_filter(NULL, [1]) |
+    +-------------------------+
+    | NULL                    |
+    +-------------------------+
+
+    -- Both the input array and filter are null. Null is returned.
+    select array_filter(null,null);
+    +--------------------------+
+    | array_filter(NULL, NULL) |
+    +--------------------------+
+    | NULL                     |
+    +--------------------------+
+    1 row in set (0.01 sec)
+
+    -- The filter contains a null element and an empty array is returned.
+    select array_filter([1,2,3],[null]);
+    +---------------------------------+
+    | array_filter([1, 2, 3], [NULL]) |
+    +---------------------------------+
+    | []                              |
+    +---------------------------------+
+    1 row in set (0.01 sec)
+
+    -- The filter contains two null elements and an empty array is returned.
+    select array_filter([1,2,3],[null,null]);
+    +---------------------------------------+
+    | array_filter([1, 2, 3], [NULL, NULL]) |
+    +---------------------------------------+
+    | []                                    |
+    +---------------------------------------+
+    1 row in set (0.00 sec)
+
+    -- Only one element matches the filter.
+    select array_filter([1,2,3],[null,1,0]);
+    +---------------------------------------+
+    | array_filter([1, 2, 3], [NULL, 1, 0]) |
+    +---------------------------------------+
+    | [2]                                   |
+    +---------------------------------------+
+    1 row in set (0.00 sec)</code></pre>
+<ul>
+<li>Examples using lambda functions</li>
+</ul>
+<pre><code>    -- Return the elements in x that are less than the elements in y.
+    select array_filter((x,y) -&gt; x &lt; y, [1,2,null], [4,5,6]);
+    +--------------------------------------------------------+
+    | array_filter((x, y) -&gt; x &lt; y, [1, 2, NULL], [4, 5, 6]) |
+    +--------------------------------------------------------+
+    | [1,2]                                                  |
+    +--------------------------------------------------------+</code></pre>
+<pre><code>  -- Return the elements in x that are greater than or equal to 3.
+  SELECT array_filter(x-&gt;x&gt;=3, [2,3,4]);
+  +--------------------------------------+
+  | array_filter(x -&gt; x &gt;= 3, [2, 3, 4]) |
+  +--------------------------------------+
+  | [3,4]                                |
+  +--------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_filter.md">StarRocks documentation</a></p>
+</body></html>

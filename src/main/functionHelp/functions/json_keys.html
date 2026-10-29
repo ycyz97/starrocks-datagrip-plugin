@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>json_keys</title></head><body>
+<h2>json_keys</h2>
+<p>Returns the top-level keys from a JSON object as a JSON array, or, if a <code>path</code> is specified, the top-level keys from the path.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<h3>Syntax</h3>
+<pre><code>json_keys(json_doc[, path])</code></pre>
+<h3>Parameters</h3>
+<p><code>json_doc</code>: required. The JSON document for which to return the keys. It must be a JSON object.</p>
+<p><code>path</code>: optional. The path generally starts with <code>$</code> and uses <code>.</code> as the path separator. <code>[]</code> is used as the array subscript, which starts from 0.</p>
+<h3>Return value</h3>
+<p>Returns a JSON array.</p>
+<p>An empty array is returned if the JSON object is empty.</p>
+<p><code>NULL</code> is returned if the JSON document is not a JSON object or the path does not identify a value in the document.</p>
+<p>If the JSON document is an array nested with a JSON object, you can use the <code>path</code> parameter to obtain keys from that object.</p>
+<h3>Examples</h3>
+<p>Example 1: Return an empty array because the input JSON object is empty.</p>
+<pre><code>select json_keys('{}');
++-----------------+
+| json_keys('{}') |
++-----------------+
+| []              |
++-----------------+</code></pre>
+<p>Example 2: Return the keys of a JSON object.</p>
+<pre><code>select json_keys('{&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: 3}');
++----------------+
+| json_keys('1') |
++----------------+
+|[&quot;a&quot;, &quot;b&quot;, &quot;c&quot;] |
++----------------+</code></pre>
+<p>Example 3: Return the keys of a JSON object that matches the specified path.</p>
+<pre><code>select json_keys('{&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: {&quot;d&quot;: 3, &quot;e&quot;: 4, &quot;f&quot;: 5}}', '$.c');
++---------------------------------------------------------------------+
+| json_keys('{&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: {&quot;d&quot;: 3, &quot;e&quot;: 4, &quot;f&quot;: 5}}', '$.c') |
++---------------------------------------------------------------------+
+| [&quot;d&quot;, &quot;e&quot;, &quot;f&quot;]                                                     |
++---------------------------------------------------------------------+</code></pre>
+<p>Example 4: The path does not exist.</p>
+<pre><code>select json_keys('{&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: {&quot;d&quot;: 3, &quot;e&quot;: 4, &quot;f&quot;: 5}}', '$.e');
++---------------------------------------------------------------------+
+| json_keys('{&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: {&quot;d&quot;: 3, &quot;e&quot;: 4, &quot;f&quot;: 5}}', '$.e') |
++---------------------------------------------------------------------+
+| NULL                                                                |
++---------------------------------------------------------------------+</code></pre>
+<p>Example 5: The JSON document is not a JSON object.</p>
+<pre><code>select json_keys('[1, 2, {&quot;a&quot;: 1, &quot;b&quot;: 2}]');
++---------------------------------------+
+| json_keys('[1, 2, {&quot;a&quot;: 1, &quot;b&quot;: 2}]') |
++---------------------------------------+
+| NULL                                  |
++---------------------------------------+</code></pre>
+<p>Example 6: The JSON document is an array nested with a JSON object. A path is specified to obtain keys from that object.</p>
+<pre><code>select json_keys('[0, 1, {&quot;a&quot;: 1, &quot;b&quot;: 2}]', '$[2]');
++-----------------------------------------------+
+| json_keys('[0, 1, {&quot;a&quot;: 1, &quot;b&quot;: 2}]', '$[2]') |
++-----------------------------------------------+
+| [&quot;a&quot;, &quot;b&quot;]                                    |
++-----------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/json_keys.md">StarRocks documentation</a></p>
+</body></html>

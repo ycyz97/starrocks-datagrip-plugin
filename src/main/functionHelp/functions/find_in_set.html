@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>find_in_set</title></head><body>
+<h2>find_in_set</h2>
+<p>This function returns the position of the first str in strlist (start counting with 1). Strlist is a sting separated by commas. If it does not find any str, it returns 0. When the argument is NULL, the result is NULL.</p>
+<h3>Syntax</h3>
+<pre><code>INT find_in_set(VARCHAR str, VARCHAR strlist)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select find_in_set(&quot;b&quot;, &quot;a,b,c&quot;);
++---------------------------+
+| find_in_set('b', 'a,b,c') |
++---------------------------+
+|                         2 |
++---------------------------+</code></pre>
+<h3>keyword</h3>
+<p>FIND_IN_SET,FIND,IN,SET</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/find_in_set.md">StarRocks documentation</a></p>
+</body></html>

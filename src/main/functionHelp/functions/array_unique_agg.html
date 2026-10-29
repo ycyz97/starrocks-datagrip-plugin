@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_unique_agg</title></head><body>
+<h2>array_unique_agg</h2>
+<p>Aggregates distinct values (including <code>NULL</code>) in an ARRAY column into an array (from multiple rows to one row).</p>
+<p>This function is supported from v3.2.</p>
+<h3>Syntax</h3>
+<pre><code>ARRAY_UNIQUE_AGG(col)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>col</code>: the column whose values you want to aggregate. Supported data type is ARRAY.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the ARRAY type.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>The order of the elements in an array is random.</li>
+<li>The data type of the elements in the returned array is the same as the data type of the elements in the input column.</li>
+<li>Returns <code>NULL</code> if there is no matched value.</li>
+</ul>
+<h3>Examples</h3>
+<p>Take the following data table as an example:</p>
+<pre><code>mysql &gt; select * from array_unique_agg_example;
++------+--------------+
+| a    | b            |
++------+--------------+
+|    2 | [1,null,2,4] |
+|    2 | [1,null,3]   |
+|    1 | [1,1,2,3]    |
+|    1 | [2,3,4]      |
++------+--------------+</code></pre>
+<p>Example 1: Group the values in column <code>a</code> and aggregate distinct values in column <code>b</code> into an array.</p>
+<pre><code>mysql &gt; select a, array_unique_agg(b) from array_unique_agg_example group by a;
++------+---------------------+
+| a    | array_unique_agg(b) |
++------+---------------------+
+|    1 | [4,1,2,3]           |
+|    2 | [4,1,2,3,null]      |
++------+---------------------+</code></pre>
+<p>Example 2: Aggregate values in column <code>b</code> using the WHERE clause. If no data meets the filter condition, a <code>NULL</code> value is returned.</p>
+<pre><code>mysql &gt; select array_unique_agg(b) from array_unique_agg_example where a &lt; 0;
++---------------------+
+| array_unique_agg(b) |
++---------------------+
+| NULL                |
++---------------------+</code></pre>
+<h3>Keywords</h3>
+<p>ARRAY_UNIQUE_AGG, ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_unique_agg.md">StarRocks documentation</a></p>
+</body></html>

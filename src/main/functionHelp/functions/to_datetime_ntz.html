@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>to_datetime_ntz</title></head><body>
+<h2>to_datetime_ntz</h2>
+<p>Converts a Unix timestamp to a DATETIME type value. <b>This function is always based on UTC+0, regardless of the time zone settings.</b></p>
+<p>If you want to convert a Unix timestamp to a DATETIME type value based on the current time zone, you can use to_datetime.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME to_datetime_ntz(BIGINT unix_ts, INT scale)</code></pre>
+<h3>Parameters</h3>
+<pre><code>| Name      | Type   | Required | Description                                             |</code></pre>
+<pre><code>| --------- | ------ | -------- | ------------------------------------------------------- |</code></pre>
+<pre><code>| `unix_ts` | BIGINT | Yes      | The Unix timestamp to convert. For example, `1598306400` (seconds) and `1598306400123` (milliseconds). |</code></pre>
+<pre><code>| `scale`   | INT    | No       | Time precision. Valid values:&lt;ul&gt;&lt;li&gt;`0` indicates seconds (Default).&lt;/li&gt;&lt;li&gt;`3` indicates milliseconds.&lt;/li&gt;&lt;li&gt;`6` indicates microseconds.&lt;/li&gt;&lt;/ul&gt; |</code></pre>
+<h3>Return Value</h3>
+<ul>
+<li>On success: returns a <code>DATETIME</code> value based on UTC+0.</li>
+<li>On failure: returns <code>NULL</code>. Common reasons include:</li>
+<li>Invalid <code>scale</code> (not 0, 3, or 6)</li>
+<li>Value out of DATETIME range (0001-01-01 to 9999-12-31)</li>
+</ul>
+<h3>Example</h3>
+<pre><code>SELECT to_datetime_ntz(1598306400);
+-- Returns: 2020-08-24 22:00:00
+
+SELECT to_datetime_ntz(1598306400123456, 6);
+-- Returns: 2020-08-24 22:00:00.123456</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/to_datetime_ntz.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_point</title></head><body>
+<h2>ST_Point</h2>
+<p>Returns the corresponding Point with the given X-coordinate and Y-coordinate. At the moment this value only makes sense on a spherical set. X/Y corresponds to longitude/latitude.</p>
+<p>&gt; <b>Caution</b><br>&gt;<br>&gt; If you directly select ST_Point(), it may get stuck.</p>
+<h3>Syntax</h3>
+<pre><code>POINT ST_Point(DOUBLE x, DOUBLE y)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT ST_AsText(ST_Point(24.7, 56.7));
++---------------------------------+
+| st_astext(st_point(24.7, 56.7)) |
++---------------------------------+
+| POINT (24.7 56.7)               |
++---------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ST_POINT,ST,POINT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_point.md">StarRocks documentation</a></p>
+</body></html>

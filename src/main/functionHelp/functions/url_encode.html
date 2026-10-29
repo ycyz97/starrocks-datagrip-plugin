@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>url_encode</title></head><body>
+<h2>url_encode</h2>
+<p>Translates a string into the application/x-www-form-urlencoded format.</p>
+<p>This functions is supported from v3.2.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR url_encode(VARCHAR str)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the string to encode. If <code>str</code> is not a string, this function will try implicit cast first.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns an encoded string compliant with the application/x-www-form-urlencoded format.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select url_encode('https://docs.starrocks.io/docs/introduction/StarRocks_intro/');
++----------------------------------------------------------------------------+
+| url_encode('https://docs.starrocks.io/docs/introduction/StarRocks_intro/') |
++----------------------------------------------------------------------------+
+| https%3A%2F%2Fdocs.starrocks.io%2Fdocs%2Fintroduction%2FStarRocks_intro%2F |
++----------------------------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/url_encode.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>mann_whitney_u_test</title></head><body>
+<h2>mann_whitney_u_test</h2>
+<p><code>mann_whitney_u_test</code> performs the Mann-Whitney rank test on samples derived from two populations. The Mann-Whitney U test is a non-parametric test that can be used to determine if two populations were selected from the same distribution.</p>
+<h3>Syntax</h3>
+<pre><code>MANN_WHITNEY_U_TEST (sample_data, sample_treatment[, alternative[, continuity_correction]])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>sample_data</code>: the value of sample data. It must be of numeric data types.</li>
+</ul>
+<ul>
+<li><code>sample_treatment</code>: the index of sample data. where each element indicates the treatment group that the corresponding sample belongs to. The values should be of type boolean, with <code>false</code> representing the first group and <code>true</code> representing the second group.</li>
+</ul>
+<ul>
+<li><code>alternative</code> (optional): A const string specifying the alternative hypothesis. It can be one of the following: </li>
+<li>- 'two-sided': The default value. Tests whether the means of the two populations are different.</li>
+<li>- 'less': Tests whether the mean of the first population is less than the mean of the second population.</li>
+<li>- 'greater': Tests whether the mean of the first population is greater than the mean of the second population.</li>
+</ul>
+<ul>
+<li><code>continuity_correction</code> (optional): A const boolean value indicating whether to apply a continuity correction. The continuity correction adjusts the U statistic by <code>0.5</code> towards the mean of the U distribution, which can improve the accuracy of the test for small sample sizes. The default value is <code>true</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>The function returns a json array containing the following two elements:</p>
+<p>The Mann-Whitney U statistic and the p-value associated with the test.</p>
+<h3>Usage notes</h3>
+<p>This function ignores NULLs.</p>
+<h3>Examples</h3>
+<p>Suppose there is a table named <code>testing_data</code> with the following data.</p>
+<pre><code>create table testing_data (
+    id int,
+    score int,
+    treatment boolean
+)
+properties(
+    &quot;replication_num&quot; = &quot;1&quot;
+);
+
+insert into testing_data values
+    (1, 80, false),
+    (2, 100, false),
+    (3, NULL, false),
+    (4, 60, true),
+    (5, 70, true),
+    (6, 85, true);</code></pre>
+<pre><code>select * from testing_data;
++------+-------+-----------+
+| id   | score | treatment |
++------+-------+-----------+
+|    1 |    80 |         0 |
+|    2 |   100 |         0 |
+|    3 |  NULL |         0 |
+|    4 |    60 |         1 |
+|    5 |    70 |         1 |
+|    6 |    85 |         1 |
++------+-------+-----------+</code></pre>
+<p>Query:</p>
+<pre><code>SELECT MANN_WHITNEY_U_TEST(score, treatment) FROM testing_data;</code></pre>
+<p>Result:</p>
+<pre><code>+---------------------------------------+
+| mann_whitney_u_test(score, treatment) |
++---------------------------------------+
+| [5, 0.38647623077123283]              |
++---------------------------------------+</code></pre>
+<p>Query:</p>
+<pre><code>SELECT MANN_WHITNEY_U_TEST(score, treatment, 'less') FROM testing_data;</code></pre>
+<p>Result:</p>
+<pre><code>+-----------------------------------------------+
+| mann_whitney_u_test(score, treatment, 'less') |
++-----------------------------------------------+
+| [5, 0.9255426634106172]                       |
++-----------------------------------------------+</code></pre>
+<p>Query:</p>
+<pre><code>SELECT MANN_WHITNEY_U_TEST(score, treatment, 'two-sided', 0) FROM testing_data;</code></pre>
+<p>Result:</p>
+<pre><code>+-------------------------------------------------------+
+| mann_whitney_u_test(score, treatment, 'two-sided', 0) |
++-------------------------------------------------------+
+| [5, 0.2482130789899235]                               |
++-------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/mann_whitney_u_test.md">StarRocks documentation</a></p>
+</body></html>

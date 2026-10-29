@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>percentile_approx_raw</title></head><body>
+<h2>percentile_approx_raw</h2>
+<p>Returns the value that corresponds to a specified percentile from <code>x</code>.</p>
+<p>If <code>x</code> is a column, this function first sorts values in <code>x</code> in ascending order and returns the value that corresponds to percentile <code>y</code>.</p>
+<h3>Syntax</h3>
+<pre><code>PERCENTILE_APPROX_RAW(x, y);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>x</code>: It can be a column or a set of values. It must evaluate to PERCENTILE.</li>
+</ul>
+<ul>
+<li><code>y</code>: the percentile. The supported data type is DOUBLE. Value range: [0.0,1.0].</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a PERCENTILE value.</p>
+<h3>Examples</h3>
+<p>Create table <code>aggregate_tbl</code>, where the <code>percent</code> column is the input of percentile_approx_raw().</p>
+<pre><code>  CREATE TABLE `aggregate_tbl` (
+    `site_id` largeint(40) NOT NULL COMMENT &quot;id of site&quot;,
+    `date` date NOT NULL COMMENT &quot;time of event&quot;,
+    `city_code` varchar(20) NULL COMMENT &quot;city_code of user&quot;,
+    `pv` bigint(20) SUM NULL DEFAULT &quot;0&quot; COMMENT &quot;total page views&quot;,
+    `percent` PERCENTILE PERCENTILE_UNION COMMENT &quot;others&quot;
+  ) ENGINE=OLAP
+  AGGREGATE KEY(`site_id`, `date`, `city_code`)
+  COMMENT &quot;OLAP&quot;
+  DISTRIBUTED BY HASH(`site_id`)
+  PROPERTIES (&quot;replication_num&quot; = &quot;1&quot;);</code></pre>
+<p>Insert data into the table.</p>
+<pre><code>  insert into aggregate_tbl values (5, '2020-02-23', 'city_code', 555, percentile_hash(1));
+  insert into aggregate_tbl values (5, '2020-02-23', 'city_code', 555, percentile_hash(2));
+  insert into aggregate_tbl values (5, '2020-02-23', 'city_code', 555, percentile_hash(3));
+  insert into aggregate_tbl values (5, '2020-02-23', 'city_code', 555, percentile_hash(4));</code></pre>
+<p>Calculate the value corresponding to percentile 0.5.</p>
+<pre><code>  mysql&gt; select percentile_approx_raw(percent, 0.5) from aggregate_tbl;
+  +-------------------------------------+
+  | percentile_approx_raw(percent, 0.5) |
+  +-------------------------------------+
+  |                                 2.5 |
+  +-------------------------------------+
+  1 row in set (0.03 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/percentile-functions/percentile_approx_raw.md">StarRocks documentation</a></p>
+</body></html>

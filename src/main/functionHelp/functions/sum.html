@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>sum</title></head><body>
+<p>Returns the sum of a numeric expression over the rows in each group.</p>
+<p><b>Syntax:</b> <code>SUM([DISTINCT] expr)</code></p>
+<p><b>Parameters:</b> <code>expr</code> must be numeric. <code>DISTINCT</code> sums each distinct value once.</p>
+<p><b>Returns:</b> A numeric result. <code>NULL</code> values are ignored.</p>
+<pre><code>SELECT SUM(amount) AS total_amount
+FROM payments;</code></pre>
+</body></html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>last_day</title></head><body>
+<h2>last_day</h2>
+<p>Returns the last day of an input DATE or DATETIME expression based on the specified date part. For example, <code>last_day('2023-05-10', 'month')</code> returns the last day of the month in which '2023-05-10' falls.</p>
+<p>If the date part is not specified, this function returns the last day of the month for a given date.</p>
+<p>This function is supported from v3.1.</p>
+<h3>Syntax</h3>
+<pre><code>DATE last_day(DATETIME|DATE date_expr[, VARCHAR unit])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>date_expr</code>: a DATE or DATETIME expression, required.</li>
+</ul>
+<ul>
+<li><code>unit</code>: the date part, optional. Valid values include <code>month</code>, <code>quarter</code>, and <code>year</code>, default to <code>month</code>. If <code>unit</code> is invalid, an error is returned.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATE value.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select last_day('2023-05-10', 'month');
++----------------------------------+
+| last_day('2023-05-10', 'month')  |
++----------------------------------+
+| 2023-05-31                       |
++----------------------------------+
+
+MySQL &gt; select last_day('2023-05-10');
++------------------------+
+| last_day('2023-05-10') |
++------------------------+
+| 2023-05-31             |
++------------------------+
+
+MySQL &gt; select last_day('2023-05-10', 'quarter');
++-----------------------------------+
+| last_day('2023-05-10', 'quarter') |
++-----------------------------------+
+| 2023-06-30                        |
++-----------------------------------+
+
+MySQL &gt; select last_day('2023-05-10', 'year');
++---------------------------------------+
+| last_day('2023-05-10', 'year')        |
++---------------------------------------+
+| 2023-12-31                            |
++---------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>LAST_DAY, LAST</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/last_day.md">StarRocks documentation</a></p>
+</body></html>

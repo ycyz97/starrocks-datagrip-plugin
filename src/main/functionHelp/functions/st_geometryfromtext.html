@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_geometryfromtext</title></head><body>
+<h2>ST_GeomFromText, ST_GeometryFromText</h2>
+<p><code>ST_GeomFromText(wkt, crs)</code> constructs a native planar <code>GEOMETRY</code> value from two-dimensional OGC Well-Known Text (WKT). The CRS is required and becomes part of the native type descriptor.</p>
+<p>The existing one-argument <code>ST_GeomFromText</code> and <code>ST_GeometryFromText</code> signatures keep returning the legacy <code>VARCHAR</code> representation.</p>
+<h3>Syntax</h3>
+<pre><code>GEOMETRY ST_GeomFromText(VARCHAR wkt, VARCHAR crs)
+VARCHAR ST_GeomFromText(VARCHAR wkt)
+VARCHAR ST_GeometryFromText(VARCHAR wkt)</code></pre>
+<p>For the native signature, <code>crs</code> must be a non-empty string literal. There is no default CRS and no implicit coordinate conversion or reprojection. The function supports all seven 2D OGC geometry families, <code>EMPTY</code>, and empty children. Invalid WKT returns <code>NULL</code>; a <code>NULL</code> WKT returns <code>NULL</code>.</p>
+<p>Native <code>GEOGRAPHY</code> and <code>GEOMETRY</code> values cannot be nested in <code>ARRAY</code>, <code>MAP</code>, or <code>STRUCT</code>. Analysis rejects these types even when an outer expression returns a scalar or the geo value is <code>NULL</code>.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT ST_AsText(ST_GeomFromText('LINESTRING (1 1, 2 2)', 'EPSG:3857'));
++----------------------------------------------------------------------------+
+| st_astext(st_geomfromtext('LINESTRING (1 1, 2 2)', 'EPSG:3857'))           |
++----------------------------------------------------------------------------+
+| LINESTRING (1 1, 2 2)                                                      |
++----------------------------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ST_GEOMETRYFROMTEXT, ST_GEOMFROMTEXT, GEOMETRY, WKT, CRS</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_geometryfromtext.md">StarRocks documentation</a></p>
+</body></html>

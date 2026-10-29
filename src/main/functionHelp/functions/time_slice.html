@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>time_slice</title></head><body>
+<h2>time_slice</h2>
+<p>Converts a given time into the beginning or end of a time interval based on the specified time granularity.</p>
+<p>This function is supported from v2.3.</p>
+<p>v2.5 supports converting a given time into the end of a time interval.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME time_slice(DATETIME dt, INTERVAL N type[, boundary])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>dt</code>: the time to convert, DATETIME.</li>
+<li><code>INTERVAL N type</code>: the time granularity, for example, <code>interval 5 second</code>.</li>
+<li><code>N</code> is the length of time interval. It must be an INT value.</li>
+<li><code>type</code> is the unit, which can be YEAR, QUARTER, MONTH, WEEK, DAY, HOUR, MINUTE, SECOND, MILLISECOND (since 3.1.7), and MICROSECOND (since 3.1.7).</li>
+<li><code>boundary</code>: optional. It is used to specify whether to return the beginning (<code>FLOOR</code>) or end (<code>CEIL</code>) of the time interval. Valid values: FLOOR, CEIL. If this parameter is not specified, <code>FLOOR</code> is the default. This parameter is supported from v2.5.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the DATETIME type.</p>
+<h3>Usage notes</h3>
+<p>The time interval starts from A.D. <code>0001-01-01 00:00:00</code>.</p>
+<h3>Examples</h3>
+<p>The following examples are provided based on the <code>test_all_type_select</code> table.</p>
+<pre><code>select * from test_all_type_select order by id_int;
++------------+---------------------+--------+
+| id_date    | id_datetime         | id_int |
++------------+---------------------+--------+
+| 2052-12-26 | 1691-12-23 04:01:09 |      0 |
+| 2168-08-05 | 2169-12-18 15:44:31 |      1 |
+| 1737-02-06 | 1840-11-23 13:09:50 |      2 |
+| 2245-10-01 | 1751-03-21 00:19:04 |      3 |
+| 1889-10-27 | 1861-09-12 13:28:18 |      4 |
++------------+---------------------+--------+
+5 rows in set (0.06 sec)</code></pre>
+<p>Example 1: Convert a given DATETIME value to the beginning of a 5-second time interval without specifying the <code>boundary</code> parameter.</p>
+<pre><code>select time_slice(id_datetime, interval 5 second)
+from test_all_type_select
+order by id_int;
++---------------------------------------------------+
+| time_slice(id_datetime, INTERVAL 5 second, floor) |
++---------------------------------------------------+
+| 1691-12-23 04:01:05                               |
+| 2169-12-18 15:44:30                               |
+| 1840-11-23 13:09:50                               |
+| 1751-03-21 00:19:00                               |
+| 1861-09-12 13:28:15                               |
++---------------------------------------------------+
+5 rows in set (0.16 sec)</code></pre>
+<p>Example 2: Convert a given DATETIME value to the beginning of a 5-day time interval with  <code>boundary</code> set to <code>FLOOR</code>.</p>
+<pre><code>select time_slice(id_datetime, interval 5 day, FLOOR)
+from test_all_type_select
+order by id_int;
++------------------------------------------------+
+| time_slice(id_datetime, INTERVAL 5 day, floor) |
++------------------------------------------------+
+| 1691-12-22 00:00:00                            |
+| 2169-12-16 00:00:00                            |
+| 1840-11-21 00:00:00                            |
+| 1751-03-18 00:00:00                            |
+| 1861-09-12 00:00:00                            |
++------------------------------------------------+
+5 rows in set (0.15 sec)</code></pre>
+<p>Example 3: Convert a given DATETIME value to the end of a 5-day time interval.</p>
+<pre><code>select time_slice(id_datetime, interval 5 day, CEIL)
+from test_all_type_select
+order by id_int;
++-----------------------------------------------+
+| time_slice(id_datetime, INTERVAL 5 day, ceil) |
++-----------------------------------------------+
+| 1691-12-27 00:00:00                           |
+| 2169-12-21 00:00:00                           |
+| 1840-11-26 00:00:00                           |
+| 1751-03-23 00:00:00                           |
+| 1861-09-17 00:00:00                           |
++-----------------------------------------------+</code></pre>
+<p>Example 4: Convert a given DATETIME value to the end of a 1-millisecond time interval.</p>
+<pre><code>select id_datetime, time_slice(id_datetime, interval 1 millisecond, CEIL)
+from test_all_type_select
+order by id_int;
++---------------------+-------------------------------------------------------+
+| id_datetime         | time_slice(id_datetime, INTERVAL 1 millisecond, ceil) |
++---------------------+-------------------------------------------------------+
+| 1691-12-23 04:01:09 | 1691-12-23 04:01:09.001000                            |
+| 2169-12-18 15:44:31 | 2169-12-18 15:44:31.001000                            |
+| 1840-11-23 13:09:50 | 1840-11-23 13:09:50.001000                            |
+| 1751-03-21 00:19:04 | 1751-03-21 00:19:04.001000                            |
+| 1861-09-12 13:28:18 | 1861-09-12 13:28:18.001000                            |
++---------------------+-------------------------------------------------------+</code></pre>
+<p>Example 5: Convert a given DATETIME value to the end of a 1-microsecond time interval.</p>
+<pre><code>select id_datetime, time_slice(id_datetime, interval 1 microsecond, CEIL)
+from test_all_type_select
+order by id_int;
++---------------------+-------------------------------------------------------+
+| id_datetime         | time_slice(id_datetime, INTERVAL 1 microsecond, ceil) |
++---------------------+-------------------------------------------------------+
+| 1691-12-23 04:01:09 | 1691-12-23 04:01:09.000001                            |
+| 2169-12-18 15:44:31 | 2169-12-18 15:44:31.000001                            |
+| 1840-11-23 13:09:50 | 1840-11-23 13:09:50.000001                            |
+| 1751-03-21 00:19:04 | 1751-03-21 00:19:04.000001                            |
+| 1861-09-12 13:28:18 | 1861-09-12 13:28:18.000001                            |
++---------------------+-------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/time_slice.md">StarRocks documentation</a></p>
+</body></html>

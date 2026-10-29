@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_append</title></head><body>
+<h2>array_append</h2>
+<p>Adds a new element to the end of the array. Returns an array.</p>
+<h3>Syntax</h3>
+<pre><code>array_append(any_array, any_element)</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select array_append([1, 2], 3);
++------------------------+
+| array_append([1,2], 3) |
++------------------------+
+| [1,2,3]                |
++------------------------+
+1 row in set (0.00 sec)
+</code></pre>
+<p>You can add NULL to the array.</p>
+<pre><code>mysql&gt; select array_append([1, 2], NULL);
++---------------------------+
+| array_append([1,2], NULL) |
++---------------------------+
+| [1,2,NULL]                |
++---------------------------+
+1 row in set (0.01 sec)
+</code></pre>
+<h3>keyword</h3>
+<p>ARRAY_APPEND,ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_append.md">StarRocks documentation</a></p>
+</body></html>

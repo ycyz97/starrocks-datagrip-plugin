@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>tanh</title></head><body>
+<h2>tanh</h2>
+<p>Computes the hyperbolic tangent of the argument.</p>
+<p>This function is supported from v3.0.</p>
+<h3>Syntax</h3>
+<pre><code>DOUBLE tanh(DOUBLE arg)</code></pre>
+<h4>Parameters</h4>
+<p><code>arg</code>: You can specify only a numeric value. This function converts the numeric value into a DOUBLE value before it computes the hyperbolic tangent of the value.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3>Usage notes</h3>
+<p>If you specify a non-numeric value, this function returns <code>NULL</code>.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select tanh(-1);
++---------------------+
+| tanh(-1)            |
++---------------------+
+| -0.7615941559557649 |
++---------------------+
+
+mysql&gt; select tanh(0);
++---------+
+| tanh(0) |
++---------+
+|       0 |
++---------+
+
+mysql&gt; select tanh(1);
++--------------------+
+| tanh(1)            |
++--------------------+
+| 0.7615941559557649 |
++--------------------+
+
+mysql&gt; select tanh(&quot;&quot;);
++----------+
+| tanh('') |
++----------+
+|     NULL |
++----------+</code></pre>
+<h3>keyword</h3>
+<p>TANH</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/tanh.md">StarRocks documentation</a></p>
+</body></html>

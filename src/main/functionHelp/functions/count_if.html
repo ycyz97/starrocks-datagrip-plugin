@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>count_if</title></head><body>
+<h2>count_if</h2>
+<p>Returns the number of records that meet the specified condition or <code>0</code> if no records satisfy the condition.</p>
+<p>This function does not support <code>DISTINCT</code>, for example <code>count_if(DISTINCT x)</code>.</p>
+<p>This function is internally transformed to <code>COUNT</code> + <code>IF</code>:</p>
+<ul>
+<li>Before: <code>COUNT_IF(x)</code></li>
+<li>After: <code>COUNT(IF(x, 1, NULL))</code></li>
+</ul>
+<h3>Syntax</h3>
+<pre><code>COUNT_IF(condition)</code></pre>
+<h3>Parameters</h3>
+<p><code>condition</code>: the condition that should evaluate to a BOOLEAN value. You can specify multiple count_if conditions in one SELECT statement.</p>
+<h3>Return value</h3>
+<p>Returns a numeric value. If no records can be found, <code>0</code> is returned. This function ignores NULL values.</p>
+<h3>Examples</h3>
+<p>Suppose there is a table named <code>test_count_if</code>.</p>
+<pre><code>CREATE TABLE `test_count_if` (
+  `v1` varchar(65533) NULL COMMENT &quot;&quot;,
+  `v2` varchar(65533) NULL COMMENT &quot;&quot;,
+  `v3` datetime NULL COMMENT &quot;&quot;,
+  `v4` int null
+) ENGINE=OLAP
+DUPLICATE KEY(v1, v2, v3)
+PARTITION BY RANGE(`v3`)
+(PARTITION p20220418 VALUES [(&quot;2022-04-18 00:00:00&quot;), (&quot;2022-04-19 00:00:00&quot;)),
+PARTITION p20220419 VALUES [(&quot;2022-04-19 00:00:00&quot;), (&quot;2022-04-20 00:00:00&quot;)),
+PARTITION p20220420 VALUES [(&quot;2022-04-20 00:00:00&quot;), (&quot;2022-04-21 00:00:00&quot;)),
+PARTITION p20220421 VALUES [(&quot;2022-04-21 00:00:00&quot;), (&quot;2022-04-22 00:00:00&quot;)))
+DISTRIBUTED BY HASH(`v1`) BUCKETS 4;
+
+INSERT INTO test_count_if VALUES
+('a','a', '2022-04-18 01:01:00', 1),
+('a','b', '2022-04-18 02:01:00', NULL),
+('a',NULL, '2022-04-18 02:05:00', 1),
+('a','b', '2022-04-18 02:15:00', 3),
+('a','b', '2022-04-18 03:15:00', 7),
+('c',NULL, '2022-04-18 03:45:00', NULL),
+('c',NULL, '2022-04-18 03:25:00', 2),
+('c','a', '2022-04-18 03:27:00', 3);
+
+SELECT * FROM test_count_if;
++------+------+---------------------+------+
+| v1   | v2   | v3                  | v4   |
++------+------+---------------------+------+
+| a    | NULL | 2022-04-18 02:05:00 |    1 |
+| a    | a    | 2022-04-18 01:01:00 |    1 |
+| a    | b    | 2022-04-18 02:01:00 | NULL |
+| a    | b    | 2022-04-18 02:15:00 |    3 |
+| a    | b    | 2022-04-18 03:15:00 |    7 |
+| c    | NULL | 2022-04-18 03:25:00 |    2 |
+| c    | NULL | 2022-04-18 03:45:00 | NULL |
+| c    | a    | 2022-04-18 03:27:00 |    3 |
++------+------+---------------------+------+</code></pre>
+<p>Example 1: Count the number of rows in table <code>test_count_if</code> where <code>v2</code> is null.</p>
+<pre><code>select count_if(v2 is null) from test_count_if;
++----------------------+
+| count_if(v2 IS NULL) |
++----------------------+
+|                    3 |
++----------------------+</code></pre>
+<p>Example 2: Count the number of rows where <code>v1 &gt;= v2 or v4 = 1</code></p>
+<pre><code>select count_if(v1 &gt;= v2 or v4 = 1)from test_count_if;
++----------------------------------+
+| count_if((v1 &gt;= v2) OR (v4 = 1)) |
++----------------------------------+
+|                                3 |
++----------------------------------+</code></pre>
+<p>Example 3: Specify multiple conditions.</p>
+<pre><code>select count_if(v1 &gt;= v2), count_if(v1 &gt;= v2 or v4 = 1), count_if(v1 &gt;= v2 and v4 = 1) from test_count_if;
++--------------------+----------------------------------+-----------------------------------+
+| count_if(v1 &gt;= v2) | count_if((v1 &gt;= v2) OR (v4 = 1)) | count_if((v1 &gt;= v2) AND (v4 = 1)) |
++--------------------+----------------------------------+-----------------------------------+
+|                  2 |                                3 |                                 1 |</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/count_if.md">StarRocks documentation</a></p>
+</body></html>

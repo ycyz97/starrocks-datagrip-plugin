@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>named_struct</title></head><body>
+<h2>named_struct</h2>
+<p>Creates a struct with the specified field names and values.</p>
+<p>This function is supported from v3.1 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>STRUCT named_struct({STRING name1, ANY val1} [, ...] )</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>nameN</code>: A STRING field.</li>
+</ul>
+<ul>
+<li><code>valN</code>: An expression of any type that specifies the value for field N. Values are nullable.</li>
+</ul>
+<p>The expressions of names and values must be in pairs. Otherwise, the struct cannot be created. You must pass at least one pair of field name and value, separated by a comma (<code>,</code>).</p>
+<h3>Return value</h3>
+<p>Returns a STRUCT value.</p>
+<h3>Examples</h3>
+<pre><code>SELECT named_struct('a', 1, 'b', 2, 'c', 3);
++--------------------------------------+
+| named_struct('a', 1, 'b', 2, 'c', 3) |
++--------------------------------------+
+| {&quot;a&quot;:1,&quot;b&quot;:2,&quot;c&quot;:3}                  |
++--------------------------------------+
+
+SELECT named_struct('a', null, 'b', 2, 'c', 3);
++-----------------------------------------+
+| named_struct('a', null, 'b', 2, 'c', 3) |
++-----------------------------------------+
+| {&quot;a&quot;:null,&quot;b&quot;:2,&quot;c&quot;:3}                  |
++-----------------------------------------+</code></pre>
+<h3>References</h3>
+<ul>
+<li>STRUCT data type</li>
+<li>row/struct</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/struct-functions/named_struct.md">StarRocks documentation</a></p>
+</body></html>

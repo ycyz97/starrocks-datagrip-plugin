@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>lpad</title></head><body>
+<h2>lpad</h2>
+<p>This function returns strings with a length of <code>len</code> (starting counting from the first syllable) in <code>str</code>. If <code>len</code> is longer than <code>str</code>, the return value is lengthened to <code>len</code> characters by adding pad characters in front of <code>str</code>.  If <code>str</code> is longer than <code>len</code>, the return value is shortened to <code>len</code> characters. <code>len</code> means the length of characters, not bytes.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR lpad(VARCHAR str, INT len[, VARCHAR pad])</code></pre>
+<h3>Parameters</h3>
+<p><code>str</code>: required, the string to be padded, which must evaluate to a VARCHAR value.</p>
+<p><code>len</code>: required, the length of return value, it means the length of characters, not bytes, which must evaluate to an INT value.</p>
+<p><code>pad</code>: optional, the characters to be added in front of str, which must be a VARCHAR value. If this parameter is not specified, spaces are added by default.</p>
+<h3>Return value</h3>
+<p>Returns a VARCHAR value.</p>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT lpad(&quot;hi&quot;, 5, &quot;xy&quot;);
++---------------------+
+| lpad('hi', 5, 'xy') |
++---------------------+
+| xyxhi               |
++---------------------+
+
+MySQL &gt; SELECT lpad(&quot;hi&quot;, 1, &quot;xy&quot;);
++---------------------+
+| lpad('hi', 1, 'xy') |
++---------------------+
+| h                   |
++---------------------+
+
+MySQL &gt; SELECT lpad(&quot;hi&quot;, 5);
++---------------------+
+| lpad('hi', 5, ' ')  |
++---------------------+
+|    hi               |
++---------------------+</code></pre>
+<h3>keyword</h3>
+<p>LPAD</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/lpad.md">StarRocks documentation</a></p>
+</body></html>

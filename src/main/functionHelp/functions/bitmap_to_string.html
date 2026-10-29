@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_to_string</title></head><body>
+<h2>bitmap_to_string</h2>
+<p>Converts an input bitmap into a string that is separated by commas (,). This string contains all the bits in the bitmap. If the input is null, null is returned.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR BITMAP_TO_STRING(BITMAP input)</code></pre>
+<h3>Parameters</h3>
+<p><code>input</code>: the bitmap you want to convert.</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type.</p>
+<h3>Examples</h3>
+<p>Example 1: The input is null and null is returned.</p>
+<pre><code>MySQL &gt; select bitmap_to_string(null);
++------------------------+
+| bitmap_to_string(NULL) |
++------------------------+
+| NULL                   |
++------------------------+</code></pre>
+<p>Example 2: The input is empty and an empty string is returned.</p>
+<pre><code>MySQL &gt; select bitmap_to_string(bitmap_empty());
++----------------------------------+
+| bitmap_to_string(bitmap_empty()) |
++----------------------------------+
+|                                  |
++----------------------------------+</code></pre>
+<p>Example 3: Convert a bitmap that contains one bit into a string.</p>
+<pre><code>MySQL &gt; select bitmap_to_string(to_bitmap(1));
++--------------------------------+
+| bitmap_to_string(to_bitmap(1)) |
++--------------------------------+
+| 1                              |
++--------------------------------+</code></pre>
+<p>Example 4: Convert a bitmap that contains two bits into a string.</p>
+<pre><code>MySQL &gt; select bitmap_to_string(bitmap_or(to_bitmap(1), to_bitmap(2)));
++---------------------------------------------------------+
+| bitmap_to_string(bitmap_or(to_bitmap(1), to_bitmap(2))) |
++---------------------------------------------------------+
+| 1,2                                                     |
++---------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_to_string.md">StarRocks documentation</a></p>
+</body></html>

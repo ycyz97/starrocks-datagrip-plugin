@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_remove</title></head><body>
+<h2>array_remove</h2>
+<p>Removes an element from an array.</p>
+<h3>Syntax</h3>
+<pre><code>array_remove(any_array, any_element)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>any_array</code>: the array to be searched.</li>
+<li><code>any_element</code>: an expression that matches the element in an array.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns the array from which specified element has been removed.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select array_remove([1,2,3,null,3], 3);
+
++---------------------------------+
+
+| array_remove([1,2,3,NULL,3], 3) |
+
++---------------------------------+
+
+| [1,2,null]                      |
+
++---------------------------------+
+
+1 row in set (0.01 sec)</code></pre>
+<h3>Keywords</h3>
+<p>ARRAY_REMOVE, ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_remove.md">StarRocks documentation</a></p>
+</body></html>

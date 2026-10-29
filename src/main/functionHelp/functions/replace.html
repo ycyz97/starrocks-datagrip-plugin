@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>replace</title></head><body>
+<h2>replace</h2>
+<p>Replaces all occurrences of characters in a string with another string. This function performs a case-sensitive match when searching for <code>pattern</code>.</p>
+<p>This function is supported from v3.0.</p>
+<p>Note: Prior to 3.0, this function was implemented as regexp_replace.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR replace(VARCHAR str, VARCHAR pattern, VARCHAR repl)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>str</code>: the original string.</li>
+</ul>
+<ul>
+<li><code>pattern</code>: the characters to replace. Note that this is not a regular expression.</li>
+</ul>
+<ul>
+<li><code>repl</code>: the string used to replace characters in <code>pattern</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a string with the specified characters replaced.</p>
+<p>If any argument is NULL, the result is NULL.</p>
+<p>If no matching characters are found, the original string is returned.</p>
+<h3>Examples</h3>
+<pre><code>-- Replace '.' in 'a.b.c' with '+'.
+
+MySQL &gt; SELECT replace('a.b.c', '.', '+');
++----------------------------+
+| replace('a.b.c', '.', '+') |
++----------------------------+
+| a+b+c                      |
++----------------------------+
+
+-- No matching characters are found and the original string is returned.
+
+MySQL &gt; SELECT replace('a b c', '', '*');
++----------------------------+
+| replace('a b c', '', '*') |
++----------------------------+
+| a b c                      |
++----------------------------+
+
+-- Replace 'like' with an empty string.
+
+MySQL &gt; SELECT replace('We like StarRocks', 'like', '');
++------------------------------------------+
+| replace('We like StarRocks', 'like', '') |
++------------------------------------------+
+| We  StarRocks                            |
++------------------------------------------+
+
+-- No matching characters are found and the original string is returned.
+
+MySQL &gt; SELECT replace('He is awesome', 'handsome', 'smart');
++-----------------------------------------------+
+| replace('He is awesome', 'handsome', 'smart') |
++-----------------------------------------------+
+| He is awesome                                 |
++-----------------------------------------------+</code></pre>
+<h3>keywords</h3>
+<p>REPLACE, replace</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/replace.md">StarRocks documentation</a></p>
+</body></html>

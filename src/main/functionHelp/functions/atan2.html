@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>atan2</title></head><body>
+<h2>atan2</h2>
+<p>Returns the arc tangent of <code>x</code> divided by <code>y</code>, that is, the arc tangent of <code>x/y</code>. The signs of the two parameters are used to determine the quadrant of the result.</p>
+<p>The return value is in the range of [-π, π].</p>
+<h3>Syntax</h3>
+<pre><code>ATAN2(x,y);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: The supported data type is DOUBLE.</p>
+<p><code>y</code>: The supported data type is DOUBLE.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE type. Returns NULL if <code>x</code> or <code>y</code> is NULL.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select atan2(-0.8,2);
++---------------------+
+| atan2(-0.8, 2)      |
++---------------------+
+| -0.3805063771123649 |
++---------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/atan2.md">StarRocks documentation</a></p>
+</body></html>

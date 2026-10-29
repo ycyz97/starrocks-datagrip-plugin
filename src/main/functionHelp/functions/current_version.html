@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>current_version</title></head><body>
+<h2>current_version</h2>
+<p>Returns the current version of StarRocks. Two syntaxes are provided for compatibility with different clients.</p>
+<h3>Syntax</h3>
+<pre><code>current_version();
+
+@@version_comment;</code></pre>
+<h3>Parameters</h3>
+<p>None</p>
+<h3>Return value</h3>
+<p>Returns a value of the VARCHAR type.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select current_version();
++-------------------+
+| current_version() |
++-------------------+
+| 2.1.2 0782ad7     |
++-------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; select @@version_comment;
++-------------------------+
+| @@version_comment       |
++-------------------------+
+| StarRocks version 2.1.2 |
++-------------------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/current_version.md">StarRocks documentation</a></p>
+</body></html>

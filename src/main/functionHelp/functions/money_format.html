@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>money_format</title></head><body>
+<h2>money_format</h2>
+<p>This function returns a string formatted as a currency string. The integer part is separated by comma every three bits and the decimal part is reserved for two bits.</p>
+<h3>Syntax</h3>
+<pre><code>VARCHAR money_format(Number)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select money_format(17014116);
++------------------------+
+| money_format(17014116) |
++------------------------+
+| 17,014,116.00          |
++------------------------+
+
+MySQL &gt; select money_format(1123.456);
++------------------------+
+| money_format(1123.456) |
++------------------------+
+| 1,123.46               |
++------------------------+
+
+MySQL &gt; select money_format(1123.4);
++----------------------+
+| money_format(1123.4) |
++----------------------+
+| 1,123.40             |
++----------------------+</code></pre>
+<h3>keyword</h3>
+<p>MONEY_FORMAT,MONEY,FORMAT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/money_format.md">StarRocks documentation</a></p>
+</body></html>

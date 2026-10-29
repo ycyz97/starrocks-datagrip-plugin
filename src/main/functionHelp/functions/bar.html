@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bar</title></head><body>
+<h2>bar</h2>
+<p>Draw a bar graph like histogram to inspect the data distribution.</p>
+<h3>Syntax</h3>
+<pre><code>bar(size, min, max, width) </code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>size</code>: size of the bar, must be within the <code>[min, max]</code></li>
+<li><code>min</code>: min value of the bar</li>
+<li><code>max</code>: max value of the bar</li>
+<li><code>width</code>: width of the bar</li>
+</ul>
+<h3>Example</h3>
+<pre><code>select r, bar(r, 0, 10, 20) as x from table(generate_series(0, 10)) as s(r);</code></pre>
+<pre><code>0
+1	▓▓
+2	▓▓▓▓
+3	▓▓▓▓▓▓
+4	▓▓▓▓▓▓▓▓
+5	▓▓▓▓▓▓▓▓▓▓
+6	▓▓▓▓▓▓▓▓▓▓▓▓
+7	▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+8	▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+9	▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+10	▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/utility-functions/bar.md">StarRocks documentation</a></p>
+</body></html>

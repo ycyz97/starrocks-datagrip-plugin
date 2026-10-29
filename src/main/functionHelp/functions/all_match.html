@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>all_match</title></head><body>
+<h2>all_match</h2>
+<p>Returns whether all elements of an array match the given predicate.</p>
+<ul>
+<li>Returns <code>true</code> (1) if all the elements match the predicate (a special case is when the array is empty).</li>
+</ul>
+<ul>
+<li>Returns <code>false</code> (0) if one or more elements do not match.</li>
+</ul>
+<ul>
+<li>Returns NULL if the predicate returns NULL for one or more elements and <code>true</code> for all other elements.</li>
+</ul>
+<p>This function is supported from v3.0.6 onwards.</p>
+<h3>Syntax</h3>
+<pre><code>all_match(lambda_function, arr1, arr2...)</code></pre>
+<p>Returns whether all elements of <code>arr1</code> match the given predicate in the lambda function.</p>
+<h3>Parameters</h3>
+<ul>
+<li><code>arr1</code>: the array to match.</li>
+</ul>
+<ul>
+<li><code>arrN</code>: optional arrays used in the lambda function.</li>
+</ul>
+<ul>
+<li><code>lambda_function</code>: the lambda function used to match values.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a BOOLEAN value.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>The lambda function follows the usage notes in array_map().</li>
+<li>If the input array is null or the lambda function results in null, null is returned.</li>
+<li>If <code>arr1</code> is empty, <code>true</code> is returned.</li>
+<li>To apply this function to MAP, rewrite <code>all_match((k,v)-&gt;k&gt;v,map)</code> to <code>all_match(map_values(transform_values((k,v)-&gt;k&gt;v, map)))</code>. For example, <code>select all_match(map_values(transform_values((k,v)-&gt;k&gt;v, map{2:1})));</code> returns 1.</li>
+</ul>
+<h3>Examples</h3>
+<p>Check whether all elements in <code>x</code> are less than the elements in <code>y</code>.</p>
+<pre><code>select all_match((x,y) -&gt; x &lt; y, [1,2,-8], [4,5,6]);
++---------------------------------------------------+
+| all_match((x, y) -&gt; x &lt; y, [1, 2, -8], [4, 5, 6]) |
++---------------------------------------------------+
+|                                                 1 |
++---------------------------------------------------+
+
+select all_match((x,y) -&gt; x &lt; y, [1,2,null], [4,5,6]);
++-----------------------------------------------------+
+| all_match((x, y) -&gt; x &lt; y, [1, 2, NULL], [4, 5, 6]) |
++-----------------------------------------------------+
+|                                                NULL |
++-----------------------------------------------------+
+
+select all_match((x,y) -&gt; x &lt; y, [1,2,8], [4,5,6]);
++--------------------------------------------------+
+| all_match((x, y) -&gt; x &lt; y, [1, 2, 8], [4, 5, 6]) |
++--------------------------------------------------+
+|                                                0 |
++--------------------------------------------------+
+
+select all_match((x,y) -&gt; x &lt; y, [], []);
++------------------------------------+
+| all_match((x, y) -&gt; x &lt; y, [], []) |
++------------------------------------+
+|                                  1 |
++------------------------------------+
+
+select all_match((x,y) -&gt; x &lt; y, null, [4,5,6]);
++---------------------------------------------+
+| all_match((x, y) -&gt; x &lt; y, NULL, [4, 5, 6]) |
++---------------------------------------------+
+|                                        NULL |
++---------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/all_match.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>arrays_zip</title></head><body>
+<h2>arrays_zip</h2>
+<p>Merges the given arrays by index into an array of structs in which the n-th struct contains n-th values of all input arrays. When array lengths differ, missing elements are filled with NULL.</p>
+<h3>Syntax</h3>
+<pre><code>arrays_zip(array_1, array_2[, ...])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>array_n</code>: Arrays to be merged. Each array can contain elements of any supported type.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns an ARRAY of STRUCT, where the n-th struct contains the n-th field of each input array. If input arrays have different lengths, shorter arrays are padded with NULL values.</p>
+<h3>Usage notes</h3>
+<ul>
+<li>If the input arrays have different lengths, the result array length is the maximum length among input arrays.</li>
+<li>Missing values in shorter arrays are filled with NULL.</li>
+<li>If any input array is NULL, the result is NULL.</li>
+<li>If all input arrays are empty, the result is an empty array.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Merge two arrays with equal length.</p>
+<pre><code>mysql&gt; SELECT arrays_zip([1, 2], ['a', 'b']) AS result;
++---------------------------------------------------+
+| result                                            |
++---------------------------------------------------+
+| [{&quot;col1&quot;:&quot;1&quot;,&quot;col2&quot;:&quot;a&quot;},{&quot;col1&quot;:&quot;2&quot;,&quot;col2&quot;:&quot;b&quot;}] |
++---------------------------------------------------+</code></pre>
+<p>Example 2: Merge two arrays with different lengths.</p>
+<pre><code>mysql&gt; SELECT arrays_zip([1, 2], ['a', null, 'c']) AS result;
++-----------------------------------------------------------------------------+
+| result                                                                      |
++-----------------------------------------------------------------------------+
+| [{&quot;col1&quot;:&quot;1&quot;,&quot;col2&quot;:&quot;a&quot;},{&quot;col1&quot;:&quot;2&quot;,&quot;col2&quot;:null},{&quot;col1&quot;:null,&quot;col2&quot;:&quot;c&quot;}] |
++-----------------------------------------------------------------------------+</code></pre>
+<p>Example 3: Merge three arrays.</p>
+<pre><code>mysql&gt; SELECT arrays_zip([1, 2, 3], ['a', 'b', 'c'], [10, 20, 30]) AS result;
++---------------------------------------------------------------------------------------------------------------+
+| result                                                                                                        |
++---------------------------------------------------------------------------------------------------------------+
+| [{&quot;col1&quot;:&quot;1&quot;,&quot;col2&quot;:&quot;a&quot;,&quot;col3&quot;:&quot;10&quot;},{&quot;col1&quot;:&quot;2&quot;,&quot;col2&quot;:&quot;b&quot;,&quot;col3&quot;:&quot;20&quot;},{&quot;col1&quot;:&quot;3&quot;,&quot;col2&quot;:&quot;c&quot;,&quot;col3&quot;:&quot;30&quot;}] |
++---------------------------------------------------------------------------------------------------------------+</code></pre>
+<p>Example 4: Merge two empty arrays.</p>
+<pre><code>mysql&gt; SELECT arrays_zip([], []) AS result;
++--------+
+| result |
++--------+
+| []     |
++--------+</code></pre>
+<p>Example 5: Merge a single array.</p>
+<pre><code>mysql&gt; SELECT arrays_zip([1, 2, 3]) AS result;
++------------------------------------------+
+| result                                   |
++------------------------------------------+
+| [{&quot;col1&quot;:&quot;1&quot;},{&quot;col1&quot;:&quot;2&quot;},{&quot;col1&quot;:&quot;3&quot;}] |
++------------------------------------------+</code></pre>
+<p>Example 6: Merge arrays when one of them is NULL.</p>
+<pre><code>mysql&gt; SELECT arrays_zip(null, [1, 2]) AS result;
++--------+
+| result |
++--------+
+| NULL   |
++--------+</code></pre>
+<p>Example 7: Merge arrays of mixed types with NULL values.</p>
+<pre><code>mysql&gt; SELECT arrays_zip([1, null, 3], ['a', 'b', null]) AS result;
++-----------------------------------------------------------------------------+
+| result                                                                      |
++-----------------------------------------------------------------------------+
+| [{&quot;col1&quot;:&quot;1&quot;,&quot;col2&quot;:&quot;a&quot;},{&quot;col1&quot;:null,&quot;col2&quot;:&quot;b&quot;},{&quot;col1&quot;:&quot;3&quot;,&quot;col2&quot;:null}] |
++-----------------------------------------------------------------------------+</code></pre>
+<p>Example 8: Merge arrays from table data.</p>
+<pre><code>mysql&gt; CREATE TABLE IF NOT EXISTS test (id INT, arr1 ARRAY&lt;INT&gt;, arr2 ARRAY&lt;VARCHAR&gt;) PROPERTIES (&quot;replication_num&quot;=&quot;1&quot;);
+mysql&gt; INSERT INTO test VALUES (1, [1, 2], ['a', 'b']), (2, [3, 4, 5], ['x', 'y']);
+mysql&gt; SELECT id, arrays_zip(arr1, arr2) AS result FROM test;
++------+----------------------------------------------------------------------------+
+| id   | result                                                                     |
++------+----------------------------------------------------------------------------+
+|    1 | [{&quot;col1&quot;:&quot;1&quot;,&quot;col2&quot;:&quot;a&quot;},{&quot;col1&quot;:&quot;2&quot;,&quot;col2&quot;:&quot;b&quot;}]                          |
+|    2 | [{&quot;col1&quot;:&quot;3&quot;,&quot;col2&quot;:&quot;x&quot;},{&quot;col1&quot;:&quot;4&quot;,&quot;col2&quot;:&quot;y&quot;},{&quot;col1&quot;:&quot;5&quot;,&quot;col2&quot;:null}] |
++------+----------------------------------------------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/arrays_zip.md">StarRocks documentation</a></p>
+</body></html>

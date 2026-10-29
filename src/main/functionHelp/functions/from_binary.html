@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>from_binary</title></head><body>
+<h2>from_binary</h2>
+<p>Converts a binary value to a VARCHAR string based on the specified binary format (<code>binary_type</code>). The following binary formats are supported: <code>hex</code>, <code>encode64</code>, and <code>utf8</code>. If no <code>binary_type</code> is specified, <code>hex</code> is the default.</p>
+<h3>Syntax</h3>
+<pre><code>from_binary(binary[, binary_type])</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>binary</code>: the input binary to convert, required.</li>
+</ul>
+<ul>
+<li><code>binary_type</code>: the binary format for conversion, optional.</li>
+</ul>
+<ul>
+<li><code>hex</code> (default): <code>from_binary</code> uses the <code>hex</code> method to encode the input binary to a VARCHAR string.</li>
+<li><code>encode64</code>: <code>from_binary</code> uses the <code>base64</code> method to encode the input binary to a VARCHAR string.</li>
+<li><code>utf8</code>: <code>from_binary</code> converts the input binary to a VARCHAR string without any transformation.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a VARCHAR string.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select from_binary(to_binary('ABAB', 'hex'), 'hex');
++----------------------------------------------+
+| from_binary(to_binary('ABAB', 'hex'), 'hex') |
++----------------------------------------------+
+| ABAB                                         |
++----------------------------------------------+
+1 row in set (0.02 sec)
+
+mysql&gt; select from_base64(from_binary(to_binary('U1RBUlJPQ0tT', 'encode64'), 'encode64'));
++-----------------------------------------------------------------------------+
+| from_base64(from_binary(to_binary('U1RBUlJPQ0tT', 'encode64'), 'encode64')) |
++-----------------------------------------------------------------------------+
+| STARROCKS                                                                   |
++-----------------------------------------------------------------------------+
+1 row in set (0.01 sec)
+
+mysql&gt; select from_binary(to_binary('STARROCKS', 'utf8'), 'utf8');
++-----------------------------------------------------+
+| from_binary(to_binary('STARROCKS', 'utf8'), 'utf8') |
++-----------------------------------------------------+
+| STARROCKS                                           |
++-----------------------------------------------------+
+1 row in set (0.01 sec)
+</code></pre>
+<h3>References</h3>
+<ul>
+<li>to_binary</li>
+<li>BINARY/VARBINARY data type</li>
+</ul>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/binary-functions/from_binary.md">StarRocks documentation</a></p>
+</body></html>

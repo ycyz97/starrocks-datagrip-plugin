@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>unnest</title></head><body>
+<p>Expands an array into a table of rows and can be used as a table function in the <code>FROM</code> clause.</p>
+<p><b>Syntax:</b> <code>UNNEST(array_expr)</code></p>
+<p><b>Parameters:</b> <code>array_expr</code> is an array expression to expand.</p>
+<p><b>Returns:</b> A table containing one row for each array element.</p>
+<pre><code>SELECT item
+FROM UNNEST(['a', 'b', 'c']) AS t(item);</code></pre>
+</body></html>

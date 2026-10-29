@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>null_or_empty</title></head><body>
+<h2>null_or_empty</h2>
+<p>This function returns true when the string is empty or NULL. Otherwise, it returns false.</p>
+<h3>Syntax</h3>
+<pre><code>BOOLEAN NULL_OR_EMPTY (VARCHAR str)
+BOOLEAN NULL_OR_EMPTY (any_array)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select null_or_empty(null);
++---------------------+
+| null_or_empty(NULL) |
++---------------------+
+|                   1 |
++---------------------+
+
+MySQL &gt; select null_or_empty(&quot;&quot;);
++-------------------+
+| null_or_empty('') |
++-------------------+
+|                 1 |
++-------------------+
+
+MySQL &gt; select null_or_empty(&quot;a&quot;);
++--------------------+
+| null_or_empty('a') |
++--------------------+
+|                  0 |
++--------------------+
+
+MySQL &gt; select null_or_empty([]);
++-------------------+
+| null_or_empty('') |
++-------------------+
+|                 1 |
++-------------------+
+
+MySQL &gt; select null_or_empty([1]);
++--------------------+
+| null_or_empty('a') |
++--------------------+
+|                  0 |
++--------------------+</code></pre>
+<h3>keyword</h3>
+<p>NULL_OR_EMPTY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/null_or_empty.md">StarRocks documentation</a></p>
+</body></html>

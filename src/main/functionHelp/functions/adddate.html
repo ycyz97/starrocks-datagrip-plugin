@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>adddate</title></head><body>
+<h2>adddate</h2>
+<p>Adds an interval or a number of days to a date or datetime value. <code>ADDDATE</code> is a synonym of <code>DATE_ADD</code>.</p>
+<p><b>Syntax:</b> <code>ADDDATE(date, INTERVAL value unit)</code> or <code>ADDDATE(date, days)</code></p>
+<p><b>Parameters:</b> <code>date</code> is the input date or datetime; <code>value</code> and <code>unit</code> define the interval; <code>days</code> is an integer day count.</p>
+<p><b>Returns:</b> The date or datetime after the interval is added.</p>
+<pre><code>SELECT ADDDATE('2024-01-01', INTERVAL 1 MONTH);
+SELECT ADDDATE('2024-01-01', 7);</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/adddate.md">StarRocks documentation</a></p>
+</body></html>

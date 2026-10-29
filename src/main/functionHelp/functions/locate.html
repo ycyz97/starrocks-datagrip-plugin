@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>locate</title></head><body>
+<h2>locate</h2>
+<p>This function is used for finding the location of a substring in a string (starting counting from 1 and measured in characters). If the third argument pos is specified, it will start to find positions of substr in strings below pos. If str is not found, it will return 0.</p>
+<h3>Syntax</h3>
+<pre><code>INT locate(VARCHAR substr, VARCHAR str[, INT pos])</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT LOCATE('bar', 'foobarbar');
++----------------------------+
+| locate('bar', 'foobarbar') |
++----------------------------+
+|                          4 |
++----------------------------+
+
+MySQL &gt; SELECT LOCATE('xbar', 'foobar');
++--------------------------+
+| locate('xbar', 'foobar') |
++--------------------------+
+|                        0 |
++--------------------------+
+
+MySQL &gt; SELECT LOCATE('bar', 'foobarbar', 5);
++-------------------------------+
+| locate('bar', 'foobarbar', 5) |
++-------------------------------+
+|                             7 |
++-------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>LOCATE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/locate.md">StarRocks documentation</a></p>
+</body></html>

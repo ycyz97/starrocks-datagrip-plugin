@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>months_add</title></head><body>
+<h2>months_add</h2>
+<p>Adds a specified number of months to the date, accurate to the month.</p>
+<p>The add_months function provides similar functionalities.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME months_add(DATETIME expr1, INT expr2);</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>expr1</code>: the start time. It must be of the DATETIME or DATE type.</li>
+</ul>
+<ul>
+<li><code>expr2</code>: the months to add. It must be of the INT type. It can be greater, equal, or less than zero. A negative value subtracts months from <code>date</code>.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a DATETIME value.</p>
+<h3>Examples</h3>
+<pre><code>select months_add('2019-08-01 13:21:03', 8);
++--------------------------------------+
+| months_add('2019-08-01 13:21:03', 8) |
++--------------------------------------+
+| 2020-04-01 13:21:03                  |
++--------------------------------------+
+
+select months_add('2019-08-01', 8);
++-----------------------------+
+| months_add('2019-08-01', 8) |
++-----------------------------+
+| 2020-04-01 00:00:00         |
++-----------------------------+
+
+select months_add('2019-08-01 13:21:03', -8);
++---------------------------------------+
+| months_add('2019-08-01 13:21:03', -8) |
++---------------------------------------+
+| 2018-12-01 13:21:03                   |
++---------------------------------------+
+
+select months_add('2019-02-28 13:21:03', 1);
++--------------------------------------+
+| months_add('2019-02-28 13:21:03', 1) |
++--------------------------------------+
+| 2019-03-28 13:21:03                  |
++--------------------------------------+
+
+select months_add('2019-01-30 13:21:03', 1);
++--------------------------------------+
+| months_add('2019-01-30 13:21:03', 1) |
++--------------------------------------+
+| 2019-02-28 13:21:03                  |
++--------------------------------------+</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/months_add.md">StarRocks documentation</a></p>
+</body></html>

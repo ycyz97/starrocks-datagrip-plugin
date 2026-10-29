@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_map</title></head><body>
+<h2>array_map</h2>
+<p>array_map() is a higher-order SQL function that can take lambda functions as arguments.It applies the lambda function to the input arrays and returns a new array.</p>
+<p>array_map() can accept multiple arrays and can be nested with lambda functions to capture a variable. For more information about lambda functions, see Lambda expression. This function is supported from v2.5.</p>
+<p>The alias is transform().</p>
+<h3>Syntax</h3>
+<pre><code>array_map(lambda_function, arr1, arr2...)
+array_map(arr1, arr2..., lambda_function)</code></pre>
+<h3>Usage notes</h3>
+<ul>
+<li>Lambda functions can only be used as the <b>first</b> or <b>last</b> parameter of a higher-order function. Either position does not affect the calculation.</li>
+<li>The number of arrays must be the same as the input parameters in the lambda function. Otherwise, an error is returned.</li>
+<li>All the arrays must have the same number of elements. Otherwise, an error is returned.</li>
+</ul>
+<h3>Examples</h3>
+<p>Example 1: Increment every element of the array by 100.</p>
+<pre><code>select array_map(x -&gt; x+100,[1,2,3]);
++------------------------------------+
+| array_map(x -&gt; x + 100, [1, 2, 3]) |
++------------------------------------+
+| [101,102,103]                      |
++------------------------------------+</code></pre>
+<p>Example 2: Sum array1 [1,2,3] and array2 [11,12,13] element by element.</p>
+<pre><code>select array_map((x,y) -&gt; x + y, [1,2,3], [11,12,13]);
++-----------------------------------------------------+
+| array_map((x, y) -&gt; x + y, [1, 2, 3], [11, 12, 13]) |
++-----------------------------------------------------+
+| [12,14,16]                                          |
++-----------------------------------------------------+</code></pre>
+<p>Example 3: Determine whether the element in <code>x</code> is greater than 1.5. If yes, log(x) is returned for the element. If not, (x+y) is returned for the corresponding element.</p>
+<pre><code>select array_map((x,y) -&gt; if(x&gt;1.5,log(x),x+y), [1,2,3], [11,12,13]);
++--------------------------------------------------------------------------+
+| array_map((x, y) -&gt; if(x &gt; 1.5, log(x), x + y), [1, 2, 3], [11, 12, 13]) |
++--------------------------------------------------------------------------+
+| [12,0.6931471805599453,1.0986122886681098]                               |
++--------------------------------------------------------------------------+</code></pre>
+<p>Example 4: Use array_map() to capture variables. The returned element whose value is 1 indicates the condition is met.</p>
+<pre><code>-- In the example table, last_avg is the average score in the last exam. score represents the scores of three subjects in the current exam.
+
++------+----------+------------+
+| id   | last_avg | score      |
++------+----------+------------+
+|    1 |       55 | [50,60,70] |
+|    2 |       73 | [70,65,75] |
+|    3 |       89 | [88,92,90] |
++------+----------+------------+
+
+-- Find the score that is higher than the average score of the last exam.
+select array_map(x -&gt; x &gt; last_avg, score) from test_tbl;
++--------------------------------------+
+| array_map(x -&gt; x &gt; last_avg, score)  |
++--------------------------------------+
+| [0,1,1]                              |
+| [0,0,1]                              |
+| [0,1,1]                              |
++--------------------------------------+</code></pre>
+<p>Example 5: Use nested lambda functions.</p>
+<pre><code>select array_map(x -&gt; array_map(x-&gt;x+100, x),[[1,2.3],[4,3,2]]);
++-------------------------------------------------------------------+
+| array_map(x -&gt; array_map(x -&gt; x + 100, x), [[1, 2.3], [4, 3, 2]]) |
++-------------------------------------------------------------------+
+| [[101,102.3],[104,103,102]]                                       |
++-------------------------------------------------------------------+</code></pre>
+<p>Example 6: An error is returned because the numbers of arrays and lambda parameters are inconsistent. The lambda function requires only one array but two arrays are passed in.</p>
+<pre><code>select array_map(x -&gt; x,[1],[2,4]);
+ERROR 1064 (HY000): Lambda arguments should equal to lambda input arrays.</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_map.md">StarRocks documentation</a></p>
+</body></html>

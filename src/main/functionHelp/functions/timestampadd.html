@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>timestampadd</title></head><body>
+<h2>timestampadd</h2>
+<p>Adds an integer expression interval to the date or datetime expression <code>datetime_expr</code>.</p>
+<p>The unit for the interval as mentioned must be one of the following:</p>
+<p>MILLISECOND (since 3.2), SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, or YEAR.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME TIMESTAMPADD(unit, interval, DATETIME datetime_expr)</code></pre>
+<h3>Parameters</h3>
+<ul>
+<li><code>datetime_expr</code>: the DATE or DATETIME value to which you want to add a time interval.</li>
+<li><code>interval</code>: an integer expression that specifies the number of intervals to add.</li>
+<li><code>unit</code>: the unit of the time interval to add. Supported units include MILLISECOND (since 3.2), SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, and YEAR.</li>
+</ul>
+<h3>Return value</h3>
+<p>Returns a value of the same data type as <code>datetime_expr</code>.</p>
+<h3>Examples</h3>
+<pre><code>
+MySQL &gt; SELECT TIMESTAMPADD(MINUTE,1,'2019-01-02');
++------------------------------------------------+
+| timestampadd(MINUTE, 1, '2019-01-02 00:00:00') |
++------------------------------------------------+
+| 2019-01-02 00:01:00                            |
++------------------------------------------------+
+
+MySQL &gt; SELECT TIMESTAMPADD(WEEK,1,'2019-01-02');
++----------------------------------------------+
+| timestampadd(WEEK, 1, '2019-01-02 00:00:00') |
++----------------------------------------------+
+| 2019-01-09 00:00:00                          |
++----------------------------------------------+
+
+MySQL &gt; SELECT TIMESTAMPADD(MILLISECOND,1,'2019-01-02');
++--------------------------------------------+
+| timestampadd(MILLISECOND, 1, '2019-01-02') |
++--------------------------------------------+
+| 2019-01-02 00:00:00.001000                 |
++--------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>TIMESTAMPADD</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/timestampadd.md">StarRocks documentation</a></p>
+</body></html>

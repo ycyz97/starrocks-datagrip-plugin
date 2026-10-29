@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>days_sub</title></head><body>
+<h2>days_sub</h2>
+<p>Subtracts specified days from a date or datetime to get a new datetime.</p>
+<h3>Syntax</h3>
+<pre><code>DATETIME days_sub(DATETIME|DATE d, INT n);</code></pre>
+<h3>Parameters</h3>
+<p><code>d</code>: the date or datetime expression.</p>
+<p><code>n</code>: the number of days to subtract from the <code>d</code>.</p>
+<h3>Return value</h3>
+<p>Returns a value of the datetime type, NULL is returned if any parameter is NULL or invalid.</p>
+<p>NULL is returned if the result exceeds the range [0000-01-01 00:00:00, 9999-12-31 00:00:00].</p>
+<h3>Examples</h3>
+<pre><code>SELECT DAYS_SUB('2022-12-20 12:00:00', 10);
++--------------------------------------------------+
+| days_sub('2022-12-20 12:00:00', INTERVAL 10 DAY) |
++--------------------------------------------------+
+| 2022-12-10 12:00:00                              |
++--------------------------------------------------+
+
+SELECT DAYS_SUB('2022-12-20 12:00:00', -10);
++---------------------------------------------------+
+| days_sub('2022-12-20 12:00:00', INTERVAL -10 DAY) |
++---------------------------------------------------+
+| 2022-12-30 12:00:00                               |
++---------------------------------------------------+
+
+SELECT DAYS_SUB('2022-12-20 12:00:00', 738874);
++------------------------------------------------------+
+| days_sub('2022-12-20 12:00:00', INTERVAL 738874 DAY) |
++------------------------------------------------------+
+| 0000-01-01 12:00:00                                  |
++------------------------------------------------------+
+
+SELECT DAYS_SUB('2022-12-20 12:00:00', 738875);
++------------------------------------------------------+
+| days_sub('2022-12-20 12:00:00', INTERVAL 738875 DAY) |
++------------------------------------------------------+
+| NULL                                                 |
++------------------------------------------------------+
+
+SELECT DAYS_SUB('2022-12-20 12:00:00', -2913550);
++--------------------------------------------------------+
+| days_sub('2022-12-20 12:00:00', INTERVAL -2913550 DAY) |
++--------------------------------------------------------+
+| 9999-12-31 12:00:00                                    |
++--------------------------------------------------------+
+
+SELECT DAYS_SUB('2022-12-20 12:00:00', -2913551);
++--------------------------------------------------------+
+| days_sub('2022-12-20 12:00:00', INTERVAL -2913551 DAY) |
++--------------------------------------------------------+
+| NULL                                                   |
++--------------------------------------------------------+</code></pre>
+<h3>keywords</h3>
+<p>DAY,day</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/date-time-functions/days_sub.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>array_max</title></head><body>
+<h2>array_max</h2>
+<p>Obtains the maximum value of all data in an ARRAY and return this result.</p>
+<h3>Syntax</h3>
+<pre><code>array_max(array(type))</code></pre>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select array_max([113, 11, 12]);
++------------------------+
+| array_max([113,11,12]) |
++------------------------+
+| 113                    |
++------------------------+
+
+mysql&gt; select array_max([11.33, 11.11, 12.324]);
++---------------------------------+
+| array_max([11.33,11.11,12.324]) |
++---------------------------------+
+| 12.324                          |
++---------------------------------+
+
+mysql&gt; select array_max([cast('2020-02-25 11:35:17' as datetime), cast('2019-08-25 17:07:10' as datetime), cast('2025-08-25 17:07:10' as datetime)]);
++--------------------------------------------------------------------------------------------------------------------------------------+
+| array_max([CAST('2020-02-25 11:35:17' AS DATETIME),CAST('2019-08-25 17:07:10' AS DATETIME),CAST('2025-08-25 17:07:10' AS DATETIME)]) |
++--------------------------------------------------------------------------------------------------------------------------------------+
+| 2025-08-25 17:07:10                                                                                                                  |
++--------------------------------------------------------------------------------------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ARRAY_MAX,ARRAY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_max.md">StarRocks documentation</a></p>
+</body></html>

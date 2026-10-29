@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_y</title></head><body>
+<h2>ST_Y</h2>
+<p>Returns the Y coordinate of a point.</p>
+<p>For a <code>GEOGRAPHY</code> value, Y is latitude in degrees under the OGC:CRS84 spherical contract. For a <code>GEOMETRY</code> value, Y is returned in the units of its declared CRS and is not necessarily latitude. The value must be a non-empty <code>POINT</code>.</p>
+<h3>Syntax</h3>
+<pre><code>DOUBLE ST_Y(VARCHAR point)
+DOUBLE ST_Y(GEOGRAPHY point)
+DOUBLE ST_Y(GEOMETRY point)</code></pre>
+<h3>Return value</h3>
+<p>Returns <code>NULL</code> when the input is <code>NULL</code>. For native <code>GEOGRAPHY</code> and <code>GEOMETRY</code>, an empty value or a non-<code>POINT</code> family produces an error. Native compute supports XY values with a valid descriptor.</p>
+<h3>Examples</h3>
+<pre><code>SELECT ST_Y(ST_Point(24.7, 56.7));
+-- 56.7
+
+SELECT ST_Y(ST_GeogFromText('POINT (24.7 56.7)'));
+-- 56.7
+
+SELECT ST_Y(ST_GeomFromText('POINT (1000000 2000000.5)', 'EPSG:3857'));
+-- 2000000.5</code></pre>
+<h3>keyword</h3>
+<p>ST_Y,ST,Y</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_y.md">StarRocks documentation</a></p>
+</body></html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>approx_top_k</title></head><body>
+<h2>approx_top_k</h2>
+<p>Returns the top <code>k</code> most frequently occurring item values in an <code>expr</code> along with their approximate counts.</p>
+<p>This function is supported from v3.0.</p>
+<h3>Syntax</h3>
+<pre><code>APPROX_TOP_K(&lt;expr&gt; [ , &lt;k&gt; [ , &lt;counter_num&gt; ] ] )</code></pre>
+<h3>Arguments</h3>
+<ul>
+<li><code>expr</code>: An expression of STRING, BOOLEAN, DATE, DATETIME, or numeric type.</li>
+<li><code>k</code>: An optional INTEGER literal greater than 0. If <code>k</code> is not specified, it defaults to <code>5</code>. The maximum value is <code>100000</code>.</li>
+<li><code>counter_num</code>: An optional INTEGER literal greater than or equal to <code>k</code>, The larger the <code>counter_num</code> is, the more accurate the result will be. However, this also comes with increased CPU and memory costs.</li>
+</ul>
+<ul>
+<li>The maximum value is <code>100000</code>.</li>
+<li>If <code>counter_num</code> is not specified, it defaults to <code>max(min(2 * k, 100), 100000)</code>.</li>
+</ul>
+<h3>Returns</h3>
+<p>Results are returned as an ARRAY of type STRUCT, where each STRUCT contains an <code>item</code> field for the value (with its original input type) and a <code>count</code> field (of type BIGINT) with the approximate number of occurrences. The array is sorted by <code>count</code> descending.</p>
+<p>The aggregate function returns the top <code>k</code> most frequently occurring item values in an expression expr along with their approximate counts. The error in each count may be up to <code>2.0 * numRows / counter_num</code> where <code>numRows</code> is the total number of rows. Higher values of <code>counter_num</code> provide better accuracy at the cost of increased memory usage. Expressions that have fewer than <code>counter_num</code> distinct items will yield exact item counts. Results include <code>NULL</code> values as their own item in the results.</p>
+<h3>Examples</h3>
+<p>Use data in the scores table as an example.</p>
+<pre><code>-- Calculate the score distribution of each subject.
+MySQL &gt; SELECT subject, APPROX_TOP_K(score)  AS top_k FROM scores GROUP BY subject;
++---------+--------------------------------------------------------------------------------------------------------------------+
+| subject | top_k                                                                                                              |
++---------+--------------------------------------------------------------------------------------------------------------------+
+| physics | [{&quot;item&quot;:99,&quot;count&quot;:2},{&quot;item&quot;:null,&quot;count&quot;:1},{&quot;item&quot;:100,&quot;count&quot;:1},{&quot;item&quot;:85,&quot;count&quot;:1},{&quot;item&quot;:60,&quot;count&quot;:1}] |
+| english | [{&quot;item&quot;:null,&quot;count&quot;:1},{&quot;item&quot;:92,&quot;count&quot;:1},{&quot;item&quot;:98,&quot;count&quot;:1},{&quot;item&quot;:100,&quot;count&quot;:1},{&quot;item&quot;:85,&quot;count&quot;:1}] |
+| NULL    | [{&quot;item&quot;:90,&quot;count&quot;:1}]                                                                                            |
+| math    | [{&quot;item&quot;:80,&quot;count&quot;:2},{&quot;item&quot;:null,&quot;count&quot;:1},{&quot;item&quot;:92,&quot;count&quot;:1},{&quot;item&quot;:95,&quot;count&quot;:1},{&quot;item&quot;:70,&quot;count&quot;:1}]  |
++---------+--------------------------------------------------------------------------------------------------------------------+
+
+-- Calculate the score distribution of the math subject.
+MySQL &gt; SELECT subject, APPROX_TOP_K(score)  AS top_k FROM scores WHERE subject IN  ('math') GROUP BY subject;
++---------+-------------------------------------------------------------------------------------------------------------------+
+| subject | top_k                                                                                                             |
++---------+-------------------------------------------------------------------------------------------------------------------+
+| math    | [{&quot;item&quot;:80,&quot;count&quot;:2},{&quot;item&quot;:null,&quot;count&quot;:1},{&quot;item&quot;:95,&quot;count&quot;:1},{&quot;item&quot;:92,&quot;count&quot;:1},{&quot;item&quot;:70,&quot;count&quot;:1}] |
++---------+-------------------------------------------------------------------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>APPROX_TOP_K</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/approx_top_k.md">StarRocks documentation</a></p>
+</body></html>

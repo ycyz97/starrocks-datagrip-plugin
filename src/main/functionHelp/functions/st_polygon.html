@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>st_polygon</title></head><body>
+<h2>ST_Polygon,ST_PolyFromText,ST_PolygonFromText</h2>
+<p>Converts a WKT (Well Known Text) to a corresponding polygon memory form.</p>
+<h3>Syntax</h3>
+<pre><code>GEOMETRY ST_Polygon(VARCHAR wkt)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; SELECT ST_AsText(ST_Polygon(&quot;POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))&quot;));
++------------------------------------------------------------------+
+| st_astext(st_polygon('POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))')) |
++------------------------------------------------------------------+
+| POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))                          |
++------------------------------------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>ST_POLYGON,ST_POLYFROMTEXT,ST_POLYGONFROMTEXT,ST,POLYGON,POLYFROMTEXT,POLYGONFROMTEXT</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/spatial-functions/st_polygon.md">StarRocks documentation</a></p>
+</body></html>

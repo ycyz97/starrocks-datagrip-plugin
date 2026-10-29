@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>degrees</title></head><body>
+<h2>degrees</h2>
+<p>Converts the angle in radians <code>x</code> to degrees.</p>
+<h3>Syntax</h3>
+<pre><code>DEGREES(x);</code></pre>
+<h3>Parameters</h3>
+<p><code>x</code>: the angle in radians. DOUBLE is supported.</p>
+<h3>Return value</h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3>Examples</h3>
+<pre><code>mysql&gt; select degrees(3.1415926535898);
++--------------------------+
+| degrees(3.1415926535898) |
++--------------------------+
+|        180.0000000000004 |
++--------------------------+
+1 row in set (0.07 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/degrees.md">StarRocks documentation</a></p>
+</body></html>

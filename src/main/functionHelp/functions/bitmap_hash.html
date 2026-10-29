@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>bitmap_hash</title></head><body>
+<h2>bitmap_hash</h2>
+<p>Calculates a 32-bit hash value for any type of input and return the bitmap containing the hash value. It is mainly used for the stream load task to import non integer fields into the bitmap field of the StarRocks table. For example:</p>
+<pre><code>cat data | curl --location-trusted -u user:passwd -T - \
+    -H &quot;columns: dt,page,device_id, device_id=bitmap_hash(device_id)&quot; \
+    http://host:8410/api/test/testDb/_stream_load</code></pre>
+<h3>Syntax</h3>
+<pre><code>BITMAP BITMAP_HASH(expr)</code></pre>
+<h3>Examples</h3>
+<pre><code>MySQL &gt; select bitmap_count(bitmap_hash('hello'));
++------------------------------------+
+| bitmap_count(bitmap_hash('hello')) |
++------------------------------------+
+|                                  1 |
++------------------------------------+
+
+select bitmap_to_string(bitmap_hash('hello'));
++----------------------------------------+
+| bitmap_to_string(bitmap_hash('hello')) |
++----------------------------------------+
+| 1321743225                             |
++----------------------------------------+</code></pre>
+<h3>keyword</h3>
+<p>BITMAP_HASH,BITMAP</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/bitmap-functions/bitmap_hash.md">StarRocks documentation</a></p>
+</body></html>

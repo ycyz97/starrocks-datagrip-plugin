@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>cot</title></head><body>
+<h2>cot</h2>
+<p>Returns the cotangent of the angle in radians <code>x</code>. If the angle in radians <code>x</code> is <code>0</code> or <code>NULL</code>, <code>NULL</code> is returned.</p>
+<h3><b>Syntax</b></h3>
+<pre><code>COT(x);</code></pre>
+<h3><b>Parameters</b></h3>
+<p><code>x</code>: the angle in radians. DOUBLE is supported.</p>
+<h3><b>Return value</b></h3>
+<p>Returns a value of the DOUBLE data type.</p>
+<h3><b>Examples</b></h3>
+<pre><code>mysql&gt; select cot(3.1415926/2);
++------------------------+
+| cot(3.1415926 / 2)     |
++------------------------+
+| 2.6794896585028646e-08 |
++------------------------+
+1 row in set (0.25 sec)
+
+mysql&gt; select cot(0);
++--------+
+| cot(0) |
++--------+
+|   NULL |
++--------+
+1 row in set (0.03 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/math-functions/cot.md">StarRocks documentation</a></p>
+</body></html>
