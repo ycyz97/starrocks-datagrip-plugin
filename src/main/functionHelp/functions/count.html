@@ -1,19 +1,80 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>count</title></head><body>
 <h2>count</h2>
-<p>Counts rows or non-<code>NULL</code> values in an aggregate query.</p>
+<p>Returns the total number of rows specified by an expression.</p>
+<p>This function has three variations:</p>
+<ul>
+<li><code>COUNT(*)</code> counts all rows in a table, no matter whether they contain NULL values.</li>
+</ul>
+<ul>
+<li><code>COUNT(expr)</code> counts the number of rows with non-NULL values in a specific column.</li>
+</ul>
+<ul>
+<li><code>COUNT(DISTINCT expr)</code> counts the number of distinct non-NULL values in a column.</li>
+</ul>
+<p><code>COUNT(DISTINCT expr)</code> is used for exact count distinct. If you require higher count distinct performance, see Use bitmap for exact count discount.</p>
+<p>From StarRocks 2.4 onwards, you can use multiple COUNT(DISTINCT) in one statement.</p>
 <h3>Syntax</h3>
-<pre><code>COUNT([DISTINCT] expr)
-COUNT(*)</code></pre>
+<p>~~~Haskell<br>COUNT(expr)<br>COUNT(DISTINCT expr [,expr,...])`<br>~~~</p>
 <h3>Parameters</h3>
-<p><code>expr</code>: the value to count. <code>DISTINCT</code> counts unique values.</p>
+<p><code>expr</code>: the column or expression based on which <code>count()</code> is performed. If <code>expr</code> is a column name, the column can be of any data type.</p>
 <h3>Return value</h3>
-<p>Returns the number of matching rows or values.</p>
+<p>Returns a numeric value. If no rows can be found, 0 is returned. This function ignores NULL values.</p>
 <h3>Examples</h3>
-<pre><code>SELECT COUNT(*) AS row_count,
-       COUNT(DISTINCT user_id) AS user_count
-FROM events;</code></pre>
-<h3>keyword</h3>
-<p>COUNT</p>
-<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
+<p>Suppose there is a table named <code>test</code>. Query the country, category, and supplier of each order by <code>id</code>.</p>
+<p>~~~Plain<br>select * from test order by id;<br>+------+----------+----------+------------+</p>
+<pre><code>| id   | country  | category | supplier   |</code></pre>
+<p>+------+----------+----------+------------+</p>
+<pre><code>| 1001 | US       | A        | supplier_1 |</code></pre>
+<pre><code>| 1002 | Thailand | A        | supplier_2 |</code></pre>
+<pre><code>| 1003 | Turkey   | B        | supplier_3 |</code></pre>
+<pre><code>| 1004 | US       | A        | supplier_2 |</code></pre>
+<pre><code>| 1005 | China    | C        | supplier_4 |</code></pre>
+<pre><code>| 1006 | Japan    | D        | supplier_3 |</code></pre>
+<pre><code>| 1007 | Japan    | NULL     | supplier_5 |</code></pre>
+<p>+------+----------+----------+------------+<br>~~~</p>
+<p>Example 1: Count the number of rows in table <code>test</code>.</p>
+<p>~~~Plain</p>
+<pre><code>select count(*) from test;</code></pre>
+<pre><code>+----------+</code></pre>
+<pre><code>| count(*) |</code></pre>
+<pre><code>+----------+</code></pre>
+<pre><code>|        7 |</code></pre>
+<pre><code>+----------+</code></pre>
+<p>~~~</p>
+<p>Example 2: Count the number of values in the <code>id</code> column.</p>
+<p>~~~Plain</p>
+<pre><code>select count(id) from test;</code></pre>
+<pre><code>+-----------+</code></pre>
+<pre><code>| count(id) |</code></pre>
+<pre><code>+-----------+</code></pre>
+<pre><code>|         7 |</code></pre>
+<pre><code>+-----------+</code></pre>
+<p>~~~</p>
+<p>Example 3: Count the number of values in the <code>category</code> column while ignoring NULL values.</p>
+<p>~~~Plain<br>select count(category) from test;<br>+-----------------+</p>
+<pre><code>| count(category) |</code></pre>
+<p>+-----------------+</p>
+<pre><code>|         6       |</code></pre>
+<p>+-----------------+<br>~~~</p>
+<p>Example 4: Count the number of distinct values in the <code>category</code> column.</p>
+<p>~~~Plain<br>select count(distinct category) from test;<br>+-------------------------+</p>
+<pre><code>| count(DISTINCT category) |</code></pre>
+<p>+-------------------------+</p>
+<pre><code>|                       4 |</code></pre>
+<p>+-------------------------+<br>~~~</p>
+<p>Example 5: Count the number of combinations that can be formed by <code>category</code> and <code>supplier</code>.</p>
+<p>~~~Plain<br>select count(distinct category, supplier) from test;<br>+------------------------------------+</p>
+<pre><code>| count(DISTINCT category, supplier) |</code></pre>
+<p>+------------------------------------+</p>
+<pre><code>|                                  5 |</code></pre>
+<p>+------------------------------------+<br>~~~</p>
+<p>In the output, the combination with <code>id</code> 1004 duplicates with the combination with <code>id</code> 1002. They are counted only once. The combination with <code>id</code> 1007 has a NULL value and is not counted.</p>
+<p>Example 6: Use multiple COUNT(DISTINCT) in one statement.</p>
+<p>~~~Plain<br>select count(distinct country, category), count(distinct country,supplier) from test;<br>+-----------------------------------+-----------------------------------+</p>
+<pre><code>| count(DISTINCT country, category) | count(DISTINCT country, supplier) |</code></pre>
+<p>+-----------------------------------+-----------------------------------+</p>
+<pre><code>|                                 6 |                                 7 |</code></pre>
+<p>+-----------------------------------+-----------------------------------+<br>~~~</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/count.md">StarRocks documentation</a></p>
 </body></html>

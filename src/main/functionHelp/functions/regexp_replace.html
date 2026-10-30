@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>regexp_replace</title></head><body>
 <h2>regexp_replace</h2>
-<p>Replaces substrings that match a regular expression.</p>
+<p>This function uses repl to replace a sequence of characters in str that matches a regular expression pattern.</p>
 <h3>Syntax</h3>
-<pre><code>REGEXP_REPLACE(source, pattern, replacement)</code></pre>
-<h3>Parameters</h3>
-<p><code>source</code>: the input string. <code>pattern</code>: the regular expression. <code>replacement</code>: the replacement text.</p>
-<h3>Return value</h3>
-<p>Returns the input string with matching substrings replaced.</p>
+<pre><code>VARCHAR regexp_replace(VARCHAR str, VARCHAR pattern, VARCHAR repl)</code></pre>
 <h3>Examples</h3>
-<pre><code>SELECT REGEXP_REPLACE('order-123', '[0-9]+', 'id');</code></pre>
+<pre><code>MySQL &gt; SELECT regexp_replace('a b c', &quot; &quot;, &quot;-&quot;);
++-----------------------------------+
+| regexp_replace('a b c', ' ', '-') |
++-----------------------------------+
+| a-b-c                             |
++-----------------------------------+
+
+MySQL &gt; SELECT regexp_replace('a b c','(b)','&lt;\\1&gt;');
++----------------------------------------+
+| regexp_replace('a b c', '(b)', '&lt;\1&gt;') |
++----------------------------------------+
+| a &lt;b&gt; c                                |
++----------------------------------------+</code></pre>
 <h3>keyword</h3>
-<p>REGEXP_REPLACE</p>
-<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
+<p>REGEXP_REPLACE,REGEXP,REPLACE</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/like-predicate-functions/regexp_replace.md">StarRocks documentation</a></p>
 </body></html>

@@ -1,17 +1,103 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>sum</title></head><body>
 <h2>sum</h2>
-<p>Returns the sum of a numeric expression over the rows in each group.</p>
+<p>Returns the sum of non-null values for <code>expr</code>. You can use the DISTINCT keyword to compute the sum of distinct non-null values.</p>
 <h3>Syntax</h3>
 <pre><code>SUM([DISTINCT] expr)</code></pre>
 <h3>Parameters</h3>
-<p><code>expr</code>: a numeric expression. <code>DISTINCT</code> sums each distinct value once.</p>
+<p><code>expr</code>: the expression that evaluates to a numeric value. Supported data types are TINYINT, SMALLINT, INT, FLOAT, DOUBLE, or DECIMAL.</p>
 <h3>Return value</h3>
-<p>Returns a numeric result. <code>NULL</code> values are ignored.</p>
+<p>Data type mapping between input value and return value:</p>
+<ul>
+<li>TINYINT -&gt; BIGINT</li>
+<li>SMALLINT -&gt; BIGINT</li>
+<li>INT -&gt; BIGINT</li>
+<li>FLOAT -&gt; DOUBLE</li>
+<li>DOUBLE -&gt; DOUBLE</li>
+<li>DECIMAL -&gt; DECIMAL</li>
+</ul>
+<h3>Usage notes</h3>
+<ul>
+<li>This function ignores nulls.</li>
+<li>An error is returned if <code>expr</code> does not exist.</li>
+<li>If a VARCHAR expression is passed, this function implicitly casts the input into DOUBLE values. If the cast fails, an error is returned.</li>
+</ul>
 <h3>Examples</h3>
-<pre><code>SELECT SUM(amount) AS total_amount
-FROM payments;</code></pre>
+<p>1. Create a table named <code>employees</code>.</p>
+<pre><code>    CREATE TABLE IF NOT EXISTS employees (
+        region_num    TINYINT        COMMENT &quot;range [-128, 127]&quot;,
+        id            BIGINT         COMMENT &quot;range [-2^63 + 1 ~ 2^63 - 1]&quot;,
+        hobby         STRING         NOT NULL COMMENT &quot;upper limit value 65533 bytes&quot;,
+        income        DOUBLE         COMMENT &quot;8 bytes&quot;,
+        sales       DECIMAL(12,4)  COMMENT &quot;&quot;
+        )
+        DISTRIBUTED BY HASH(region_num);</code></pre>
+<p>2. Insert data into <code>employees</code>.</p>
+<pre><code>    INSERT INTO employees VALUES
+    (3,432175,'3',25600,1250.23),
+    (4,567832,'3',37932,2564.33),
+    (3,777326,'2',null,1932.99),
+    (5,342611,'6',43727,45235.1),
+    (2,403882,'4',36789,52872.4);</code></pre>
+<p>3. Query data from <code>employees</code>.</p>
+<pre><code>    MySQL &gt; select * from employees;
+    +------------+--------+-------+--------+------------+
+    | region_num | id     | hobby | income | sales      |
+    +------------+--------+-------+--------+------------+
+    |          5 | 342611 | 6     |  43727 | 45235.1000 |
+    |          2 | 403882 | 4     |  36789 | 52872.4000 |
+    |          4 | 567832 | 3     |  37932 |  2564.3300 |
+    |          3 | 432175 | 3     |  25600 |  1250.2300 |
+    |          3 | 777326 | 2     |   NULL |  1932.9900 |
+    +------------+--------+-------+--------+------------+
+    5 rows in set (0.01 sec)</code></pre>
+<p>4. Use this function to compute sum.</p>
+<pre><code>Example 1: Calculate the total sales of each region.</code></pre>
+<pre><code>    MySQL &gt; SELECT region_num, sum(sales) from employees
+    group by region_num;
+
+    +------------+------------+
+    | region_num | sum(sales) |
+    +------------+------------+
+    |          2 | 52872.4000 |
+    |          5 | 45235.1000 |
+    |          4 |  2564.3300 |
+    |          3 |  3183.2200 |
+    +------------+------------+
+    4 rows in set (0.01 sec)</code></pre>
+<pre><code>Example 2: Calculate the total employee income of each region. This function ignores nulls and the income of employee id `777326` is not counted.</code></pre>
+<pre><code>    MySQL &gt; select region_num, sum(income) from employees
+    group by region_num;
+
+    +------------+-------------+
+    | region_num | sum(income) |
+    +------------+-------------+
+    |          2 |       36789 |
+    |          5 |       43727 |
+    |          4 |       37932 |
+    |          3 |       25600 |
+    +------------+-------------+
+    4 rows in set (0.01 sec)</code></pre>
+<pre><code>Example 3: Calculate the total number of hobbies. The `hobby` column is of the STRING type and will be implicitly converted to DOUBLE during computation.</code></pre>
+<pre><code>    MySQL &gt; select sum(DISTINCT hobby) from employees;
+
+    +---------------------+
+    | sum(DISTINCT hobby) |
+    +---------------------+
+    |                  15 |
+    +---------------------+
+    1 row in set (0.01 sec)</code></pre>
+<pre><code>Example 4: Use `sum` with the WHERE clause to calculate the total income of employees whose monthly income is higher than 30000.</code></pre>
+<pre><code>    MySQL &gt; select sum(income) from employees
+    WHERE income &gt; 30000;
+
+    +-------------+
+    | sum(income) |
+    +-------------+
+    |      118448 |
+    +-------------+
+    1 row in set (0.00 sec)</code></pre>
 <h3>keyword</h3>
-<p>SUM</p>
-<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
+<p>SUM, sum</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/aggregate-functions/sum.md">StarRocks documentation</a></p>
 </body></html>

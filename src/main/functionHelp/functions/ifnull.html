@@ -1,16 +1,27 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>ifnull</title></head><body>
 <h2>ifnull</h2>
-<p>Returns a fallback value when the first expression is <code>NULL</code>.</p>
+<p>If <code>expr1</code> is NULL, returns expr2. If <code>expr1</code> is not NULL, returns <code>expr1</code>.</p>
 <h3>Syntax</h3>
-<pre><code>IFNULL(expr1, expr2)</code></pre>
+<pre><code>ifnull(expr1,expr2);</code></pre>
 <h3>Parameters</h3>
-<p><code>expr1</code>: the value to test. <code>expr2</code>: the value returned when <code>expr1</code> is <code>NULL</code>.</p>
+<p><code>expr1</code> and <code>expr2</code> must be compatible in data type.</p>
 <h3>Return value</h3>
-<p>Returns <code>expr1</code> when it is not <code>NULL</code>; otherwise returns <code>expr2</code>.</p>
+<p>The return value has the same type as <code>expr1</code>.</p>
 <h3>Examples</h3>
-<pre><code>SELECT IFNULL(NULL, 'unknown');</code></pre>
-<h3>keyword</h3>
-<p>IFNULL</p>
-<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
+<pre><code>mysql&gt; select ifnull(2,4);
++--------------+
+| ifnull(2, 4) |
++--------------+
+|            2 |
++--------------+
+
+mysql&gt; select ifnull(NULL,2);
++-----------------+
+| ifnull(NULL, 2) |
++-----------------+
+|               2 |
++-----------------+
+1 row in set (0.01 sec)</code></pre>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/condition-functions/ifnull.md">StarRocks documentation</a></p>
 </body></html>

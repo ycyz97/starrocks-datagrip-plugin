@@ -1,16 +1,38 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>array_length</title></head><body>
 <h2>array_length</h2>
-<p>Returns the number of elements in an array.</p>
+<p>Returns the number of elements in an array. The result type is INT. If the input parameter is NULL, the result is also NULL. Null elements are counted in the length.</p>
+<p>It has an alias cardinality().</p>
 <h3>Syntax</h3>
-<pre><code>ARRAY_LENGTH(array)</code></pre>
+<pre><code>INT array_length(any_array)</code></pre>
 <h3>Parameters</h3>
-<p><code>array</code>: an array expression.</p>
+<p><code>any_array</code>: the ARRAY value from which you want to retrieve the number of elements.</p>
 <h3>Return value</h3>
-<p>Returns an integer count. A <code>NULL</code> array returns <code>NULL</code>.</p>
+<p>Returns an INT value.</p>
 <h3>Examples</h3>
-<pre><code>SELECT ARRAY_LENGTH([10, 20, 30]);</code></pre>
-<h3>keyword</h3>
-<p>ARRAY_LENGTH,ARRAY</p>
-<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
+<pre><code>mysql&gt; select array_length([1,2,3]);
++-----------------------+
+| array_length([1,2,3]) |
++-----------------------+
+|                     3 |
++-----------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; select array_length([1,2,3,null]);
++-------------------------------+
+| array_length([1, 2, 3, NULL]) |
++-------------------------------+
+|                             4 |
++-------------------------------+
+
+mysql&gt; select array_length([[1,2], [3,4]]);
++-----------------------------+
+| array_length([[1,2],[3,4]]) |
++-----------------------------+
+|                           2 |
++-----------------------------+
+1 row in set (0.01 sec)</code></pre>
+<h3>keywords</h3>
+<p>ARRAY_LENGTH, ARRAY, CARDINALITY</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/array-functions/array_length.md">StarRocks documentation</a></p>
 </body></html>

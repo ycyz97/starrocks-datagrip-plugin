@@ -1,16 +1,58 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>get_json_string</title></head><body>
-<h2>get_json_string</h2>
-<p>Extracts a string value from a JSON document using a JSON path.</p>
+<h2>get_json_string,get_json_object</h2>
+<p>Analyzes and gets strings from the specified path (<code>json_path</code>) in a JSON string. If the format of <code>json_string</code> or <code>json_path</code> is wrong or if no matching value is found, this function will return NULL.</p>
+<p>:::tip<br>All of the JSON functions and operators are listed in the navigation and on the overview page</p>
+<p>Accelerate your queries with generated columns</p>
+<pre><code>:::</code></pre>
+<p>The alias is get_json_object.</p>
 <h3>Syntax</h3>
-<pre><code>GET_JSON_STRING(json_doc, json_path)</code></pre>
+<pre><code>VARCHAR get_json_string(VARCHAR json_str, VARCHAR json_path)</code></pre>
 <h3>Parameters</h3>
-<p><code>json_doc</code>: a JSON string. <code>json_path</code>: the path of the value to extract.</p>
+<ul>
+<li><code>json_str</code>: the JSON string. Supported data type is VARCHAR.</li>
+<li><code>json_path</code>: the JSON path. Supported data type is VARCHAR. <code>json_path</code> starts with <code>$</code> and uses <code>.</code> as the path separator. <code>[ ]</code> is used as the array subscripts which starts from 0. For example, <code>$.&quot;my.key&quot;[1]</code> indicates to obtain the second value form element <code>my.key</code>.</li>
+</ul>
 <h3>Return value</h3>
-<p>Returns the extracted string, or <code>NULL</code> when the path does not resolve to a string.</p>
+<p>Returns a value of the VARCHAR type. If no matching object is found, NULL is returned.</p>
 <h3>Examples</h3>
-<pre><code>SELECT GET_JSON_STRING('{"store_id":"s1"}', '$.store_id');</code></pre>
+<h4>Example 1: Get the value whose key is <code>k1</code></h4>
+<pre><code>SELECT get_json_string('{&quot;k1&quot;:&quot;v1&quot;, &quot;k2&quot;:&quot;v2&quot;}', &quot;$.k1&quot;);</code></pre>
+<pre><code>+---------------------------------------------------+
+| get_json_string('{&quot;k1&quot;:&quot;v1&quot;, &quot;k2&quot;:&quot;v2&quot;}', '$.k1') |
++---------------------------------------------------+
+| v1                                                |
++---------------------------------------------------+</code></pre>
+<h4>Example 2: Get the value whose key is <code>a</code> from the first element</h4>
+<pre><code>SELECT get_json_object('[{&quot;a&quot;:&quot;123&quot;, &quot;b&quot;: &quot;456&quot;},{&quot;a&quot;:&quot;23&quot;, &quot;b&quot;: &quot;56&quot;}]', '$[0].a');</code></pre>
+<pre><code>+------------------------------------------------------------------------------+
+| get_json_object('[{&quot;a&quot;:&quot;123&quot;, &quot;b&quot;: &quot;456&quot;},{&quot;a&quot;:&quot;23&quot;, &quot;b&quot;: &quot;56&quot;}]', '$[0].a') |
++------------------------------------------------------------------------------+
+| 123                                                                          |
++------------------------------------------------------------------------------+</code></pre>
+<h4>Example 3: Get the second element in the array whose key is <code>my.key</code></h4>
+<pre><code>SELECT get_json_string('{&quot;k1&quot;:&quot;v1&quot;, &quot;my.key&quot;:[&quot;e1&quot;, &quot;e2&quot;, &quot;e3&quot;]}', '$.&quot;my.key&quot;[1]');</code></pre>
+<pre><code>+------------------------------------------------------------------------------+
+| get_json_string('{&quot;k1&quot;:&quot;v1&quot;, &quot;my.key&quot;:[&quot;e1&quot;, &quot;e2&quot;, &quot;e3&quot;]}', '$.&quot;my.key&quot;[1]') |
++------------------------------------------------------------------------------+
+| e2                                                                           |
++------------------------------------------------------------------------------+</code></pre>
+<h4>Example 4: Get the first element in the array whose path is <code>k1.key -&gt; k2</code></h4>
+<pre><code>SELECT get_json_string('{&quot;k1.key&quot;:{&quot;k2&quot;:[&quot;v1&quot;, &quot;v2&quot;]}}', '$.&quot;k1.key&quot;.k2[0]');</code></pre>
+<pre><code>+-----------------------------------------------------------------------+
+| get_json_string('{&quot;k1.key&quot;:{&quot;k2&quot;:[&quot;v1&quot;, &quot;v2&quot;]}}', '$.&quot;k1.key&quot;.k2[0]') |
++-----------------------------------------------------------------------+
+| v1                                                                    |
++-----------------------------------------------------------------------+</code></pre>
+<h4>Example 5: Get all values whose key is <code>k1</code> from the array</h4>
+<pre><code>SELECT get_json_string('[{&quot;k1&quot;:&quot;v1&quot;}, {&quot;k2&quot;:&quot;v2&quot;}, {&quot;k1&quot;:&quot;v3&quot;}, {&quot;k1&quot;:&quot;v4&quot;}]', '$.[*].k1');</code></pre>
+<pre><code>+-------------------------------------------------------------------------------------+
+| get_json_string('[{&quot;k1&quot;:&quot;v1&quot;}, {&quot;k2&quot;:&quot;v2&quot;}, {&quot;k1&quot;:&quot;v3&quot;}, {&quot;k1&quot;:&quot;v4&quot;}]', '$.[*].k1') |
++-------------------------------------------------------------------------------------+
+| [&quot;v1&quot;, &quot;v3&quot;, &quot;v4&quot;]                                                                  |
++-------------------------------------------------------------------------------------+
+1 row in set (0.01 sec)</code></pre>
 <h3>keyword</h3>
-<p>GET_JSON_STRING</p>
-<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
+<p>GET_JSON_STRING,GET,JSON,STRING</p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/json-functions/json-query-and-processing-functions/get_json_string.md">StarRocks documentation</a></p>
 </body></html>

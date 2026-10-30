@@ -1,16 +1,31 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>concat</title></head><body>
 <h2>concat</h2>
-<p>Concatenates two or more values as a string.</p>
+<p>This function combines multiple strings. If any of the parameter value is NULL, it will return NULL.</p>
 <h3>Syntax</h3>
-<pre><code>CONCAT(expr1, expr2 [, ...])</code></pre>
-<h3>Parameters</h3>
-<p>Each argument is converted to a compatible string value.</p>
-<h3>Return value</h3>
-<p>Returns the concatenated string. If an argument is <code>NULL</code>, the result is <code>NULL</code>.</p>
+<pre><code>VARCHAR concat(VARCHAR,...)</code></pre>
 <h3>Examples</h3>
-<pre><code>SELECT CONCAT('Star', 'Rocks');</code></pre>
+<pre><code>MySQL &gt; select concat(&quot;a&quot;, &quot;b&quot;);
++------------------+
+| concat('a', 'b') |
++------------------+
+| ab               |
++------------------+
+
+MySQL &gt; select concat(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
++-----------------------+
+| concat('a', 'b', 'c') |
++-----------------------+
+| abc                   |
++-----------------------+
+
+MySQL &gt; select concat(&quot;a&quot;, null, &quot;c&quot;);
++------------------------+
+| concat('a', NULL, 'c') |
++------------------------+
+| NULL                   |
++------------------------+</code></pre>
 <h3>keyword</h3>
 <p>CONCAT</p>
-<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
+<p><b>Source:</b> <a href="https://github.com/StarRocks/starrocks/blob/main/docs/en/sql-reference/sql-functions/string-functions/concat.md">StarRocks documentation</a></p>
 </body></html>
