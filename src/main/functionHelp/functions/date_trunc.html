@@ -1,8 +1,16 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>date_trunc</title></head><body>
+<h2>date_trunc</h2>
 <p>Truncates a date or datetime to the specified time unit.</p>
-<p><b>Syntax:</b> <code>DATE_TRUNC(unit, datetime)</code></p>
-<p><b>Parameters:</b> <code>unit</code> is a supported unit such as <code>day</code>, <code>month</code>, or <code>year</code>; <code>datetime</code> is the value to truncate.</p>
-<p><b>Returns:</b> A date or datetime aligned to the beginning of the selected unit.</p>
+<h3>Syntax</h3>
+<pre><code>DATE_TRUNC(unit, datetime)</code></pre>
+<h3>Parameters</h3>
+<p><code>unit</code>: a supported unit such as <code>day</code>, <code>month</code>, or <code>year</code>. <code>datetime</code>: the value to truncate.</p>
+<h3>Return value</h3>
+<p>Returns a date or datetime aligned to the beginning of the selected unit.</p>
+<h3>Examples</h3>
 <pre><code>SELECT DATE_TRUNC('month', '2026-10-29 14:30:00');</code></pre>
+<h3>keyword</h3>
+<p>DATE_TRUNC</p>
+<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
 </body></html>

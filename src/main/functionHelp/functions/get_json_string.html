@@ -1,8 +1,16 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>get_json_string</title></head><body>
+<h2>get_json_string</h2>
 <p>Extracts a string value from a JSON document using a JSON path.</p>
-<p><b>Syntax:</b> <code>GET_JSON_STRING(json_doc, json_path)</code></p>
-<p><b>Parameters:</b> <code>json_doc</code> is a JSON string; <code>json_path</code> identifies the value to extract.</p>
-<p><b>Returns:</b> The extracted string, or <code>NULL</code> when the path does not resolve to a string.</p>
-<pre><code>SELECT GET_JSON_STRING('{"store_id":"s1"}', '$.store_id'); -- s1</code></pre>
+<h3>Syntax</h3>
+<pre><code>GET_JSON_STRING(json_doc, json_path)</code></pre>
+<h3>Parameters</h3>
+<p><code>json_doc</code>: a JSON string. <code>json_path</code>: the path of the value to extract.</p>
+<h3>Return value</h3>
+<p>Returns the extracted string, or <code>NULL</code> when the path does not resolve to a string.</p>
+<h3>Examples</h3>
+<pre><code>SELECT GET_JSON_STRING('{"store_id":"s1"}', '$.store_id');</code></pre>
+<h3>keyword</h3>
+<p>GET_JSON_STRING</p>
+<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
 </body></html>

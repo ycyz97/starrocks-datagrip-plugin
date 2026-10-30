@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>row_number</title></head><body>
+<h2>row_number</h2>
 <p>Assigns a sequential number to each row within an analytic window.</p>
-<p><b>Syntax:</b> <code>ROW_NUMBER() OVER ([PARTITION BY ...] ORDER BY ...)</code></p>
-<p><b>Parameters:</b> The function takes no arguments. The window clause controls partitioning and order.</p>
-<p><b>Returns:</b> A 1-based integer row number for each row in its window.</p>
+<h3>Syntax</h3>
+<pre><code>ROW_NUMBER() OVER ([PARTITION BY ...] ORDER BY ...)</code></pre>
+<h3>Parameters</h3>
+<p>The function takes no arguments. The window clause controls partitioning and order.</p>
+<h3>Return value</h3>
+<p>Returns a 1-based integer row number for each row in its window.</p>
+<h3>Examples</h3>
 <pre><code>SELECT user_id,
        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_time) AS rn
 FROM events;</code></pre>
+<h3>keyword</h3>
+<p>ROW_NUMBER</p>
+<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
 </body></html>

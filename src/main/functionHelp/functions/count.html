@@ -1,10 +1,19 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>count</title></head><body>
+<h2>count</h2>
 <p>Counts rows or non-<code>NULL</code> values in an aggregate query.</p>
-<p><b>Syntax:</b> <code>COUNT([DISTINCT] expr)</code> or <code>COUNT(*)</code></p>
-<p><b>Parameters:</b> <code>expr</code> is the value to count. <code>DISTINCT</code> counts unique values.</p>
-<p><b>Returns:</b> The number of matching rows or values.</p>
+<h3>Syntax</h3>
+<pre><code>COUNT([DISTINCT] expr)
+COUNT(*)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: the value to count. <code>DISTINCT</code> counts unique values.</p>
+<h3>Return value</h3>
+<p>Returns the number of matching rows or values.</p>
+<h3>Examples</h3>
 <pre><code>SELECT COUNT(*) AS row_count,
        COUNT(DISTINCT user_id) AS user_count
 FROM events;</code></pre>
+<h3>keyword</h3>
+<p>COUNT</p>
+<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
 </body></html>

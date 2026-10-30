@@ -1,8 +1,16 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>coalesce</title></head><body>
+<h2>coalesce</h2>
 <p>Returns the first non-<code>NULL</code> value in the argument list.</p>
-<p><b>Syntax:</b> <code>COALESCE(expr1, expr2 [, ...])</code></p>
-<p><b>Parameters:</b> Arguments should have compatible types.</p>
-<p><b>Returns:</b> The first non-<code>NULL</code> argument, or <code>NULL</code> when all arguments are <code>NULL</code>.</p>
-<pre><code>SELECT COALESCE(NULL, NULL, 'fallback'); -- fallback</code></pre>
+<h3>Syntax</h3>
+<pre><code>COALESCE(expr1, expr2 [, ...])</code></pre>
+<h3>Parameters</h3>
+<p>Arguments should have compatible types.</p>
+<h3>Return value</h3>
+<p>Returns the first non-<code>NULL</code> argument, or <code>NULL</code> when all arguments are <code>NULL</code>.</p>
+<h3>Examples</h3>
+<pre><code>SELECT COALESCE(NULL, NULL, 'fallback');</code></pre>
+<h3>keyword</h3>
+<p>COALESCE</p>
+<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
 </body></html>

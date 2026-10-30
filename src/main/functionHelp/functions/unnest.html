@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>unnest</title></head><body>
+<h2>unnest</h2>
 <p>Expands an array into a table of rows and can be used as a table function in the <code>FROM</code> clause.</p>
-<p><b>Syntax:</b> <code>UNNEST(array_expr)</code></p>
-<p><b>Parameters:</b> <code>array_expr</code> is an array expression to expand.</p>
-<p><b>Returns:</b> A table containing one row for each array element.</p>
+<h3>Syntax</h3>
+<pre><code>UNNEST(array_expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>array_expr</code>: an array expression to expand.</p>
+<h3>Return value</h3>
+<p>Returns a table containing one row for each array element.</p>
+<h3>Examples</h3>
 <pre><code>SELECT item
 FROM UNNEST(['a', 'b', 'c']) AS t(item);</code></pre>
+<h3>keyword</h3>
+<p>UNNEST</p>
+<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
 </body></html>

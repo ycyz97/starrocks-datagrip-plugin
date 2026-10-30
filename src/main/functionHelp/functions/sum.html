@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="en"><head><title>sum</title></head><body>
+<h2>sum</h2>
 <p>Returns the sum of a numeric expression over the rows in each group.</p>
-<p><b>Syntax:</b> <code>SUM([DISTINCT] expr)</code></p>
-<p><b>Parameters:</b> <code>expr</code> must be numeric. <code>DISTINCT</code> sums each distinct value once.</p>
-<p><b>Returns:</b> A numeric result. <code>NULL</code> values are ignored.</p>
+<h3>Syntax</h3>
+<pre><code>SUM([DISTINCT] expr)</code></pre>
+<h3>Parameters</h3>
+<p><code>expr</code>: a numeric expression. <code>DISTINCT</code> sums each distinct value once.</p>
+<h3>Return value</h3>
+<p>Returns a numeric result. <code>NULL</code> values are ignored.</p>
+<h3>Examples</h3>
 <pre><code>SELECT SUM(amount) AS total_amount
 FROM payments;</code></pre>
+<h3>keyword</h3>
+<p>SUM</p>
+<p><b>Source:</b> <a href="https://docs.starrocks.io/docs/sql-reference/sql-functions/">StarRocks documentation</a></p>
 </body></html>
