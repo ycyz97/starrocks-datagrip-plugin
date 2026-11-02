@@ -32,11 +32,6 @@
 
     <change-notes><![CDATA[
         <ul>
-            <li>Expanded common StarRocks 4.1 warehouse syntax coverage: multi-column and expression partitioning, named-column CTAS, INSERT labels and properties, temporary partitions, <code>INSERT INTO FILES</code>, partitioned deletes, CTE/USING deletes, and aggregate <code>FILTER</code> clauses.</li>
-            <li>Expanded ETL syntax coverage for Broker Load and Routine Load column transformations, path-derived columns, filters, partition routing, routine-load lifecycle commands, scheduled <code>SUBMIT TASK</code> INSERT/CTAS jobs, and partitioned or Broker-backed EXPORT statements.</li>
-            <li>Fixed <b>Expand column list</b> (Alt+Enter) unnecessarily adding backticks to every generated column name. Plain identifiers now remain unquoted, while reserved keywords, special names, and explicitly requested quoting use StarRocks backticks.</li>
-            <li>Added syntax support for static partition assignments in <code>INSERT INTO/OVERWRITE</code>, such as <code>PARTITION (p_date = '2026-10-13')</code>.</li>
-            <li>Fixed false unresolved symbol warnings for new column names in <code>ALTER TABLE ... RENAME COLUMN ... TO ...</code>.</li>
             <li>Added table-level metadata refresh for StarRocks DDL, including catalog-qualified table names.</li>
             <li>Skipped automatic metadata synchronization for session-scoped temporary table creation.</li>
             <li>Added built-in function quick documentation for the StarRocks function catalog, including parameters, return values, usage notes, and SQL examples.</li>
